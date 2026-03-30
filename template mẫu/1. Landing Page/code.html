@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+
+<html class="scroll-smooth" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI Recruit | The Editorial Navigator for Tech Careers</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-bright": "#f8f9ff",
+                        "inverse-primary": "#52e078",
+                        "inverse-surface": "#233142",
+                        "on-secondary-fixed-variant": "#34476a",
+                        "primary": "#006e2e",
+                        "surface-dim": "#cddbf0",
+                        "surface-tint": "#006e2e",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-container": "#503c00",
+                        "on-error": "#ffffff",
+                        "secondary-fixed": "#d7e2ff",
+                        "on-tertiary-fixed-variant": "#594400",
+                        "outline-variant": "#bccbb9",
+                        "inverse-on-surface": "#e9f1ff",
+                        "secondary-container": "#bfd2fd",
+                        "on-primary-fixed": "#002109",
+                        "outline": "#6d7b6c",
+                        "background": "#f8f9ff",
+                        "surface-container-low": "#eef4ff",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-fixed": "#ffdf94",
+                        "tertiary": "#765b00",
+                        "primary-fixed-dim": "#52e078",
+                        "on-primary-container": "#003a15",
+                        "error-container": "#ffdad6",
+                        "surface-container-highest": "#d5e4f9",
+                        "on-surface-variant": "#3d4a3d",
+                        "tertiary-fixed-dim": "#f5bf00",
+                        "secondary": "#4c5e83",
+                        "surface-container": "#e4efff",
+                        "on-secondary-container": "#475a7e",
+                        "on-surface": "#0e1d2c",
+                        "tertiary-container": "#d3a400",
+                        "secondary-fixed-dim": "#b4c7f1",
+                        "surface-variant": "#d5e4f9",
+                        "on-primary-fixed-variant": "#005321",
+                        "on-background": "#0e1d2c",
+                        "primary-fixed": "#71fe91",
+                        "on-secondary-fixed": "#041b3c",
+                        "primary-container": "#00b14f",
+                        "on-error-container": "#93000a",
+                        "error": "#ba1a1a",
+                        "on-secondary": "#ffffff",
+                        "surface-container-high": "#dbe9ff",
+                        "on-tertiary-fixed": "#251a00",
+                        "surface": "#f8f9ff",
+                        "surface-container-lowest": "#ffffff"
+                    },
+                    fontFamily: {
+                        "headline": ["Inter", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .editorial-gradient {
+            background: linear-gradient(135deg, #006e2e 0%, #00b14f 100%);
+        }
+    </style>
+</head>
+<body class="bg-surface-bright text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-[0_8px_24px_rgba(14,29,44,0.06)] font-['Inter'] antialiased tracking-tight">
+<div class="flex justify-between items-center h-16 px-6 md:px-12 w-full max-w-screen-2xl mx-auto">
+<div class="flex items-center gap-8">
+<a class="text-xl font-bold text-slate-900 dark:text-white tracking-tighter" href="#">AI Recruit</a>
+<div class="hidden md:flex items-center gap-6">
+<a class="text-emerald-600 dark:text-emerald-400 font-semibold border-b-2 border-emerald-500 pb-1" href="#">Jobs</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-emerald-600 transition-colors" href="tracking.html">My Applications</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-emerald-600 transition-colors" href="hr-dashboard.html">Employer</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="px-6 py-2 rounded-lg bg-primary-container text-white font-semibold hover:opacity-90 active:scale-95 transition-all">Sign In</button>
+</div>
+</div>
+</nav>
+<main class="pt-16">
+<!-- Hero Section -->
+<section class="relative min-h-[819px] flex items-center justify-center px-6 overflow-hidden bg-surface-container-low">
+<div class="absolute inset-0 opacity-10 pointer-events-none">
+<img class="w-full h-full object-cover" data-alt="Professional office environment with soft natural lighting and modern architectural lines, minimalist tech workspace" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBtZr6JLPDNuAIC3u0bWukBcw7XZe0U4EmlMcEtfEjAODyg2dCnH5qA8yu1LNu6a6Mj7iuzSUfQSvw3eBGVsDjXUfkrpcrX7ItmOWxbYou9zzfVhPs2qD1MWRcDD9l-YMr9SYFYmgG0ol-LzNvAV-jCP3ajDatPrU5geXm8SO5F7PhcCts3Nmurl5DNLx8dj1mNEOKo2ndF2eis9olf4lsPZ9T26qtq5Uvx-a-Z8qvAEeAFWxJdyI8zfjtDdXly20UCja88EEsWX6hH"/>
+</div>
+<div class="relative z-10 max-w-4xl w-full text-center space-y-8">
+<div class="space-y-4">
+<h1 class="text-5xl md:text-7xl font-extrabold tracking-tight text-on-surface leading-[1.1]">
+                        Find your dream <span class="text-primary italic">tech career</span> with AI Recruit.
+                    </h1>
+<p class="text-xl md:text-2xl text-on-surface-variant font-medium">
+                        Over 10,000+ top jobs in tech and design.
+                    </p>
+</div>
+<!-- Search Container -->
+<div class="bg-surface-container-lowest p-2 md:p-3 rounded-xl shadow-2xl flex flex-col md:flex-row items-center gap-2 max-w-3xl mx-auto">
+<div class="flex-1 flex items-center px-4 gap-3 w-full border-b md:border-b-0 md:border-r border-outline-variant/20">
+<span class="material-symbols-outlined text-outline">search</span>
+<input class="w-full bg-transparent border-none focus:ring-0 py-3 text-on-surface font-medium" placeholder="Job title, keywords..." type="text"/>
+</div>
+<div class="flex-1 flex items-center px-4 gap-3 w-full">
+<span class="material-symbols-outlined text-outline">location_on</span>
+<input class="w-full bg-transparent border-none focus:ring-0 py-3 text-on-surface font-medium" placeholder="Location" type="text"/>
+</div>
+<button class="w-full md:w-auto px-10 py-4 editorial-gradient text-white font-bold rounded-lg shadow-lg hover:opacity-90 transition-all active:scale-95">
+                        Search Jobs
+                    </button>
+</div>
+<div class="flex flex-wrap justify-center gap-4 pt-4">
+<span class="text-sm font-label text-on-surface-variant">Popular:</span>
+<a class="text-sm font-semibold text-primary hover:underline" href="#">Product Designer</a>
+<a class="text-sm font-semibold text-primary hover:underline" href="#">Fullstack Engineer</a>
+<a class="text-sm font-semibold text-primary hover:underline" href="#">AI Researcher</a>
+</div>
+</div>
+</section>
+<!-- Featured Section (Editorial Layout) -->
+<section class="py-24 px-6 md:px-12 max-w-screen-2xl mx-auto">
+<div class="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+<div class="max-w-2xl">
+<h2 class="text-4xl md:text-5xl font-extrabold text-on-surface tracking-tight mb-4">Latest Jobs</h2>
+<p class="text-lg text-on-surface-variant">Hand-picked opportunities from global innovators and emerging startups.</p>
+</div>
+<a class="flex items-center gap-2 text-primary font-bold group" href="#">
+                    View all openings
+                    <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</a>
+</div>
+<!-- Bento Grid Job Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<!-- Job Card 1 -->
+<div class="group bg-surface-container-lowest p-8 rounded-xl border border-outline-variant/20 hover:border-primary/40 transition-all duration-300 hover:shadow-[0_20px_50px_rgba(0,110,46,0.08)]">
+<div class="flex justify-between items-start mb-6">
+<div class="w-14 h-14 rounded-lg bg-surface-container-low flex items-center justify-center overflow-hidden">
+<img class="w-10 h-10 object-contain" data-alt="Minimalist abstract tech logo for a software company using vibrant shapes" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfJHUzKa-rDKraKMSpoz4g2RB2A5W_34hhWaph84jKef5Be124nLuZ9FHT-YygsaqxxfqkLNCMFtWacAinI3VAh37whMICZOSr5BVSd53kRbM4Qwm_6Y89Uw1-VL8P7EEi9t5DNEv7FYNRlvSM_-w4vPKz75V3qdSUee1pjPfE9-DHM0_tmYNsbfXnDmt9qIKW7dejFmCaQEhgjvkoNdBJlBRWRApjUw1tT1Ph25IrMrO2xy0rifk_uU-IUjMLLYutSE5H_8LS6P-S"/>
+</div>
+<span class="px-3 py-1 rounded-full bg-tertiary-container text-on-tertiary-container text-xs font-bold uppercase tracking-wider">98% Match</span>
+</div>
+<h3 class="text-2xl font-bold text-on-surface mb-2 group-hover:text-primary transition-colors">Senior UX Architect</h3>
+<p class="text-on-surface-variant font-medium mb-6">Stellar Systems • San Francisco, CA</p>
+<div class="flex flex-wrap gap-2 mb-8">
+<span class="px-3 py-1 rounded-md bg-surface-container text-on-secondary-container text-xs font-semibold">Remote</span>
+<span class="px-3 py-1 rounded-md bg-surface-container text-on-secondary-container text-xs font-semibold">$140k - $180k</span>
+</div>
+<a class="block w-full text-center py-3 rounded-lg border-2 border-primary text-primary font-bold hover:bg-primary hover:text-white transition-all" href="job-detail.html">View Detail</a>
+</div>
+<!-- Job Card 2 -->
+<div class="group bg-surface-container-lowest p-8 rounded-xl border border-outline-variant/20 hover:border-primary/40 transition-all duration-300 hover:shadow-[0_20px_50px_rgba(0,110,46,0.08)]">
+<div class="flex justify-between items-start mb-6">
+<div class="w-14 h-14 rounded-lg bg-surface-container-low flex items-center justify-center overflow-hidden">
+<img class="w-10 h-10 object-contain" data-alt="Geometric modern logo for a cloud computing infrastructure firm" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA_nWFLeUA51eoDzUWyXx16XDdg2pgQkXt5-nRooyl_pDZH8U3t9npuWCZw5XUPdmLqAITrmTrDwylghi8-Nky7UxRvcOAEsxQsPSNpRzSAufTWn152VQ6nl7mYmE4LxCKX_9dqZUQ0fm0-kInYly68amSHqK6_f2Cd8PUut8KlyNONAcrElWc-eYHeqGrpPV916PLNWsiJ4C7fjiv_n-LaKAvzmzSqZELQHwhBbg2gblDO-1fqvRUMZDS8TU7Bl4bYCRKmGaOX6ToO"/>
+</div>
+<span class="px-3 py-1 rounded-full bg-surface-container text-on-surface-variant text-xs font-bold uppercase tracking-wider">New</span>
+</div>
+<h3 class="text-2xl font-bold text-on-surface mb-2 group-hover:text-primary transition-colors">Lead AI Engineer</h3>
+<p class="text-on-surface-variant font-medium mb-6">Neural Nexus • Austin, TX</p>
+<div class="flex flex-wrap gap-2 mb-8">
+<span class="px-3 py-1 rounded-md bg-surface-container text-on-secondary-container text-xs font-semibold">Hybrid</span>
+<span class="px-3 py-1 rounded-md bg-surface-container text-on-secondary-container text-xs font-semibold">$160k - $220k</span>
+</div>
+<a class="block w-full text-center py-3 rounded-lg border-2 border-primary text-primary font-bold hover:bg-primary hover:text-white transition-all" href="job-detail.html">View Detail</a>
+</div>
+<!-- Job Card 3 -->
+<div class="group bg-surface-container-lowest p-8 rounded-xl border border-outline-variant/20 hover:border-primary/40 transition-all duration-300 hover:shadow-[0_20px_50px_rgba(0,110,46,0.08)]">
+<div class="flex justify-between items-start mb-6">
+<div class="w-14 h-14 rounded-lg bg-surface-container-low flex items-center justify-center overflow-hidden">
+<img class="w-10 h-10 object-contain" data-alt="Elegant branding logo for a high-end financial tech startup" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCjXfpcqX7V6_e4bAhsB6aWm5x0xs7ZX2W0ZbVJk3FBJb3otRptVgktIXyj0BM62Efs0WRVGo6uTvub3Uhy4dYQM_p1lL49hGMxNfTXG_6w_v7E6lbPHndBaoIGD_yYQ0vHf0l5gWrLlGwpVuAVv58FgS4k2Gqqph4rT6ONym4yoNQygoPrGR-vfsl0BH9BPvRAQJtccPd6V6pT5AaJyDo_A5qiX2OV_ISn-GkDd5SXDcdLTT_XnJfevZKVG-8XoahRXs6Wmcx50cz7"/>
+</div>
+<span class="px-3 py-1 rounded-full bg-tertiary-container text-on-tertiary-container text-xs font-bold uppercase tracking-wider">85% Match</span>
+</div>
+<h3 class="text-2xl font-bold text-on-surface mb-2 group-hover:text-primary transition-colors">Backend Developer</h3>
+<p class="text-on-surface-variant font-medium mb-6">FinFlow Technologies • New York, NY</p>
+<div class="flex flex-wrap gap-2 mb-8">
+<span class="px-3 py-1 rounded-md bg-surface-container text-on-secondary-container text-xs font-semibold">On-site</span>
+<span class="px-3 py-1 rounded-md bg-surface-container text-on-secondary-container text-xs font-semibold">$120k - $150k</span>
+</div>
+<a class="block w-full text-center py-3 rounded-lg border-2 border-primary text-primary font-bold hover:bg-primary hover:text-white transition-all" href="job-detail.html">View Detail</a>
+</div>
+</div>
+</section>
+<!-- Stats Section -->
+<section class="py-20 bg-inverse-surface text-white">
+<div class="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-12 text-center">
+<div>
+<div class="text-4xl md:text-5xl font-black mb-2 text-primary-container">10k+</div>
+<div class="text-surface-variant text-sm font-semibold tracking-widest uppercase">Active Jobs</div>
+</div>
+<div>
+<div class="text-4xl md:text-5xl font-black mb-2 text-primary-container">500+</div>
+<div class="text-surface-variant text-sm font-semibold tracking-widest uppercase">Top Companies</div>
+</div>
+<div>
+<div class="text-4xl md:text-5xl font-black mb-2 text-primary-container">24h</div>
+<div class="text-surface-variant text-sm font-semibold tracking-widest uppercase">Avg Response</div>
+</div>
+<div>
+<div class="text-4xl md:text-5xl font-black mb-2 text-primary-container">92%</div>
+<div class="text-surface-variant text-sm font-semibold tracking-widest uppercase">Success Rate</div>
+</div>
+</div>
+</section>
+<!-- Newsletter Section -->
+<section class="py-24 px-6">
+<div class="max-w-5xl mx-auto bg-surface-container-high rounded-[2rem] overflow-hidden flex flex-col md:flex-row shadow-xl">
+<div class="flex-1 p-12 md:p-16 space-y-6">
+<h2 class="text-3xl md:text-4xl font-extrabold text-on-surface tracking-tight leading-tight">Get the first look at <span class="text-primary">unlisted roles.</span></h2>
+<p class="text-on-surface-variant text-lg">Our AI engine scans thousands of sources to find roles before they go public. Join the editorial waitlist.</p>
+<div class="flex flex-col sm:flex-row gap-3">
+<input class="flex-1 px-6 py-4 rounded-xl bg-surface-container-lowest border-none focus:ring-2 focus:ring-primary shadow-sm text-on-surface" placeholder="Enter your email" type="email"/>
+<button class="px-8 py-4 bg-primary text-white font-bold rounded-xl shadow-lg hover:opacity-90 active:scale-95 transition-all">Subscribe</button>
+</div>
+<p class="text-xs text-on-surface-variant/70">Join 50,000+ tech professionals. No spam, just careers.</p>
+</div>
+<div class="flex-1 hidden md:block relative">
+<img class="absolute inset-0 w-full h-full object-cover" data-alt="Creative collaborative team working around a large monitor in a bright modern office with warm lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBaOroqOqEdN_KHTpI9MxFzV-Yw2RsI7oHhql7eqVJoOyJsz2pMsLmmj24j6j2STnOlYcR9ky5X24RRuuKZFSl65vBJ5DR_RvMKneCDWUH5u9-FRdBLBaRjGN_ymndnyYImk6XNNFU3iWsRA9mAWsw0ZvE4syaLTXmFcdGXOPfaBQYM14P9LW4XVtDFyGe0t0pQZtRMK4L31DggCZ-zOoF1AAw8sJEAFH4kitfMHnxfnymMXq5h2jtZ8rNUfw0mJXIJvGDqPNGzVP7n"/>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="w-full py-12 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 tonal-shift">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-8 px-6 md:px-12 max-w-7xl mx-auto">
+<div class="col-span-1 md:col-span-1">
+<div class="text-lg font-bold text-slate-900 dark:text-white mb-4">AI Recruit</div>
+<p class="body-md font-['Inter'] text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">© 2024 AI Recruit. The Editorial Navigator for Tech Careers.</p>
+</div>
+<div class="flex flex-col gap-4">
+<h4 class="text-sm font-bold uppercase tracking-widest text-on-surface">Platform</h4>
+<a class="text-slate-500 hover:text-emerald-500 hover:underline decoration-emerald-500 underline-offset-4 transition-all" href="#">Browse Jobs</a>
+<a class="text-slate-500 hover:text-emerald-500 hover:underline decoration-emerald-500 underline-offset-4 transition-all" href="#">Success Stories</a>
+</div>
+<div class="flex flex-col gap-4">
+<h4 class="text-sm font-bold uppercase tracking-widest text-on-surface">Support</h4>
+<a class="text-slate-500 hover:text-emerald-500 hover:underline decoration-emerald-500 underline-offset-4 transition-all" href="#">Contact Support</a>
+<a class="text-slate-500 hover:text-emerald-500 hover:underline decoration-emerald-500 underline-offset-4 transition-all" href="#">Privacy Policy</a>
+<a class="text-slate-500 hover:text-emerald-500 hover:underline decoration-emerald-500 underline-offset-4 transition-all" href="#">Terms of Service</a>
+</div>
+<div class="flex flex-col gap-4">
+<h4 class="text-sm font-bold uppercase tracking-widest text-on-surface">Follow</h4>
+<div class="flex gap-4">
+<a class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all" href="#"><span class="material-symbols-outlined">public</span></a>
+<a class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all" href="#"><span class="material-symbols-outlined">share</span></a>
+</div>
+</div>
+</div>
+</footer>
+</body></html>

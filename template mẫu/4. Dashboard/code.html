@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+
+<html class="light" lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI Recruit - Employer Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .stat-card {
+            border: 1px solid #E9E9E9;
+            padding: 20px;
+            border-radius: 8px;
+            background: #fff;
+            border-left: 4px solid #00B14F;
+        }
+        /* Custom scrollbar for better editorial feel */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #bccbb9; border-radius: 10px; }
+    </style>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-container": "#e4efff",
+              "on-secondary-fixed-variant": "#34476a",
+              "on-tertiary-fixed": "#251a00",
+              "tertiary": "#765b00",
+              "on-tertiary-container": "#503c00",
+              "on-tertiary": "#ffffff",
+              "on-primary": "#ffffff",
+              "surface-container-lowest": "#ffffff",
+              "secondary-fixed": "#d7e2ff",
+              "secondary-fixed-dim": "#b4c7f1",
+              "surface-container-high": "#dbe9ff",
+              "outline-variant": "#bccbb9",
+              "primary-fixed": "#71fe91",
+              "inverse-surface": "#233142",
+              "inverse-primary": "#52e078",
+              "surface": "#f8f9ff",
+              "primary-container": "#00b14f",
+              "inverse-on-surface": "#e9f1ff",
+              "on-surface-variant": "#3d4a3d",
+              "tertiary-container": "#d3a400",
+              "secondary-container": "#bfd2fd",
+              "on-secondary-container": "#475a7e",
+              "tertiary-fixed": "#ffdf94",
+              "surface-container-highest": "#d5e4f9",
+              "on-error": "#ffffff",
+              "primary": "#006e2e",
+              "background": "#f8f9ff",
+              "surface-bright": "#f8f9ff",
+              "on-secondary": "#ffffff",
+              "surface-dim": "#cddbf0",
+              "on-surface": "#0e1d2c",
+              "tertiary-fixed-dim": "#f5bf00",
+              "error-container": "#ffdad6",
+              "surface-variant": "#d5e4f9",
+              "surface-tint": "#006e2e",
+              "outline": "#6d7b6c",
+              "on-primary-fixed": "#002109",
+              "on-primary-fixed-variant": "#005321",
+              "on-primary-container": "#003a15",
+              "on-background": "#0e1d2c",
+              "surface-container-low": "#eef4ff",
+              "on-tertiary-fixed-variant": "#594400",
+              "error": "#ba1a1a",
+              "on-error-container": "#93000a",
+              "secondary": "#4c5e83",
+              "primary-fixed-dim": "#52e078",
+              "on-secondary-fixed": "#041b3c"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+</head>
+<body class="bg-surface text-on-surface antialiased">
+<!-- TopNavBar -->
+<header class="w-full sticky top-0 z-50 bg-white dark:bg-slate-900 shadow-[0_8px_24px_rgba(14,29,44,0.06)]">
+<div class="flex items-center justify-between px-8 h-16 w-full max-w-full">
+<div class="flex items-center gap-8">
+<span class="text-xl font-bold text-emerald-700 dark:text-emerald-400 tracking-tighter">AI Recruit</span>
+<nav class="hidden md:flex items-center gap-6 font-['Inter'] font-medium text-sm tracking-tight">
+<a class="text-slate-600 dark:text-slate-400 hover:text-emerald-600 transition-colors" href="#">Jobs</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-emerald-600 transition-colors" href="#">My Applications</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-slate-600 hover:bg-slate-50 rounded-full transition-all duration-200 active:scale-95">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-slate-600 hover:bg-slate-50 rounded-full transition-all duration-200 active:scale-95">
+<span class="material-symbols-outlined">help</span>
+</button>
+<div class="h-8 w-8 rounded-full overflow-hidden bg-surface-container-low border border-outline-variant/20">
+<img alt="User Avatar" class="w-full h-full object-cover" data-alt="Professional headshot of a smiling HR manager in a modern office setting, bright and clean photography style" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAR9K3lMXCwNy67kNAXRPbrOVOqewDrXA0rjnFxtkEglHDM783HPvQG37d5pd8IRIA0Y48o2w1qF3ZFays0w0tbYZ1fcncRbEUzbUbUd8iql5xw5YoSEKhFcF7wfbxXQD6J9v102yr1TevC7qUWksh_KkjnnUJ74d_dJi8DpMGvn4gHyieg3kJr1PIsDngyxExJxmEh_l9Bm3SZBqabPKs_yeQJ8r8RzOQhhM24TDMd2RliaesQPvbqzPdgskzTfgnoPLd-2Vvpwaxv"/>
+</div>
+</div>
+</div>
+<div class="bg-slate-100 dark:bg-slate-800 h-[1px] w-full"></div>
+</header>
+<div class="flex">
+<!-- SideNavBar -->
+<aside class="h-screen w-64 fixed left-0 top-0 pt-16 bg-slate-50 dark:bg-slate-950 border-r border-transparent z-40 hidden md:block">
+<div class="flex flex-col p-4 gap-2 h-full font-['Inter'] text-sm antialiased">
+<div class="mb-6 px-2 py-4">
+<p class="font-bold text-emerald-700 dark:text-emerald-400 text-base">Precision Talent</p>
+<p class="text-xs text-on-surface-variant opacity-70">Enterprise Admin</p>
+</div>
+<a class="flex items-center gap-3 px-4 py-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 font-bold rounded-lg cursor-pointer transition-transform hover:translate-x-1 duration-200" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Tổng quan</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer hover:translate-x-1 duration-200" href="candidate-list.html">
+<span class="material-symbols-outlined">group</span>
+<span>Danh sách ứng viên</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-900 rounded-lg transition-all cursor-pointer hover:translate-x-1 duration-200" href="#">
+<span class="material-symbols-outlined">psychology</span>
+<span>Cài đặt trọng số AI</span>
+</a>
+<div class="mt-auto pb-8">
+<button class="w-full bg-gradient-to-br from-primary to-primary-container text-on-primary py-3 rounded-lg font-semibold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 active:scale-95 transition-transform">
+<span class="material-symbols-outlined">add</span>
+                        Post New Job
+                    </button>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 ml-0 md:ml-64 p-8 min-h-screen">
+<div class="max-w-7xl mx-auto space-y-12">
+<!-- Welcome Section -->
+<section class="space-y-2">
+<h1 class="text-3xl font-extrabold text-on-surface tracking-tight font-headline">Bảng điều khiển tuyển dụng</h1>
+<p class="text-on-surface-variant text-lg">Chào buổi sáng, Precision Talent. Đây là báo cáo tổng quan hôm nay.</p>
+</section>
+<!-- Stat Cards: Bento-ish Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<div class="stat-card shadow-sm hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start">
+<div>
+<p class="text-sm font-medium text-on-surface-variant uppercase tracking-wider">Tổng hồ sơ</p>
+<h3 class="text-3xl font-bold mt-2">250</h3>
+</div>
+<span class="material-symbols-outlined text-primary/40">description</span>
+</div>
+<div class="mt-4 text-xs text-primary font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">trending_up</span>
+<span>+12% so với tháng trước</span>
+</div>
+</div>
+<div class="stat-card shadow-sm hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start">
+<div>
+<p class="text-sm font-medium text-on-surface-variant uppercase tracking-wider">Ứng viên tiềm năng</p>
+<h3 class="text-3xl font-bold mt-2">45</h3>
+</div>
+<span class="material-symbols-outlined text-primary/40">star</span>
+</div>
+<div class="mt-4 text-xs text-primary font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">bolt</span>
+<span>Ưu tiên phỏng vấn</span>
+</div>
+</div>
+<div class="stat-card shadow-sm hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start">
+<div>
+<p class="text-sm font-medium text-on-surface-variant uppercase tracking-wider">Vị trí đang tuyển</p>
+<h3 class="text-3xl font-bold mt-2">8</h3>
+</div>
+<span class="material-symbols-outlined text-primary/40">work</span>
+</div>
+<div class="mt-4 text-xs text-on-surface-variant font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">schedule</span>
+<span>3 vị trí sắp hết hạn</span>
+</div>
+</div>
+<div class="stat-card shadow-sm hover:shadow-md transition-shadow bg-surface-container-low">
+<div class="flex justify-between items-start">
+<div>
+<p class="text-sm font-medium text-on-surface-variant uppercase tracking-wider">Tỉ lệ khớp AI trung bình</p>
+<h3 class="text-3xl font-bold mt-2">72%</h3>
+</div>
+<div class="bg-tertiary-container/20 p-2 rounded-full">
+<span class="material-symbols-outlined text-tertiary-container" style="font-variation-settings: 'FILL' 1;">psychology</span>
+</div>
+</div>
+<div class="mt-4 w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full" style="width: 72%"></div>
+</div>
+</div>
+</div>
+<!-- Charts Area: Asymmetric Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Column Chart Card -->
+<div class="lg:col-span-2 bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/10">
+<div class="flex items-center justify-between mb-8">
+<h4 class="text-lg font-bold text-on-surface">Nguồn ứng viên</h4>
+<select class="bg-surface-container-low border-none rounded-lg text-sm font-medium focus:ring-primary">
+<option>30 ngày qua</option>
+<option>90 ngày qua</option>
+</select>
+</div>
+<div class="flex items-end justify-around h-64 px-4">
+<!-- LinkedIn Bar -->
+<div class="flex flex-col items-center gap-3 w-full max-w-[60px]">
+<div class="bg-primary/90 w-full rounded-t-lg transition-all hover:bg-primary" style="height: 85%"></div>
+<span class="text-xs font-semibold text-on-surface-variant">LinkedIn</span>
+</div>
+<!-- Indeed Bar -->
+<div class="flex flex-col items-center gap-3 w-full max-w-[60px]">
+<div class="bg-primary/70 w-full rounded-t-lg transition-all hover:bg-primary" style="height: 60%"></div>
+<span class="text-xs font-semibold text-on-surface-variant">Indeed</span>
+</div>
+<!-- Referral Bar -->
+<div class="flex flex-col items-center gap-3 w-full max-w-[60px]">
+<div class="bg-primary/50 w-full rounded-t-lg transition-all hover:bg-primary" style="height: 40%"></div>
+<span class="text-xs font-semibold text-on-surface-variant">Referral</span>
+</div>
+<!-- Direct Bar -->
+<div class="flex flex-col items-center gap-3 w-full max-w-[60px]">
+<div class="bg-primary/30 w-full rounded-t-lg transition-all hover:bg-primary" style="height: 25%"></div>
+<span class="text-xs font-semibold text-on-surface-variant">Direct</span>
+</div>
+</div>
+</div>
+<!-- Pie Chart Simulation -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/10">
+<h4 class="text-lg font-bold text-on-surface mb-8">Phân bố kỹ năng</h4>
+<div class="relative flex justify-center items-center py-4">
+<!-- CSS-based Pie Visual -->
+<div class="w-48 h-48 rounded-full border-[16px] border-slate-100 flex items-center justify-center relative">
+<div class="absolute inset-[-16px] rounded-full border-[16px] border-emerald-600" style="clip-path: polygon(50% 50%, 50% 0, 100% 0, 100% 100%, 0 100%, 0 40%);"></div>
+<div class="absolute inset-[-16px] rounded-full border-[16px] border-emerald-400 opacity-60" style="clip-path: polygon(50% 50%, 0 40%, 0 0, 50% 0);"></div>
+<div class="text-center">
+<p class="text-2xl font-bold">12</p>
+<p class="text-xs font-medium text-on-surface-variant">Ngôn ngữ</p>
+</div>
+</div>
+</div>
+<div class="mt-8 space-y-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-emerald-600"></div>
+<span class="text-sm font-medium">Java</span>
+</div>
+<span class="text-sm font-bold">45%</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-emerald-400"></div>
+<span class="text-sm font-medium">Python</span>
+</div>
+<span class="text-sm font-bold">30%</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-slate-200"></div>
+<span class="text-sm font-medium">React</span>
+</div>
+<span class="text-sm font-bold">25%</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Recent Activity Table -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/10 overflow-hidden">
+<div class="p-6 border-b border-outline-variant/10 flex justify-between items-center">
+<div>
+<h4 class="text-lg font-bold text-on-surface">Hoạt động gần đây</h4>
+<p class="text-sm text-on-surface-variant">5 ứng viên mới nhất vừa nộp hồ sơ</p>
+</div>
+<a class="text-primary font-bold text-sm flex items-center gap-1 hover:underline" href="candidate-list.html">
+                            Xem tất cả
+                            <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</a>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low text-on-surface-variant text-xs uppercase tracking-widest font-bold">
+<th class="px-6 py-4">Ứng viên</th>
+<th class="px-6 py-4">Vị trí</th>
+<th class="px-6 py-4">Match Score</th>
+<th class="px-6 py-4">Nguồn</th>
+<th class="px-6 py-4 text-right">Thao tác</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/10">
+<tr class="hover:bg-surface-container-low/50 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-xs">NL</div>
+<div>
+<p class="font-bold text-sm">Nguyễn Lan Anh</p>
+<p class="text-xs text-on-surface-variant">anh.nguyen@email.com</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-sm font-medium">Senior Java Developer</td>
+<td class="px-6 py-4">
+<span class="px-3 py-1 bg-tertiary-container/10 text-on-tertiary-container rounded-full text-xs font-bold border border-tertiary-container/20">94% Fit</span>
+</td>
+<td class="px-6 py-4 text-sm text-on-surface-variant">LinkedIn</td>
+<td class="px-6 py-4 text-right">
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low/50 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xs">PV</div>
+<div>
+<p class="font-bold text-sm">Phạm Văn Mạnh</p>
+<p class="text-xs text-on-surface-variant">manh.p@email.com</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-sm font-medium">Product Manager</td>
+<td class="px-6 py-4">
+<span class="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold border border-emerald-100">88% Fit</span>
+</td>
+<td class="px-6 py-4 text-sm text-on-surface-variant">Direct</td>
+<td class="px-6 py-4 text-right">
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low/50 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-700 font-bold text-xs">TH</div>
+<div>
+<p class="font-bold text-sm">Trần Hoàng Long</p>
+<p class="text-xs text-on-surface-variant">long.th@email.com</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-sm font-medium">UI/UX Designer</td>
+<td class="px-6 py-4">
+<span class="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold border border-emerald-100">82% Fit</span>
+</td>
+<td class="px-6 py-4 text-sm text-on-surface-variant">Referral</td>
+<td class="px-6 py-4 text-right">
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low/50 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 font-bold text-xs">LM</div>
+<div>
+<p class="font-bold text-sm">Lê Minh Tâm</p>
+<p class="text-xs text-on-surface-variant">tam.le@email.com</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-sm font-medium">Fullstack Engineer</td>
+<td class="px-6 py-4">
+<span class="px-3 py-1 bg-tertiary-container/10 text-on-tertiary-container rounded-full text-xs font-bold border border-tertiary-container/20">91% Fit</span>
+</td>
+<td class="px-6 py-4 text-sm text-on-surface-variant">Indeed</td>
+<td class="px-6 py-4 text-right">
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low/50 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold text-xs">VD</div>
+<div>
+<p class="font-bold text-sm">Vũ Diệu Huyền</p>
+<p class="text-xs text-on-surface-variant">huyen.vu@email.com</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-sm font-medium">HR Specialist</td>
+<td class="px-6 py-4">
+<span class="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold border border-emerald-100">79% Fit</span>
+</td>
+<td class="px-6 py-4 text-sm text-on-surface-variant">LinkedIn</td>
+<td class="px-6 py-4 text-right">
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>
