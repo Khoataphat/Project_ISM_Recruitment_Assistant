@@ -5,7 +5,10 @@
     "esModuleInterop": true,
     "target": "ESNext",
     "sourceMap": true,
-    "outDir": "dist"
+    "outDir": "dist",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "strictPropertyInitialization": false 
   },
   "lib": ["ESNext"]
 }
