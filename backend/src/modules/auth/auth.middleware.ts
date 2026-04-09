@@ -4,6 +4,7 @@ import { prisma } from "../../../prisma/prisma.service";
 
 export interface AuthRequest extends Request {
     userId?: number;
+    userRole?: string;
 }
 
 export const authMiddleware = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -35,8 +36,29 @@ export const authMiddleware = async (req: AuthRequest, res: Response, next: Next
         }
 
         req.userId = user.userId;
+        req.userRole = user.role;
         next();
     } catch (err) {
         return res.status(401).json({ status: "error", message: "Not authorized, token failed" });
     }
+};
+
+export const authorizeRole = (...allowedRoles: string[]) => {
+    return (req: AuthRequest, res: Response, next: NextFunction) => {
+        if (!req.userRole) {
+            return res.status(403).json({
+                status: "error",
+                message: "Forbidden: you do not have permission to access this resource",
+            });
+        }
+
+        if (req.userRole === "hr" || allowedRoles.includes(req.userRole)) {
+            return next();
+        }
+
+        return res.status(403).json({
+            status: "error",
+            message: "Forbidden: you do not have permission to access this resource",
+        });
+    };
 };
