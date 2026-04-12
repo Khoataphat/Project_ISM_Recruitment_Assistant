@@ -30,17 +30,30 @@ def extract_text_from_pdf(pdf_path):
         return None
 
 def ai_resume_parser(cv_text):
-    """Sử dụng Gemini 1.5 Flash để trích xuất dữ liệu sang JSON"""
     
     # Định nghĩa cấu trúc dữ liệu mong muốn (giúp AI làm việc chính xác hơn)
     prompt = f"""
-    Bạn là một chuyên gia nhân sự AI. Hãy phân tích CV dưới đây và trả về dữ liệu JSON.
-    Yêu cầu:
-    - 'skills': Chỉ liệt kê các từ khóa kỹ thuật (Tech stack).
-    - 'years_of_experience': Trả về một số nguyên (int).
-    - 'summary': Tóm tắt ngắn gọn năng lực ứng viên trong 1 câu.
+    Bạn là một chuyên gia nhân sự AI. Hãy phân tích văn bản CV dưới đây và trích xuất thông tin
+    chính xác dưới định dạng JSON.
+    Lưu ý:
+    - Nếu thông tin không có, để là null.
+    - Phần 'skills' hãy tách thành danh sách các từ khóa cụ thể.
+    - Phần 'years_of_experience' hãy trả về một con số (int).
 
-    Nội dung CV:
+
+    Định dạng JSON yêu cầu:
+    {{
+      "full_name": "string",
+      "email": "string",
+      "phone": "string",
+      "education": "string",
+      "years_of_experience": int,
+      "skills": ["skill1", "skill2", ...],
+      "summary": "Tóm tắt ngắn gọn 1 câu về ứng viên"
+    }}
+
+
+    Văn bản CV:
     {cv_text}
     """
 

@@ -4,7 +4,7 @@ import json
 
 def main():
     # 1. Tên file PDF bạn vừa bỏ vào thư mục
-    file_path = "HÀ ANH KHOA_ CV INTERN.pdf" 
+    file_path = "TruongThaiNgocToan_Resume.pdf" 
     
     print(f"--- Bước 1: Đang đọc nội dung từ file {file_path} ---")
     raw_text = extract_text_from_pdf(file_path)

@@ -1,5 +1,7 @@
-google-generativeai
+google-genai
 pymupdf
 python-dotenv
 fastapi
 uvicorn
+sentence-transformers
+torch
