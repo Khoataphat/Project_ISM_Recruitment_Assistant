@@ -1,31 +1,49 @@
 # main.py
-from parser import extract_text_from_pdf, ai_resume_parser
 import json
+from parser import extract_text_from_pdf, ai_resume_parser
+from models import MatchingEngine # Import class bạn vừa sửa lỗi xong
 
 def main():
-    # 1. Tên file PDF bạn vừa bỏ vào thư mục
-    file_path = "TruongThaiNgocToan_Resume.pdf" 
+    # --- CẤU HÌNH ĐẦU VÀO ---
+    file_path = "TruongThaiNgocToan_Resume.pdf"
     
-    print(f"--- Bước 1: Đang đọc nội dung từ file {file_path} ---")
+    # Giả sử đây là JD lấy từ bảng 'jobs' trong Database của Backend
+    job_description = """
+    Tuyển Lập trình viên Python. Yêu cầu biết sử dụng thư viện xử lý dữ liệu,
+    có kiến thức về SQL và kỹ năng giao tiếp tiếng Anh cơ bản.
+    Ưu tiên ứng viên biết về Machine Learning.
+    """
+    
+    # --- BƯỚC 1: TRÍCH XUẤT CV (TASK 1) ---
+    print(f"--- B1: Đang đọc và phân tích CV: {file_path} ---")
     raw_text = extract_text_from_pdf(file_path)
+    cv_data = ai_resume_parser(raw_text)
     
-    if not raw_text:
-        print("Lỗi: Không thể đọc được nội dung PDF. Hãy kiểm tra lại file.")
+    if not cv_data:
+        print("Lỗi: Không thể trích xuất dữ liệu từ CV.")
         return
 
-    print("--- Bước 2: Đang gửi dữ liệu sang Gemini AI để phân tích ---")
-    try:
-        # Gọi hàm xử lý từ file parser.py
-        result = ai_resume_parser(raw_text)
-        
-        print("\n--- KẾT QUẢ TRÍCH XUẤT (JSON) ---")
-        # In kết quả định dạng đẹp (indent=4) để kiểm tra
-        print(json.dumps(result, indent=4, ensure_ascii=False))
-        
-        print("\n=> Chúc mừng! Task 1 đã hoàn thành thành công.")
-        
-    except Exception as e:
-        print(f"Lỗi phát sinh khi AI xử lý: {e}")
+    # --- BƯỚC 2: TÍNH TOÁN MATCHING (TASK 2) ---
+    print("--- B2: Đang so khớp với yêu cầu công việc (AI Matching) ---")
+    engine = MatchingEngine()
+    
+    # Lấy danh sách kỹ năng từ Task 1 để đưa vào Task 2
+    skills_list = cv_data.get("skills", [])
+    
+    # Gọi hàm calculate_match đã nâng cấp (có Summary và Radar)
+    matching_result = engine.calculate_match(skills_list, job_description)
+
+    # --- BƯỚC 3: TỔNG HỢP DỮ LIỆU ĐỂ BÀN GIAO CHO BACKEND ---
+    # Cấu trúc này khớp 100% với bảng Mapping chúng ta đã thống nhất
+    final_output = {
+        "candidate_data": cv_data, # Dữ liệu cho bảng candidates, education, experiences
+        "matching_data": matching_result # Dữ liệu cho bảng applications (score, summary, radar)
+    }
+
+    print("\n" + "="*50)
+    print("KẾT QUẢ CUỐI CÙNG SẴN SÀNG CHO BACKEND")
+    print("="*50)
+    print(json.dumps(final_output, indent=4, ensure_ascii=False))
 
 if __name__ == "__main__":
     main()

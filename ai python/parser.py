@@ -58,7 +58,7 @@ def ai_resume_parser(cv_text):
     """
 
     try:
-        # Cách gọi model mới của SDK google-genai
+        # Gọi model
         response = client.models.generate_content(
             model="gemini-3-flash-preview",
             contents=prompt,
