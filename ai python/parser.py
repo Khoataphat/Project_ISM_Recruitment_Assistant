@@ -45,7 +45,7 @@ def ai_resume_parser(cv_text):
     {{
       "full_name": "string",
       "email": "string",
-      "phone": "string",
+      "phone": "string. Ví dụ: 'Sinh viên năm 3 - Đại học Quốc tế'. Nếu chưa tốt nghiệp, KHÔNG ĐƯỢC ghi là 'Cử nhân'.",
       "education": "string",
       "years_of_experience": int,
       "skills": ["skill1", "skill2", ...],
