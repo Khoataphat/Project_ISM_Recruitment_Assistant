@@ -1,8 +1,7 @@
 # main.py
 import json
 from parser import extract_text_from_pdf, ai_resume_parser
-from models import MatchingEngine # Import class bạn vừa sửa lỗi xong
-
+from models import MatchingEngine 
 def main():
     # --- CẤU HÌNH ĐẦU VÀO ---
     file_path = "TruongThaiNgocToan_Resume.pdf"
@@ -34,7 +33,6 @@ def main():
     matching_result = engine.calculate_match(skills_list, job_description)
 
     # --- BƯỚC 3: TỔNG HỢP DỮ LIỆU ĐỂ BÀN GIAO CHO BACKEND ---
-    # Cấu trúc này khớp 100% với bảng Mapping chúng ta đã thống nhất
     final_output = {
         "candidate_data": cv_data, # Dữ liệu cho bảng candidates, education, experiences
         "matching_data": matching_result # Dữ liệu cho bảng applications (score, summary, radar)

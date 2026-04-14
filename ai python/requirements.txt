@@ -5,3 +5,5 @@ fastapi
 uvicorn
 sentence-transformers
 torch
+python-multipart
+huggingface_hub
