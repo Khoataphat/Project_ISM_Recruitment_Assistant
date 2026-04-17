@@ -2,13 +2,15 @@
   "compilerOptions": {
     "module": "CommonJS",
     "moduleResolution": "Node",
+    "ignoreDeprecations": "6.0",
     "esModuleInterop": true,
     "target": "ESNext",
     "sourceMap": true,
     "outDir": "dist",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "strictPropertyInitialization": false 
+    "strictPropertyInitialization": false,
+    "typeRoots": ["./node_modules/@types", "./src/@types"]
   },
   "lib": ["ESNext"]
 }

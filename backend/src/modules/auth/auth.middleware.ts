@@ -1,10 +1,11 @@
 import { NextFunction, Request, Response } from 'express';
 import jwt, { JwtPayload } from 'jsonwebtoken';
+import { Role } from '@prisma/client';
 import { prisma } from "../../../prisma/prisma.service";
 
 export interface AuthRequest extends Request {
     userId?: number;
-    userRole?: string;
+    userRole?: Role;
 }
 
 export const authMiddleware = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -43,7 +44,7 @@ export const authMiddleware = async (req: AuthRequest, res: Response, next: Next
     }
 };
 
-export const authorizeRole = (...allowedRoles: string[]) => {
+export const authorizeRole = (...allowedRoles: Role[]) => {
     return (req: AuthRequest, res: Response, next: NextFunction) => {
         if (!req.userRole) {
             return res.status(403).json({
@@ -52,7 +53,7 @@ export const authorizeRole = (...allowedRoles: string[]) => {
             });
         }
 
-        if (req.userRole === "hr" || allowedRoles.includes(req.userRole)) {
+        if (allowedRoles.includes(req.userRole)) {
             return next();
         }
 
