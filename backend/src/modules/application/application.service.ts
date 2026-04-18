@@ -1,5 +1,6 @@
 import { prisma } from "../../../prisma/prisma.service";
 import { dispatchEmail } from "../email/email.worker";
+import { scoreApplicationWithAi } from "./ai.service";
 
 export const submitApplication = async (data: {
     userId: number;
@@ -34,7 +35,13 @@ export const submitApplication = async (data: {
     const user = await prisma.user.findUnique({ where: { userId } });
 
     const application = await prisma.application.create({
-        data: { userId, jobId, resumeUrl, coverLetter },
+        data: {
+            userId,
+            jobId,
+            resumeUrl,
+            coverLetter,
+            aiStatus: "pending",
+        },
     });
 
     if (user) {
@@ -46,7 +53,7 @@ export const submitApplication = async (data: {
         });
     }
 
-    return application;
+    return scoreApplicationWithAi(application.applicationId);
 };
 
 export const getApplicationsByUser = async (userId: number) => {

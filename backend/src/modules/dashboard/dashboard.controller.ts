@@ -10,11 +10,12 @@ import { findUserById } from "../auth/auth.service";
 
 export const getApplications = async (req: AuthRequest, res: Response) => {
     try {
-        const { page, limit, status, search } = res.locals.query;
+        const { page, limit, status, aiStatus, search, sortBy, sortOrder } = res.locals.query;
         const skip = (page - 1) * limit;
 
         const where: any = {};
         if (status) where.status = status;
+        if (aiStatus) where.aiStatus = aiStatus;
         if (search) {
             where.OR = [
                 { user: { fullName: { contains: search, mode: "insensitive" } } },
@@ -30,7 +31,7 @@ export const getApplications = async (req: AuthRequest, res: Response) => {
                     user: { select: { userId: true, email: true, fullName: true } },
                     job: { select: { jobId: true, title: true } },
                 },
-                orderBy: { submittedAt: "desc" },
+                orderBy: { [sortBy]: sortOrder },
                 skip,
                 take: limit,
             }),
