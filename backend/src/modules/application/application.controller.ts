@@ -1,4 +1,5 @@
 import { Response } from "express";
+import path from "path";
 import { AuthRequest } from "../auth/auth.middleware";
 import {
     submitApplication,
@@ -8,10 +9,9 @@ import {
 export const submit = async (req: AuthRequest, res: Response) => {
     try {
         const { jobId, coverLetter } = req.body;
-
-        // In a real app the resume would be uploaded to cloud storage;
-        // here we store a placeholder path derived from the uploaded buffer.
-        const resumeUrl = `uploads/resume_${req.userId}_${jobId}_${Date.now()}.pdf`;
+        const uploadedFile = req.file;
+        const resumeFilename = uploadedFile?.filename;
+        const resumeUrl = resumeFilename ? `/uploads/${resumeFilename}` : path.posix.join("/uploads", "unknown.pdf");
 
         const application = await submitApplication({
             userId: req.userId!,

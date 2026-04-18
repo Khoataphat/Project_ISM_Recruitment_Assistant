@@ -270,11 +270,57 @@ Refresh the access token using the refresh token cookie.
 
 ---
 
-## 2. APPLICATIONS (`/applications`) - Role: CANDIDATE only
+## 2. JOBS (`/jobs`)
+
+Use this flow when frontend needs HR to create jobs first and candidates to apply afterward.
+
+### 2.1 GET `/jobs`
+
+Public endpoint. Returns all open jobs.
+
+### 2.2 GET `/jobs/:id`
+
+Public endpoint. Returns detail of one open job.
+
+### 2.3 POST `/jobs`
+
+**Auth:** Required, Role `HR`
+
+**Request Body (JSON):**
+
+```json
+{
+  "title": "Backend Engineer",
+  "description": "Build APIs for HR job posting and candidate application flow.",
+  "status": "open"
+}
+```
+
+| Field       | Type   | Required | Notes              |
+| ----------- | ------ | -------- | ------------------ |
+| title       | string | Yes      | 2-256 chars        |
+| description | string | Yes      | At least 10 chars  |
+| status      | string | No       | `open` or `closed` |
+
+### 2.4 PATCH `/jobs/:id`
+
+**Auth:** Required, Role `HR`
+
+Update one or more job fields.
+
+### 2.5 GET `/jobs/hr/manage`
+
+**Auth:** Required, Role `HR`
+
+Returns all jobs, including closed jobs, for HR management screens.
+
+---
+
+## 3. APPLICATIONS (`/applications`) - Role: CANDIDATE only
 
 All endpoints require auth with role `CANDIDATE`.
 
-### 2.1 POST `/applications`
+### 3.1 POST `/applications`
 
 Submit an application with a PDF resume.
 
@@ -344,7 +390,7 @@ curl -X POST http://localhost:3000/applications \
 
 ---
 
-### 2.2 GET `/applications`
+### 3.2 GET `/applications`
 
 Get all applications for the current candidate.
 
@@ -377,11 +423,11 @@ Get all applications for the current candidate.
 
 ---
 
-## 3. DASHBOARD (`/dashboard`) - Role: HR only
+## 4. DASHBOARD (`/dashboard`) - Role: HR only
 
 All endpoints require auth with role `HR`.
 
-### 3.1 GET `/dashboard/applications`
+### 4.1 GET `/dashboard/applications`
 
 List all applications with pagination, filter, and search.
 
@@ -442,7 +488,7 @@ GET /dashboard/applications?page=1&limit=10&status=pending&search=Nguyen
 
 ---
 
-### 3.2 GET `/dashboard/applications/:id`
+### 4.2 GET `/dashboard/applications/:id`
 
 Get detail of a single application.
 
@@ -499,7 +545,7 @@ GET /dashboard/applications/1
 
 ---
 
-### 3.3 PATCH `/dashboard/applications/:id/accept`
+### 4.3 PATCH `/dashboard/applications/:id/accept`
 
 Accept an application and send interview invitation email to the candidate.
 
@@ -559,7 +605,7 @@ Accept an application and send interview invitation email to the candidate.
 
 ---
 
-### 3.4 PATCH `/dashboard/applications/:id/reject`
+### 4.4 PATCH `/dashboard/applications/:id/reject`
 
 Reject an application.
 
@@ -700,4 +746,3 @@ curl -X PATCH http://localhost:3000/dashboard/applications/1/accept \
   -H "Content-Type: application/json" \
   -d '{"interviewDate":"2026-04-25 10:00 AM","interviewLocation":"Room 301, Building A"}'
 ```
-

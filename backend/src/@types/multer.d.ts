@@ -7,7 +7,7 @@ declare module 'multer' {
         encoding: string;
         mimetype: string;
         size: number;
-        buffer: Buffer;
+        buffer?: Buffer;
         destination?: string;
         filename?: string;
         path?: string;
@@ -64,7 +64,10 @@ declare namespace Express {
             encoding: string;
             mimetype: string;
             size: number;
-            buffer: Buffer;
+            buffer?: Buffer;
+            destination?: string;
+            filename?: string;
+            path?: string;
         };
         files?: any;
     }

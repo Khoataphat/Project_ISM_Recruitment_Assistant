@@ -1,3 +1,4 @@
+import fs from "fs";
 import { Request, Response, NextFunction } from 'express';
 
 // PDF magic bytes: %PDF (hex 25 50 44 46)
@@ -22,15 +23,32 @@ export const validateFile = (fieldName: string) => {
             });
         }
 
-        if (!file.buffer || file.buffer.length < 4) {
+        if (!file.path) {
             return res.status(400).json({
                 status: "error",
                 message: "Invalid file content",
             });
         }
 
-        const header = file.buffer.subarray(0, 4);
+        const fd = fs.openSync(file.path, "r");
+        const header = Buffer.alloc(4);
+        const bytesRead = fs.readSync(fd, header, 0, 4, 0);
+        fs.closeSync(fd);
+
+        if (bytesRead < 4) {
+            if (fs.existsSync(file.path)) {
+                fs.unlinkSync(file.path);
+            }
+            return res.status(400).json({
+                status: "error",
+                message: "Invalid file content",
+            });
+        }
+
         if (!header.equals(PDF_MAGIC_BYTES)) {
+            if (fs.existsSync(file.path)) {
+                fs.unlinkSync(file.path);
+            }
             return res.status(400).json({
                 status: "error",
                 message: "Only PDF files are allowed. The uploaded file is not a valid PDF",

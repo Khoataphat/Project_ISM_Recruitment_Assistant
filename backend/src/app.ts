@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express, { Request, Response, NextFunction } from "express";
+import path from "path";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import helmet from "helmet";
@@ -12,6 +13,7 @@ import { connectRedis, disconnectRedis } from "./shared/redis.service";
 import authRoute from "./modules/auth/auth.route";
 import applicationRoute from "./modules/application/application.route";
 import dashboardRoute from "./modules/dashboard/dashboard.route";
+import jobRoute from "./modules/job/job.route";
 import { authMiddleware, authorizeRole } from "./modules/auth/auth.middleware";
 import { sanitizeBody } from "./shared/middleware/sanitize.middleware";
 
@@ -32,8 +34,10 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(sanitizeBody);
+app.use("/uploads", express.static(path.resolve(process.cwd(), "uploads")));
 
 app.use("/auth", authRoute);
+app.use("/jobs", jobRoute);
 app.use("/applications", authMiddleware, authorizeRole(Role.CANDIDATE), applicationRoute);
 app.use("/dashboard", authMiddleware, authorizeRole(Role.HR), dashboardRoute);
 

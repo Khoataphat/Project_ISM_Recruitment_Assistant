@@ -40,8 +40,17 @@ model User {
 
 model Job {
   jobId        Int       @id @default(autoincrement()) @map("JobId")
+  companyName  String?   @db.VarChar(128) @map("CompanyName")
   title        String    @db.VarChar(256) @map("Title")
   description  String    @map("Description")
+  location     String?   @db.VarChar(128) @map("Location")
+  workMode     String?   @db.VarChar(32) @map("WorkMode")
+  employmentType String? @db.VarChar(32) @map("EmploymentType")
+  salaryMin    Int?      @map("SalaryMin")
+  salaryMax    Int?      @map("SalaryMax")
+  deadline     DateTime? @map("Deadline")
+  requirements String[]  @default([]) @map("Requirements")
+  benefits     String[]  @default([]) @map("Benefits")
   status       String    @default("open") @db.VarChar(32) @map("Status")
 
   createdBy    Int       @map("CreatedBy")
@@ -61,6 +70,11 @@ model Application {
   resumeUrl     String    @db.VarChar(512) @map("ResumeUrl")
   coverLetter   String?   @map("CoverLetter")
   status        String    @default("pending") @db.VarChar(32) @map("Status")
+  matchingScore Float?    @map("MatchingScore")
+  confidenceScore Float?  @map("ConfidenceScore")
+  aiStatus      String    @default("pending") @db.VarChar(32) @map("AiStatus")
+  aiError       String?   @db.VarChar(512) @map("AiError")
+  processedAt   DateTime? @map("ProcessedAt")
 
   submittedAt   DateTime  @default(now()) @map("SubmittedAt")
   reviewedAt    DateTime? @map("ReviewedAt")
