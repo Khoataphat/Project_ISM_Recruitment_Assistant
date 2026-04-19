@@ -355,7 +355,7 @@ echo "AI status: $APPLICATION_AI_STATUS"
 echo "Matching score: $APPLICATION_MATCHING_SCORE"
 echo "Confidence score: $APPLICATION_CONFIDENCE_SCORE"
 
-if [[ "$APPLICATION_AI_STATUS" != "completed" ]]; then
+if [[ "$APPLICATION_AI_STATUS" != "completed" && "$APPLICATION_AI_STATUS" != "COMPLETED" ]]; then
   echo "AI scoring did not complete successfully. Status: $APPLICATION_AI_STATUS" >&2
   exit 1
 fi

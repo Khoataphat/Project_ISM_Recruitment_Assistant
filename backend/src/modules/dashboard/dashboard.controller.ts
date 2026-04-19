@@ -1,3 +1,4 @@
+import { AiProcessingStatus, ApplicationStatus } from "@prisma/client";
 import { Response } from "express";
 import { AuthRequest } from "../auth/auth.middleware";
 import { prisma } from "../../../prisma/prisma.service";
@@ -7,6 +8,24 @@ import {
     rejectApplication,
 } from "../application/application.service";
 import { findUserById } from "../auth/auth.service";
+import { serializeApplications } from "../application/ai.service";
+
+const statusMap: Record<string, ApplicationStatus> = {
+    pending: ApplicationStatus.PENDING,
+    shortlisted: ApplicationStatus.SHORTLISTED,
+    interviewing: ApplicationStatus.INTERVIEWING,
+    offered: ApplicationStatus.OFFERED,
+    accepted: ApplicationStatus.ACCEPTED,
+    rejected: ApplicationStatus.REJECTED,
+    withdrawn: ApplicationStatus.WITHDRAWN,
+};
+
+const aiStatusMap: Record<string, AiProcessingStatus> = {
+    pending: AiProcessingStatus.PENDING,
+    processing: AiProcessingStatus.PROCESSING,
+    completed: AiProcessingStatus.COMPLETED,
+    failed: AiProcessingStatus.FAILED,
+};
 
 export const getApplications = async (req: AuthRequest, res: Response) => {
     try {
@@ -14,8 +33,8 @@ export const getApplications = async (req: AuthRequest, res: Response) => {
         const skip = (page - 1) * limit;
 
         const where: any = {};
-        if (status) where.status = status;
-        if (aiStatus) where.aiStatus = aiStatus;
+        if (status) where.status = statusMap[status];
+        if (aiStatus) where.aiStatus = aiStatusMap[aiStatus];
         if (search) {
             where.OR = [
                 { user: { fullName: { contains: search, mode: "insensitive" } } },
@@ -41,7 +60,7 @@ export const getApplications = async (req: AuthRequest, res: Response) => {
         res.status(200).json({
             status: "success",
             data: {
-                applications,
+                applications: serializeApplications(applications),
                 pagination: {
                     page,
                     limit,

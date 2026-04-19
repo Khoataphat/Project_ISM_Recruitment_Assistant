@@ -1,6 +1,7 @@
+import { ApplicationStatus, AiProcessingStatus } from "@prisma/client";
 import { prisma } from "../../../prisma/prisma.service";
 import { dispatchEmail } from "../email/email.worker";
-import { scoreApplicationWithAi } from "./ai.service";
+import { scoreApplicationWithAi, serializeApplication, serializeApplications } from "./ai.service";
 
 export const submitApplication = async (data: {
     userId: number;
@@ -40,7 +41,7 @@ export const submitApplication = async (data: {
             jobId,
             resumeUrl,
             coverLetter,
-            aiStatus: "pending",
+            aiStatus: AiProcessingStatus.PENDING,
         },
     });
 
@@ -57,20 +58,51 @@ export const submitApplication = async (data: {
 };
 
 export const getApplicationsByUser = async (userId: number) => {
-    return prisma.application.findMany({
+    const applications = await prisma.application.findMany({
         where: { userId },
         include: { job: { select: { title: true, status: true } } },
         orderBy: { submittedAt: "desc" },
     });
+
+    return serializeApplications(applications);
 };
 
 export const getApplicationById = async (applicationId: number) => {
-    return prisma.application.findUnique({
+    const application = await prisma.application.findUnique({
         where: { applicationId },
         include: {
-            user: { select: { userId: true, email: true, fullName: true } },
+            user: {
+                select: {
+                    userId: true,
+                    email: true,
+                    fullName: true,
+                    phoneNumber: true,
+                    candidateProfile: {
+                        include: {
+                            educations: true,
+                            skills: true,
+                        },
+                    },
+                },
+            },
             job: { select: { jobId: true, title: true } },
         },
+    });
+
+    if (!application) {
+        return null;
+    }
+
+    await prisma.application.update({
+        where: { applicationId },
+        data: {
+            viewedByHrAt: application.viewedByHrAt ?? new Date(),
+        },
+    });
+
+    return serializeApplication({
+        ...application,
+        viewedByHrAt: application.viewedByHrAt ?? new Date(),
     });
 };
 
@@ -95,7 +127,7 @@ export const acceptApplication = async (
         throw error;
     }
 
-    if (application.status !== "pending") {
+    if (application.status !== ApplicationStatus.PENDING) {
         const error: any = new Error("Application already reviewed");
         error.code = "ALREADY_REVIEWED";
         throw error;
@@ -104,7 +136,7 @@ export const acceptApplication = async (
     const updated = await prisma.application.update({
         where: { applicationId },
         data: {
-            status: "accepted",
+            status: ApplicationStatus.ACCEPTED,
             reviewedAt: new Date(),
             reviewedBy,
         },
@@ -120,7 +152,7 @@ export const acceptApplication = async (
         hrName,
     });
 
-    return updated;
+    return serializeApplication(updated);
 };
 
 export const rejectApplication = async (applicationId: number, reviewedBy: number) => {
@@ -138,7 +170,7 @@ export const rejectApplication = async (applicationId: number, reviewedBy: numbe
         throw error;
     }
 
-    if (application.status !== "pending") {
+    if (application.status !== ApplicationStatus.PENDING) {
         const error: any = new Error("Application already reviewed");
         error.code = "ALREADY_REVIEWED";
         throw error;
@@ -147,7 +179,7 @@ export const rejectApplication = async (applicationId: number, reviewedBy: numbe
     const updated = await prisma.application.update({
         where: { applicationId },
         data: {
-            status: "rejected",
+            status: ApplicationStatus.REJECTED,
             reviewedAt: new Date(),
             reviewedBy,
         },
@@ -160,5 +192,5 @@ export const rejectApplication = async (applicationId: number, reviewedBy: numbe
         jobTitle: application.job.title,
     });
 
-    return updated;
+    return serializeApplication(updated);
 };
