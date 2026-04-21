@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { Role } from "@prisma/client";
 import {
     generateTokens,
     refreshAccessToken,
@@ -14,9 +15,9 @@ import bcrypt from 'bcrypt';
 
 const register = async (req: Request, res: Response) => {
     try {
-        const { email, password, fullName } = req.body;
+        const { email, password, fullName, role } = req.body;
 
-        const user = await createUser({ email, password, fullName });
+        const user = await createUser({ email, password, fullName, role: role as Role });
         const { accessToken } = generateTokens(user.userId, user.role, res);
 
         res.status(201).json({

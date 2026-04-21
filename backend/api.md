@@ -2,6 +2,8 @@
 
 Base URL: `http://localhost:3000`
 
+Compatibility Base URL for the frontend API sheet: `http://localhost:3000/api/v1`
+
 All responses follow the format:
 
 ```json
@@ -12,11 +14,37 @@ Cookies: Login/Register set `jwt` (access token, 15min) and `refreshToken` (7 da
 
 ---
 
+## Frontend Compatibility Layer (`/api/v1`)
+
+The backend now also exposes compatibility endpoints aligned with the Excel API sheet from frontend:
+
+- `GET /api/v1/jobs`
+- `GET /api/v1/jobs/:id`
+- `POST /api/v1/jobs`
+- `PUT /api/v1/jobs/:id`
+- `DELETE /api/v1/jobs/:id`
+- `POST /api/v1/apply`
+- `GET /api/v1/candidates/:email/applied`
+- `GET /api/v1/candidates/:email/cv/:pdf`
+- `GET /api/v1/jobs/:id/candidates`
+- `GET /api/v1/candidates`
+- `GET /api/v1/candidates/:id`
+- `PATCH /api/v1/candidates/:id`
+- `GET /api/v1/jobs/:id/candidates/:email/result`
+
+Notes:
+
+- `POST /api/v1/apply` accepts `multipart/form-data` with fields `fullName`, `email`, `jobId`, and file field `cvFile`.
+- The compatibility layer keeps the newer `/auth`, `/jobs`, `/applications`, and `/dashboard` APIs untouched.
+- If `DELETE /api/v1/jobs/:id` is called for a job that already has applications, the backend closes the job instead of physically deleting it to preserve application data.
+
+---
+
 ## 1. AUTH (`/auth`)
 
 ### 1.1 POST `/auth/register`
 
-Register a new candidate account. HR accounts are created directly in the database.
+Register a new account for either `CANDIDATE` or `HR`.
 
 **Request Body (JSON):**
 
@@ -24,17 +52,29 @@ Register a new candidate account. HR accounts are created directly in the databa
 {
   "email": "candidate@example.com",
   "password": "123456",
-  "fullName": "Nguyen Van A"
+  "fullName": "Nguyen Van A",
+  "role": "CANDIDATE"
 }
 ```
 
 
-| Field    | Type   | Required | Notes                     |
-| -------- | ------ | -------- | ------------------------- |
-| email    | string | Yes      | Valid email, max 64 chars |
-| password | string | Yes      | 6-255 chars               |
-| fullName | string | Yes      | 2-128 chars               |
+| Field    | Type   | Required | Notes                            |
+| -------- | ------ | -------- | -------------------------------- |
+| email    | string | Yes      | Valid email, max 64 chars        |
+| password | string | Yes      | 6-255 chars                      |
+| fullName | string | Yes      | 2-128 chars                      |
+| role     | string | Yes      | `CANDIDATE` or `HR`              |
 
+**Example for HR:**
+
+```json
+{
+  "email": "hr@example.com",
+  "password": "123456",
+  "fullName": "Tran Thi B",
+  "role": "HR"
+}
+```
 
 **Success Response (201):**
 
@@ -700,12 +740,28 @@ Reject an application.
 ```bash
 curl -X POST http://localhost:3000/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"email":"candidate@example.com","password":"123456","fullName":"Nguyen Van A"}'
+  -d '{"email":"candidate@example.com","password":"123456","fullName":"Nguyen Van A","role":"CANDIDATE"}'
 ```
 
-> **Note:** HR accounts must be created directly in the database (e.g. via SQL or a seed script).
+### Step 2: Register an HR user
 
-### Step 3: Login as Candidate (save the token)
+```bash
+curl -X POST http://localhost:3000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"hr@example.com","password":"123456","fullName":"Tran Thi B","role":"HR"}'
+```
+
+> **Note:** Both `CANDIDATE` and `HR` must verify email before logging in.
+
+### Step 3: Verify email (Candidate or HR)
+
+```bash
+curl -X POST http://localhost:3000/auth/verify-email \
+  -H "Content-Type: application/json" \
+  -d '{"email":"candidate@example.com","code":"123456"}'
+```
+
+### Step 4: Login as Candidate (save the token)
 
 ```bash
 curl -X POST http://localhost:3000/auth/login \
@@ -713,7 +769,7 @@ curl -X POST http://localhost:3000/auth/login \
   -d '{"email":"candidate@example.com","password":"123456"}'
 ```
 
-### Step 4: Submit application (as Candidate)
+### Step 5: Submit application (as Candidate)
 
 ```bash
 curl -X POST http://localhost:3000/applications \
@@ -723,7 +779,7 @@ curl -X POST http://localhost:3000/applications \
   -F "coverLetter=I would love to join your team."
 ```
 
-### Step 5: Login as HR (save the token)
+### Step 6: Login as HR (save the token)
 
 ```bash
 curl -X POST http://localhost:3000/auth/login \
@@ -731,14 +787,14 @@ curl -X POST http://localhost:3000/auth/login \
   -d '{"email":"hr@example.com","password":"123456"}'
 ```
 
-### Step 6: View applications (as HR)
+### Step 7: View applications (as HR)
 
 ```bash
 curl -X GET "http://localhost:3000/dashboard/applications?page=1&limit=10" \
   -H "Authorization: Bearer <HR_TOKEN>"
 ```
 
-### Step 7: Accept application (as HR)
+### Step 8: Accept application (as HR)
 
 ```bash
 curl -X PATCH http://localhost:3000/dashboard/applications/1/accept \

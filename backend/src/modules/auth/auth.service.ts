@@ -70,8 +70,9 @@ export const createUser = async (data: {
     email: string;
     password: string;
     fullName: string;
+    role: Role;
 }) => {
-    const { email, password, fullName } = data;
+    const { email, password, fullName, role } = data;
 
     const userExist = await prisma.user.findUnique({ where: { email } });
     if (userExist) {
@@ -88,7 +89,7 @@ export const createUser = async (data: {
             email,
             passwordHash,
             fullName,
-            role: Role.CANDIDATE,
+            role,
         },
     });
 

@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { Request, Response, NextFunction } from 'express';
 
+const roleSchema = z.enum(["CANDIDATE", "HR"]);
+
 const registerSchema = z.object({
     email: z
         .string()
@@ -17,6 +19,7 @@ const registerSchema = z.object({
         .min(2, { message: "Full name must be at least 2 characters" })
         .max(128, { message: "Full name must be less than 128 characters" })
         .trim(),
+    role: roleSchema,
 });
 
 const loginSchema = z.object({
