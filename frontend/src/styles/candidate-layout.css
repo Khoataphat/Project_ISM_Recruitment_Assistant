@@ -1,0 +1,699 @@
+.candidate-filters .candidate-filterRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.candidate-filters .candidate-filterLabel {
+  transition: color 160ms ease;
+}
+
+.candidate-filters .candidate-filterRow:hover .candidate-filterLabel {
+  color: var(--candidate-text);
+}
+
+.candidate-sider :where(.ant-checkbox-wrapper) {
+  margin-inline-start: 0;
+}
+
+/* Checkbox border + checked color via tokens */
+.candidate-sider :where(.ant-checkbox .ant-checkbox-inner) {
+  border-color: var(--candidate-border);
+}
+
+.candidate-sider :where(.ant-checkbox-checked .ant-checkbox-inner) {
+  background-color: var(--candidate-primary);
+  border-color: var(--candidate-primary);
+}
+
+/* InputNumber border + focus ring via tokens */
+.candidate-sider :where(.ant-input-number) {
+  border-color: color-mix(in srgb, var(--candidate-border) 70%, transparent);
+}
+
+.candidate-sider :where(.ant-input-number-focused),
+.candidate-sider :where(.ant-input-number):focus-within {
+  border-color: var(--candidate-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--candidate-primary) 18%, transparent);
+}
+
+.candidate-sider :where(.candidate-tagBtn.ant-btn) {
+  height: 26px;
+  padding-inline: 10px;
+  font-size: 11px;
+  font-weight: 650;
+  border-radius: 10px;
+  color: var(--candidate-text-secondary);
+  background: color-mix(in srgb, var(--candidate-bg) 94%, var(--candidate-border));
+  border-color: color-mix(in srgb, var(--candidate-border) 70%, transparent);
+}
+
+.candidate-sider :where(.candidate-tagBtn.ant-btn):hover {
+  color: var(--candidate-primary);
+  border-color: color-mix(in srgb, var(--candidate-primary) 35%, transparent);
+  background: color-mix(in srgb, var(--candidate-primary) 12%, var(--candidate-bg));
+}
+
+.candidate-sider :where(.candidate-tagBtn.ant-btn.ant-btn-primary) {
+  color: #fff;
+  background: var(--candidate-primary);
+  border-color: var(--candidate-primary);
+}
+
+.candidate-jobsMain {
+  background: var(--candidate-bg-layout, #fcfcfc);
+  /* Full-bleed within CandidateLayout outlet (parent has padding: 24px) */
+  width: calc(100% + 48px);
+  max-width: none;
+  margin-left: -24px;
+  margin-right: -24px;
+  box-sizing: border-box;
+}
+
+.candidate-jobsHero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: url('../assets/images/jobs-hero-bg.jpg') center/cover no-repeat;
+}
+
+.candidate-jobsHeroOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.85), rgba(22, 119, 255, 0.55));
+  pointer-events: none;
+}
+
+.candidate-jobsHeroContent {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: none;
+  margin: 0 auto;
+  padding: clamp(14px, 2vh, 20px) clamp(16px, 3vw, 28px);
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.candidate-jobsHeroTitle.ant-typography {
+  margin: 0 0 4px !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: rgba(255, 255, 255, 0.98) !important;
+  font-size: clamp(20px, 2.6vw, 28px) !important;
+}
+
+.candidate-jobsHeroSubtitle {
+  display: block;
+  color: rgba(255, 255, 255, 0.88) !important;
+  font-weight: 650;
+  font-size: clamp(13px, 1.5vw, 15px);
+}
+
+.candidate-jobsContainer {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding: clamp(28px, 3vw, 40px) clamp(16px, 3vw, 36px) clamp(40px, 5vh, 64px);
+  box-sizing: border-box;
+}
+
+.candidate-jobsSplit {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, min(520px, 42vw));
+  gap: clamp(20px, 2.5vw, 36px);
+  align-items: start;
+}
+
+.candidate-jobsListCol {
+  min-width: 0;
+}
+
+.candidate-jobsListInner {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.candidate-jobsPreviewCol {
+  min-width: 0;
+}
+
+.candidate-jobPreviewSticky {
+  position: sticky;
+  top: 96px;
+  max-height: calc(100vh - 104px);
+  overflow-y: auto;
+}
+
+.candidate-jobPreview {
+  background: var(--candidate-bg);
+  border: 1px solid color-mix(in srgb, var(--candidate-border) 45%, transparent);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px color-mix(in srgb, var(--candidate-text) 8%, transparent);
+}
+
+.candidate-jobPreviewMedia {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  background: color-mix(in srgb, var(--candidate-border) 30%, transparent);
+}
+
+.candidate-jobPreviewMedia :where(.ant-image) {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.candidate-jobPreviewMedia :where(.ant-image-img) {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+.candidate-jobPreviewMediaShade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, color-mix(in srgb, var(--candidate-text) 38%, transparent), transparent 52%);
+  pointer-events: none;
+}
+
+.candidate-jobPreviewBody {
+  padding: 22px 22px 24px;
+}
+
+.candidate-jobPreviewTitle.ant-typography {
+  font-weight: 850 !important;
+  letter-spacing: -0.03em;
+  line-height: 1.2 !important;
+}
+
+.candidate-jobPreviewSummary {
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.candidate-jobPreviewSecondaryBtn.ant-btn {
+  height: 44px;
+  border-radius: 10px;
+  font-weight: 750;
+}
+
+.candidate-jobCard {
+  cursor: pointer;
+  background: var(--candidate-bg);
+  border: 1px solid color-mix(in srgb, var(--candidate-border) 45%, transparent);
+  border-radius: 16px;
+  padding: 28px 32px;
+  transition:
+    border-color 200ms ease,
+    box-shadow 200ms ease,
+    transform 200ms ease;
+}
+
+.candidate-jobCard:focus {
+  outline: none;
+}
+
+.candidate-jobCard:focus-visible {
+  outline: 2px solid var(--candidate-primary);
+  outline-offset: 3px;
+}
+
+.candidate-jobCard:hover {
+  border-color: color-mix(in srgb, var(--candidate-primary) 35%, transparent);
+  box-shadow:
+    0 12px 36px color-mix(in srgb, var(--candidate-text) 12%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--candidate-primary) 12%, transparent);
+  transform: translateY(-2px);
+}
+
+.candidate-jobCard--selected {
+  border-color: color-mix(in srgb, var(--candidate-primary) 50%, transparent);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--candidate-primary) 20%, transparent),
+    0 10px 28px color-mix(in srgb, var(--candidate-primary) 14%, transparent);
+}
+
+.candidate-jobCard--selected .candidate-jobTitle {
+  color: var(--candidate-primary);
+}
+
+.candidate-jobCard--selected:hover {
+  transform: translateY(-2px);
+}
+
+.candidate-jobLogoBox {
+  width: 104px;
+  height: 104px;
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--candidate-border) 16%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid color-mix(in srgb, var(--candidate-border) 35%, transparent);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--candidate-text) 8%, transparent);
+}
+
+.candidate-jobLogo {
+  filter: grayscale(1);
+  opacity: 0.82;
+  transition: filter 160ms ease, opacity 160ms ease;
+}
+
+.candidate-jobCard:hover .candidate-jobLogo {
+  filter: grayscale(0);
+  opacity: 0.95;
+}
+
+.candidate-jobTitleRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.candidate-jobHeatBadge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  color: #fff;
+  line-height: 1.2;
+  box-shadow: 0 2px 10px color-mix(in srgb, #000 18%, transparent);
+}
+
+.candidate-jobHeatBadge--lg {
+  padding: 5px 14px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+}
+
+.candidate-jobHeatBadge--super_hot {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 45%, #dc2626 100%);
+}
+
+.candidate-jobHeatBadge--hot {
+  background: linear-gradient(135deg, #fb7185 0%, #f43f5e 100%);
+}
+
+.candidate-jobHeatBadge--trending {
+  background: linear-gradient(135deg, var(--candidate-primary) 0%, #6366f1 100%);
+}
+
+.candidate-jobHeatBadge--new {
+  background: linear-gradient(135deg, #34d399 0%, #059669 100%);
+}
+
+.candidate-jobTitleLink {
+  text-decoration: none;
+}
+
+.candidate-jobTitle {
+  display: inline-block;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--candidate-text);
+  margin-bottom: 0;
+  transition: color 160ms ease;
+  letter-spacing: -0.02em;
+}
+
+.candidate-jobCard:hover .candidate-jobTitle {
+  color: var(--candidate-primary);
+}
+
+.candidate-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--candidate-border) 100%, transparent);
+}
+
+.candidate-jobSalary {
+  color: var(--candidate-primary);
+  font-weight: 700;
+}
+
+.candidate-jobTagList {
+  margin-top: 14px;
+}
+
+.candidate-jobTag {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  color: color-mix(in srgb, var(--candidate-text) 92%, var(--candidate-primary));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--candidate-primary) 16%, var(--candidate-bg)) 0%,
+    color-mix(in srgb, var(--candidate-primary) 10%, var(--candidate-bg)) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--candidate-primary) 42%, transparent);
+  border-radius: 999px;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 55%, transparent),
+    0 4px 12px color-mix(in srgb, var(--candidate-primary) 14%, transparent);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.candidate-jobCard:hover .candidate-jobTag {
+  border-color: color-mix(in srgb, var(--candidate-primary) 58%, transparent);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 45%, transparent),
+    0 6px 16px color-mix(in srgb, var(--candidate-primary) 22%, transparent);
+  transform: translateY(-1px);
+}
+
+.candidate-applyBtn.ant-btn {
+  height: 36px;
+  padding-inline: 18px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+.candidate-paginationBar {
+  margin-top: 48px;
+  padding-top: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 1px solid color-mix(in srgb, var(--candidate-border) 45%, transparent);
+}
+
+.candidate-pagination :where(.ant-pagination-item),
+.candidate-pagination :where(.ant-pagination-prev),
+.candidate-pagination :where(.ant-pagination-next) {
+  min-width: 40px;
+  height: 40px;
+  line-height: 38px;
+  border-radius: 10px;
+  border-color: color-mix(in srgb, var(--candidate-border) 65%, transparent);
+  background: var(--candidate-bg);
+}
+
+.candidate-pagination :where(.ant-pagination-item-active) {
+  background: var(--candidate-primary);
+  border-color: var(--candidate-primary);
+}
+
+.candidate-pagination :where(.ant-pagination-item-active a) {
+  color: #fff;
+  font-weight: 800;
+}
+
+.candidate-pagination :where(.ant-pagination-item a) {
+  color: var(--candidate-text);
+}
+
+.candidate-pagination :where(.ant-pagination-prev button),
+.candidate-pagination :where(.ant-pagination-next button) {
+  color: var(--candidate-text);
+}
+
+.candidate-pagination :where(.ant-pagination-item):hover {
+  background: color-mix(in srgb, var(--candidate-border) 14%, var(--candidate-bg));
+}
+
+.candidate-pagination :where(.ant-pagination-prev:hover),
+.candidate-pagination :where(.ant-pagination-next:hover) {
+  background: color-mix(in srgb, var(--candidate-border) 14%, var(--candidate-bg));
+}
+
+.candidate-jobDetails {
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 48px;
+}
+
+.candidate-jobHeader {
+  margin-bottom: 48px;
+}
+
+.candidate-breadcrumb :where(.ant-breadcrumb-link a) {
+  color: var(--candidate-text-secondary);
+  font-weight: 650;
+  transition: color 160ms ease;
+}
+
+.candidate-breadcrumb :where(.ant-breadcrumb-link a:hover) {
+  color: var(--candidate-primary);
+}
+
+.candidate-breadcrumbLink {
+  color: var(--candidate-text-secondary);
+  font-weight: 650;
+}
+
+.candidate-breadcrumbActive {
+  color: var(--candidate-text);
+  font-weight: 650;
+}
+
+.candidate-breadcrumbSep {
+  color: color-mix(in srgb, var(--candidate-text-secondary) 65%, transparent);
+  padding-inline: 2px;
+}
+
+.candidate-jobH1.ant-typography {
+  font-weight: 950;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.candidate-moneyIcon {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--candidate-primary) 18%, transparent);
+  position: relative;
+}
+
+.candidate-moneyIcon::after {
+  content: '$';
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--candidate-primary);
+}
+
+.candidate-jobPay {
+  color: var(--candidate-primary);
+  font-weight: 800;
+}
+
+.candidate-applyNowBtn.ant-btn {
+  height: 44px;
+  padding-inline: 28px;
+  border-radius: 10px;
+  font-weight: 850;
+  border: 0;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--candidate-primary) 85%, #000),
+    var(--candidate-primary)
+  );
+  box-shadow: 0 4px 14px 0 color-mix(in srgb, var(--candidate-primary) 40%, transparent);
+  transform: scale(0.98);
+  transition: transform 120ms ease, filter 120ms ease, opacity 120ms ease;
+}
+
+.candidate-applyNowBtn.ant-btn:hover {
+  filter: brightness(1.03);
+  transform: scale(1);
+}
+
+.candidate-applyNowBtn.ant-btn:active {
+  opacity: 0.88;
+  transform: scale(0.98);
+}
+
+.candidate-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  color: color-mix(in srgb, var(--candidate-text) 92%, var(--candidate-primary));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--candidate-primary) 16%, var(--candidate-bg)) 0%,
+    color-mix(in srgb, var(--candidate-primary) 10%, var(--candidate-bg)) 100%
+  );
+  border: 1px solid color-mix(in srgb, var(--candidate-primary) 42%, transparent);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 55%, transparent),
+    0 4px 12px color-mix(in srgb, var(--candidate-primary) 14%, transparent);
+}
+
+.candidate-heroCard {
+  width: 100%;
+  height: 320px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--candidate-border) 14%, transparent);
+  box-shadow: 0 12px 40px color-mix(in srgb, #001a43 8%, transparent);
+  position: relative;
+}
+
+.candidate-heroCard :where(.ant-image),
+.candidate-heroCard :where(.ant-image-img) {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.candidate-heroOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.4), transparent);
+  opacity: 0.6;
+  transition: opacity 160ms ease;
+  pointer-events: none;
+}
+
+.candidate-heroCard:hover .candidate-heroOverlay {
+  opacity: 0.4;
+}
+
+.candidate-prose :where(p) {
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+.candidate-detailFooter {
+  margin-top: 72px;
+  padding: 40px 0;
+  background: color-mix(in srgb, var(--candidate-border) 18%, var(--candidate-bg));
+  border-top: 1px solid color-mix(in srgb, var(--candidate-border) 40%, transparent);
+  border-radius: 14px;
+}
+
+.candidate-detailFooterInner {
+  display: flex;
+  gap: 24px;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  padding-inline: 24px;
+}
+
+.candidate-detailFooterBrand {
+  display: inline-block;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--candidate-text) 60%, transparent);
+}
+
+.candidate-detailFooterCopy {
+  color: color-mix(in srgb, var(--candidate-text) 55%, transparent);
+  font-size: 12px;
+}
+
+.candidate-detailFooterLink {
+  color: color-mix(in srgb, var(--candidate-text) 55%, transparent);
+  font-size: 12px;
+  text-decoration: none;
+  transition: color 160ms ease, opacity 160ms ease;
+  opacity: 0.92;
+}
+
+.candidate-detailFooterLink:hover {
+  color: var(--candidate-primary);
+  opacity: 1;
+}
+
+/* Candidate jobs list — responsive */
+@media (max-width: 991px) {
+  .candidate-jobsSplit {
+    grid-template-columns: 1fr;
+  }
+
+  .candidate-jobPreviewSticky {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 767px) {
+  .candidate-jobsHeroContent {
+    padding: 14px 16px;
+  }
+
+  .candidate-jobsContainer {
+    padding: 28px 16px 40px;
+  }
+
+  .candidate-jobCard {
+    padding: 20px 18px;
+  }
+
+  .candidate-jobTitle {
+    font-size: 18px;
+  }
+
+  .candidate-jobTitleRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .candidate-jobTag {
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+
+  .candidate-jobLogoBox {
+    width: 88px;
+    height: 88px;
+    border-radius: 16px;
+  }
+
+  .candidate-jobCard .candidate-jobLogo.ant-image {
+    width: 72px !important;
+    height: 72px !important;
+  }
+
+  .candidate-jobCard .candidate-jobLogo.ant-image .ant-image-img {
+    width: 72px !important;
+    height: 72px !important;
+  }
+
+  .candidate-paginationBar {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+}
+
+/* Apply job modal (portaled; structural z-index only — colors come from antd tokens in component) */
+.candidate-applyModalWrap.ant-modal-wrap {
+  z-index: 1100;
+}
+
