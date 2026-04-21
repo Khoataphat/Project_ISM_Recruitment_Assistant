@@ -1,12 +1,29 @@
 import json
 import os
+import re
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-from models import MatchingEngine
-from parser import ai_resume_parser, extract_text_from_pdf
+
+def normalize_words(text: str) -> list[str]:
+    return re.findall(r"[a-z0-9+#.-]+", text.lower())
 
 
-ENGINE = MatchingEngine()
+def extract_resume_text(resume_path: str) -> str:
+    with open(resume_path, "rb") as file:
+        raw = file.read()
+
+    decoded = raw.decode("latin-1", errors="ignore")
+
+    # Very lightweight PDF text extraction for simple text PDFs.
+    text_chunks = re.findall(r"\((.*?)\)", decoded)
+    if text_chunks:
+        return " ".join(text_chunks)
+
+    return decoded
+
+
+def clamp(value: float, min_value: float = 0.0, max_value: float = 1.0) -> float:
+    return max(min_value, min(max_value, value))
 
 
 def score_application(payload: dict) -> dict:
@@ -18,39 +35,28 @@ def score_application(payload: dict) -> dict:
     if not resume_path or not os.path.exists(resume_path):
         raise FileNotFoundError("Resume file not found")
 
-    resume_text = extract_text_from_pdf(resume_path)
-    if not resume_text:
-        raise ValueError("Could not extract text from the resume")
+    resume_text = extract_resume_text(resume_path)
+    resume_words = set(normalize_words(resume_text))
 
     job_title = job.get("title", "")
     job_description = job.get("description", "")
     requirements = job.get("requirements", []) or []
-    benefits = job.get("benefits", []) or []
 
-    target_parts = [job_title, job_description]
-    target_parts.extend(str(item) for item in requirements if item)
-    target_parts.extend(str(item) for item in benefits if item)
-    target_text = " ".join(part for part in target_parts if part).strip()
+    target_text = " ".join([job_title, job_description, *requirements])
+    target_words = set(normalize_words(target_text))
 
-    cv_data = ai_resume_parser(resume_text)
-    if not cv_data:
-        raise ValueError("Could not parse structured candidate data from the resume")
-
-    cv_data.setdefault("full_name", candidate_name or None)
-    cv_data.setdefault("email", candidate_email or None)
-    if not cv_data.get("full_name") and candidate_name:
-        cv_data["full_name"] = candidate_name
-    if not cv_data.get("email") and candidate_email:
-        cv_data["email"] = candidate_email
-
-    skills_list = cv_data.get("skills", []) or []
-
-    if not target_text:
+    if not target_words:
         return {
             "matching_score": 0.0,
             "confidence_score": 0.2,
-            "summary": "Resume was parsed, but no job description was provided for matching.",
-            "candidate_data": cv_data,
+            "candidate_data": {
+                "full_name": candidate_name,
+                "email": candidate_email,
+                "education": None,
+                "years_of_experience": 0,
+                "skills": sorted(list(resume_words))[:12],
+                "summary": "Resume processed successfully, but the target job description was empty.",
+            },
             "matching_data": {
                 "ai_matching_score": 0.0,
                 "confidence_score": 0.2,
@@ -69,17 +75,50 @@ def score_application(payload: dict) -> dict:
             },
         }
 
-    matching_result = ENGINE.calculate_match(skills_list, target_text)
-    matching_score = float(matching_result.get("ai_matching_score", 0.0) or 0.0)
-    confidence_score = float(matching_result.get("confidence_score", 0.0) or 0.0)
-    top_level_summary = matching_result.get("ai_summary") or f"AI matching completed for {job_title or 'the role'}."
+    matched_words = target_words.intersection(resume_words)
+    match_ratio = len(matched_words) / len(target_words)
+
+    resume_signal = min(len(resume_words) / 100.0, 1.0)
+    confidence = clamp((match_ratio * 0.7) + (resume_signal * 0.3))
+    normalized_match = round(clamp(match_ratio), 4)
+    normalized_confidence = round(confidence, 4)
+
+    top_skills = sorted(list(matched_words))[:12]
+    technical = round(clamp(match_ratio * 1.4, 0.0, 1.0) * 100)
+    experience = round(clamp((resume_signal * 0.7) + (match_ratio * 0.3), 0.0, 1.0) * 100)
+    soft_skills = round(clamp((resume_signal * 0.5) + (match_ratio * 0.2), 0.0, 1.0) * 100)
+    education = round(clamp((match_ratio * 0.6) + 0.25, 0.0, 1.0) * 100)
+    overall = round(normalized_match * 100)
+    job_title = job.get("title", "the role")
 
     return {
-        "matching_score": round(matching_score, 4),
-        "confidence_score": round(confidence_score, 4),
-        "summary": top_level_summary,
-        "candidate_data": cv_data,
-        "matching_data": matching_result,
+        "matching_score": normalized_match,
+        "confidence_score": normalized_confidence,
+        "summary": f"Keyword matching suggests the resume has a {overall}% fit with {job_title}.",
+        "candidate_data": {
+            "full_name": candidate_name,
+            "email": candidate_email,
+            "education": None,
+            "years_of_experience": 0,
+            "skills": top_skills,
+            "summary": f"Resume contains {len(resume_words)} normalized keywords and overlaps with {len(matched_words)} job keywords.",
+        },
+        "matching_data": {
+            "ai_matching_score": normalized_match,
+            "confidence_score": normalized_confidence,
+            "ai_summary": f"The candidate overlaps with {len(matched_words)} of {len(target_words)} tracked job keywords.",
+            "ai_explanation": {
+                "score_reason": "The score is based on keyword overlap between the resume and the job title, description, and requirement fields.",
+                "radar_breakdown": "Technical is driven by keyword overlap, Experience by resume signal density, Soft Skills by general text richness, and Education by baseline profile completeness.",
+            },
+            "skills_radar": {
+                "Technical": technical,
+                "Experience": experience,
+                "Soft Skills": soft_skills,
+                "Education": education,
+                "Overall": overall,
+            },
+        },
     }
 
 
