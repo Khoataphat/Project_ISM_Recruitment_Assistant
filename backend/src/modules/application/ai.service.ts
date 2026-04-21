@@ -1,8 +1,10 @@
 import axios from "axios";
+import fs from "fs/promises";
+import path from "path";
 import { AiProcessingStatus, ApplicationStatus, Prisma } from "@prisma/client";
 import { prisma } from "../../../prisma/prisma.service";
 
-const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://127.0.0.1:8000/score";
+const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://127.0.0.1:8000/analyze-cv";
 const AI_TIMEOUT_MS = Number(process.env.AI_SERVICE_TIMEOUT_MS || "10000");
 
 type CandidateData = {
@@ -16,60 +18,52 @@ type CandidateData = {
 };
 
 type MatchingData = {
-    ai_matching_score?: number;
-    confidence_score?: number;
+    ai_matching_score: number;
+    confidence_score: number;
     ai_summary?: string;
     ai_explanation?: Prisma.JsonValue;
     skills_radar?: Prisma.JsonValue;
 };
 
 type AiScoreResponse = {
-    matching_score?: number;
-    confidence_score?: number;
+    matching_score: number;
+    confidence_score: number;
     summary?: string;
-    candidate_data?: CandidateData;
-    matching_data?: MatchingData;
+    candidate_data: CandidateData;
+    matching_data: MatchingData;
 };
 
-function normalizeScore(name: string, value: unknown) {
-    const numeric = Number(value);
-
-    if (Number.isNaN(numeric)) {
+function normalizeScore(name: string, value: number) {
+    if (Number.isNaN(value)) {
         throw new Error(`${name} must be a valid number`);
     }
 
-    if (numeric >= 0 && numeric <= 1) {
-        return numeric;
+    if (value >= 0 && value <= 1) {
+        return value;
     }
 
-    if (numeric > 1 && numeric <= 100) {
-        return numeric / 100;
+    if (value > 1 && value <= 100) {
+        return value / 100;
     }
 
     throw new Error(`${name} must be between 0 and 1 or 0 and 100`);
 }
 
 function parseAiResponse(data: AiScoreResponse) {
-    const candidateData = data.candidate_data ?? {};
-    const matchingData = data.matching_data ?? {};
+    if (!data.candidate_data || !data.matching_data) {
+        throw new Error("AI response is missing candidate_data or matching_data");
+    }
 
-    const matchingScore = normalizeScore(
-        "matching_score",
-        matchingData.ai_matching_score ?? data.matching_score ?? 0,
-    );
-
-    const confidenceScore = normalizeScore(
-        "confidence_score",
-        matchingData.confidence_score ?? data.confidence_score ?? matchingScore,
-    );
+    const matchingScore = normalizeScore("matching_score", Number(data.matching_score));
+    const confidenceScore = normalizeScore("confidence_score", Number(data.confidence_score));
 
     return {
         matchingScore,
         confidenceScore,
-        aiSummary: matchingData.ai_summary ?? data.summary ?? null,
-        aiExplanation: matchingData.ai_explanation ?? null,
-        skillsRadar: matchingData.skills_radar ?? null,
-        candidateData,
+        aiSummary: data.matching_data.ai_summary ?? data.summary ?? null,
+        aiExplanation: data.matching_data.ai_explanation ?? null,
+        skillsRadar: data.matching_data.skills_radar ?? null,
+        candidateData: data.candidate_data,
         rawAiResponse: data as Prisma.JsonObject,
     };
 }
@@ -149,6 +143,33 @@ function resolveResumePath(resumeUrl: string) {
         : resumeUrl;
 }
 
+function buildJobDescription(job: {
+    title: string | null;
+    description: string | null;
+    requirements: unknown;
+    benefits: unknown;
+}) {
+    const parts: string[] = [];
+
+    if (job.title?.trim()) {
+        parts.push(job.title.trim());
+    }
+
+    if (job.description?.trim()) {
+        parts.push(job.description.trim());
+    }
+
+    if (Array.isArray(job.requirements)) {
+        parts.push(...job.requirements.map((value) => String(value).trim()).filter(Boolean));
+    }
+
+    if (Array.isArray(job.benefits)) {
+        parts.push(...job.benefits.map((value) => String(value).trim()).filter(Boolean));
+    }
+
+    return parts.join("\n");
+}
+
 function mapDbApplicationStatus(status: ApplicationStatus) {
     return status.toLowerCase();
 }
@@ -178,8 +199,13 @@ function stringifyAiError(error: unknown) {
         if (typeof data === "string" && data.trim()) {
             return data;
         }
-        if (data && typeof data === "object" && "message" in data) {
-            return String((data as { message?: unknown }).message || error.message);
+        if (data && typeof data === "object") {
+            if ("message" in data) {
+                return String((data as { message?: unknown }).message || error.message);
+            }
+            if ("detail" in data) {
+                return String((data as { detail?: unknown }).detail || error.message);
+            }
         }
         return error.message;
     }
@@ -224,27 +250,18 @@ export const scoreApplicationWithAi = async (applicationId: number) => {
     });
 
     try {
-        const response = await axios.post<AiScoreResponse>(
-            AI_SERVICE_URL,
-            {
-                application_id: application.applicationId,
-                candidate_name: application.user.fullName,
-                candidate_email: application.user.email,
-                resume_path: resolveResumePath(application.resumeUrl),
-                job: {
-                    title: application.job.title,
-                    description: application.job.description,
-                    requirements: application.job.requirements,
-                    benefits: application.job.benefits,
-                },
-            },
-            {
-                timeout: AI_TIMEOUT_MS,
-                headers: {
-                    "Content-Type": "application/json",
-                },
-            },
-        );
+        const resumePath = resolveResumePath(application.resumeUrl);
+        const resumeBuffer = await fs.readFile(resumePath);
+        const formData = new FormData();
+        const filename = path.basename(resumePath) || "resume.pdf";
+        const jdText = buildJobDescription(application.job);
+
+        formData.append("file", new Blob([resumeBuffer], { type: "application/pdf" }), filename);
+        formData.append("jd_text", jdText);
+
+        const response = await axios.post<AiScoreResponse>(AI_SERVICE_URL, formData, {
+            timeout: AI_TIMEOUT_MS,
+        });
 
         const {
             matchingScore,
@@ -255,6 +272,14 @@ export const scoreApplicationWithAi = async (applicationId: number) => {
             candidateData,
             rawAiResponse,
         } = parseAiResponse(response.data);
+
+        if (!candidateData.full_name && application.user.fullName) {
+            candidateData.full_name = application.user.fullName;
+        }
+
+        if (!candidateData.email && application.user.email) {
+            candidateData.email = application.user.email;
+        }
 
         await syncCandidateProfile(application.user.userId, candidateData);
 

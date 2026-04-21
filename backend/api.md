@@ -324,6 +324,13 @@ All endpoints require auth with role `CANDIDATE`.
 
 Submit an application with a PDF resume.
 
+Integration flow:
+- Frontend uploads the CV to the Node.js backend via `/applications`.
+- Backend stores the PDF in `/uploads`.
+- Backend sends the resume file and combined JD text to the Python AI service via `POST /analyze-cv`.
+- Python returns parsed candidate data and matching analysis as JSON.
+- Backend updates the database with AI scores, explanations, and candidate profile data.
+
 **Request: `multipart/form-data`**
 
 

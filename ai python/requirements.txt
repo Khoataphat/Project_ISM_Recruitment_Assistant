@@ -1,0 +1,9 @@
+google-genai
+pymupdf
+python-dotenv
+fastapi
+uvicorn
+sentence-transformers
+torch
+python-multipart
+huggingface_hub

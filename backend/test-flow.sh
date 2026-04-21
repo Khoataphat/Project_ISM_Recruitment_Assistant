@@ -123,7 +123,7 @@ AI service is not reachable at $AI_SERVICE_URL.
 Start it first, for example:
 
   cd /Users/dungkimhuynh/Desktop/ISM/Project_ISM_Recruitment_Assistant/ai\ python
-  python3 main.py
+  python3 app.py
 EOF
   exit 1
 fi
