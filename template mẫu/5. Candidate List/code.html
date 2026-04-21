@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+
+<html lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Quản lý ứng viên | AI Recruit</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .matching-badge { 
+            background: #E6F7ED; 
+            color: #00B14F; 
+            font-weight: bold; 
+            padding: 5px 10px; 
+            border-radius: 20px; 
+            border: 1px solid #00B14F; 
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom range slider styling to match brand */
+        input[type='range']::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #006e2e;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+    </style>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-container-highest": "#d5e4f9",
+              "on-surface": "#0e1d2c",
+              "surface-container": "#e4efff",
+              "primary-fixed-dim": "#52e078",
+              "inverse-primary": "#52e078",
+              "error-container": "#ffdad6",
+              "tertiary-container": "#d3a400",
+              "surface-tint": "#006e2e",
+              "surface-bright": "#f8f9ff",
+              "surface-container-high": "#dbe9ff",
+              "surface": "#f8f9ff",
+              "tertiary-fixed-dim": "#f5bf00",
+              "surface-container-low": "#eef4ff",
+              "secondary": "#4c5e83",
+              "secondary-fixed-dim": "#b4c7f1",
+              "on-secondary": "#ffffff",
+              "primary-container": "#00b14f",
+              "on-primary-container": "#003a15",
+              "outline-variant": "#bccbb9",
+              "on-secondary-container": "#475a7e",
+              "background": "#f8f9ff",
+              "primary-fixed": "#71fe91",
+              "on-tertiary-container": "#503c00",
+              "on-tertiary": "#ffffff",
+              "on-tertiary-fixed-variant": "#594400",
+              "on-secondary-fixed": "#041b3c",
+              "on-error-container": "#93000a",
+              "on-error": "#ffffff",
+              "surface-container-lowest": "#ffffff",
+              "secondary-container": "#bfd2fd",
+              "on-primary-fixed": "#002109",
+              "secondary-fixed": "#d7e2ff",
+              "primary": "#006e2e",
+              "inverse-on-surface": "#e9f1ff",
+              "surface-variant": "#d5e4f9",
+              "on-tertiary-fixed": "#251a00",
+              "on-background": "#0e1d2c",
+              "error": "#ba1a1a",
+              "on-primary": "#ffffff",
+              "tertiary-fixed": "#ffdf94",
+              "outline": "#6d7b6c",
+              "on-secondary-fixed-variant": "#34476a",
+              "tertiary": "#765b00",
+              "surface-dim": "#cddbf0",
+              "on-surface-variant": "#3d4a3d",
+              "inverse-surface": "#233142",
+              "on-primary-fixed-variant": "#005321"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+</head>
+<body class="bg-surface font-body text-on-surface antialiased">
+<!-- TopNavBar -->
+<header class="fixed top-0 w-full z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl shadow-sm shadow-slate-200/50 flex items-center justify-between px-8 h-16">
+<div class="flex items-center gap-8">
+<span class="text-xl font-black tracking-tight text-emerald-700 dark:text-emerald-400">AI Recruit</span>
+<nav class="hidden md:flex gap-6">
+<a class="text-slate-600 dark:text-slate-400 hover:text-emerald-600 transition-colors text-sm font-medium" href="#">Jobs</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-emerald-600 transition-colors text-sm font-medium" href="#">My Applications</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+<input class="bg-surface-container-low border-none rounded-full pl-10 pr-4 py-1.5 text-sm w-64 focus:ring-2 focus:ring-primary" placeholder="Tìm kiếm nhanh..." type="text"/>
+</div>
+<button class="p-2 text-slate-600 hover:bg-slate-50 rounded-full transition-all active:scale-95">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-slate-600 hover:bg-slate-50 rounded-full transition-all active:scale-95">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<img alt="User Profile Avatar" class="w-8 h-8 rounded-full bg-slate-200" data-alt="professional profile avatar of a recruiter in a modern office setting, soft bokeh background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDK9e06VXxsK7MpoLbB5WM3ygw2eSHHue1jk1JfS6T2WS3FAGjmBi-2cua8zfsXrCrex71sxXuzHXbLdSnuJYopJp9SehSVqKHi1HLOicBk5iBkEI6SFKGKNhtmD7EYh5SGlV-YK4nFTm3Zx_GJPB4D_WEHFkX3wbOao2DDBy4NEJEw5h7oLTwYRsisFTOY8i8iwYq1seka3zU3Oa2u7PTn-_0_jTTFySH0MBqoHfkFaNM5Gfa5LxQ8FN7iEGTeEqNptkRCi5HZu9gp"/>
+</div>
+</header>
+<div class="flex pt-16">
+<!-- SideNavBar -->
+<aside class="h-screen w-64 fixed left-0 top-16 bg-slate-50 dark:bg-slate-900 flex flex-col p-4 gap-y-2">
+<div class="mb-6 px-2">
+<p class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Enterprise Edition</p>
+<h2 class="text-sm font-bold text-emerald-600">Recruiter Portal</h2>
+</div>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 transition-all rounded-lg text-sm font-medium" href="#">
+<span class="material-symbols-outlined">dashboard</span> Dashboard
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-400 shadow-sm rounded-lg text-sm font-medium" href="#">
+<span class="material-symbols-outlined">group</span> Candidates
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 transition-all rounded-lg text-sm font-medium" href="#">
+<span class="material-symbols-outlined">psychology</span> AI Weight Settings
+            </a>
+<div class="mt-8 mb-4">
+<button class="w-full bg-gradient-to-br from-primary to-primary-container text-white py-2.5 rounded-lg font-bold text-sm shadow-sm active:scale-95 transition-all">
+                    + New Candidate
+                </button>
+</div>
+<div class="mt-auto flex flex-col gap-2 border-t border-slate-200 pt-4">
+<a class="flex items-center gap-3 px-3 py-2 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 transition-all rounded-lg text-sm font-medium" href="#">
+<span class="material-symbols-outlined">help</span> Help Center
+                </a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 transition-all rounded-lg text-sm font-medium" href="#">
+<span class="material-symbols-outlined">logout</span> Sign Out
+                </a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-64 w-full min-h-screen bg-surface p-8">
+<div class="max-w-7xl mx-auto">
+<!-- Page Header & Actions -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+<div>
+<h1 class="text-3xl font-extrabold text-on-surface tracking-tight">Quản lý ứng viên</h1>
+<p class="text-on-surface-variant mt-1">Quản lý và sàng lọc hồ sơ ứng viên thông minh với AI.</p>
+</div>
+<button class="flex items-center gap-2 bg-white text-on-surface px-5 py-2.5 rounded-lg border border-outline-variant/20 shadow-sm hover:bg-surface-container-low transition-all font-semibold text-sm">
+<span class="material-symbols-outlined text-red-600">picture_as_pdf</span>
+                        Xuất báo cáo PDF
+                    </button>
+</div>
+<!-- Filters & Search Bar -->
+<div class="bg-surface-container-lowest rounded-xl p-6 mb-6 shadow-sm flex flex-col lg:flex-row items-center gap-8 border border-outline-variant/10">
+<div class="flex-1 w-full relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/60">search</span>
+<input class="w-full pl-12 pr-4 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary text-sm" placeholder="Tìm kiếm theo tên, vị trí hoặc kỹ năng..." type="text"/>
+</div>
+<div class="flex items-center gap-6 w-full lg:w-auto min-w-[300px]">
+<label class="text-sm font-bold text-on-surface-variant whitespace-nowrap">Lọc theo điểm số &gt; 80</label>
+<div class="flex-1 flex items-center gap-3">
+<span class="text-xs font-medium text-slate-400">0</span>
+<input class="flex-1 h-1.5 bg-surface-container-high rounded-lg appearance-none cursor-pointer accent-primary" max="100" min="0" type="range" value="80"/>
+<span class="text-xs font-bold text-primary">100</span>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="px-4 py-2 bg-surface-container-high text-on-surface rounded-lg text-sm font-semibold hover:bg-surface-container transition-all">
+                            Tất cả trạng thái
+                        </button>
+</div>
+</div>
+<!-- Data Table -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden border border-outline-variant/10">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low/50 border-b border-outline-variant/10">
+<th class="py-4 px-6 w-12">
+<input class="rounded border-outline-variant text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+</th>
+<th class="py-4 px-6 text-xs font-bold uppercase tracking-wider text-on-surface-variant">Ứng viên</th>
+<th class="py-4 px-6 text-xs font-bold uppercase tracking-wider text-on-surface-variant">AI Matching Score</th>
+<th class="py-4 px-6 text-xs font-bold uppercase tracking-wider text-on-surface-variant">Trạng thái</th>
+<th class="py-4 px-6 text-xs font-bold uppercase tracking-wider text-on-surface-variant text-right">Thao tác</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container-low">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-lowest/50 transition-colors group">
+<td class="py-5 px-6">
+<input class="rounded border-outline-variant text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+</td>
+<td class="py-5 px-6">
+<div class="flex items-center gap-4">
+<img alt="Nguyen Lan" class="w-10 h-10 rounded-full object-cover ring-2 ring-white" data-alt="professional headshot of a female software engineer, natural lighting, smiling, modern minimalist style" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAACE3HWIWkeeytwcsCvxX4U56Uv6P0JQ36zxdzjS8GLobvS82pdAFJL-8_Rx69GiRzcxtN6FvOtaw_kKhLK6cpr9X56IDlax99P1TU33pTdMxxGhrKGB3oAQGRC0O19At-yQRg0T3pP3HAFGvxPojk6PTpLRncMiSdL9j2S_joyUP0VBlD2ntdS3jsHvItTAqltdVacAgiuHJrRvEKMRVIHPOtVrJnDstZAZFPOGUuiENdDBKkQ1TeC08dBCf9p4PrNXdsUWZzl9K0"/>
+<div>
+<a class="text-sm font-bold text-on-surface hover:text-primary transition-colors" href="candidate-detail.html?id=123">Nguyễn Thị Lan</a>
+<p class="text-xs text-on-surface-variant">Senior Product Designer</p>
+</div>
+</div>
+</td>
+<td class="py-5 px-6">
+<span class="matching-badge">95% Match</span>
+</td>
+<td class="py-5 px-6">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                                        Đã lọc AI
+                                    </span>
+</td>
+<td class="py-5 px-6 text-right">
+<a class="text-primary hover:text-on-primary-fixed-variant font-bold text-sm underline-offset-4 hover:underline" href="candidate-detail.html?id=123">Chi tiết</a>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-lowest/50 transition-colors group">
+<td class="py-5 px-6">
+<input class="rounded border-outline-variant text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+</td>
+<td class="py-5 px-6">
+<div class="flex items-center gap-4">
+<img alt="Tran Vu" class="w-10 h-10 rounded-full object-cover ring-2 ring-white" data-alt="portrait of a confident male tech professional, studio lighting, clean background, high resolution" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC4Z7ghx-9Gm5TD-w9Gwn_8eVOsDOGKPs4RhsBeviv2gqQu56pGlDbBb-4gQxJBhDYvC8A80MloY3FuFUdOWazMAHMRBswgI1-_WYPjmfWbWWVbBuWxADLJjVZZj0IsqdQ7eXH2Ij2wENXC3Cs_KHeJxYy_xkzQaaqyAiyVtHiZll_C0v1OcuHOmYmHt6RywgLPXffuY23z0jkco8w0V91SbSiyJDh0V8h_yFHe5RbYB9VsnieDkbVSCMPyR9JUYVA3WcNSJHy-Kqi8"/>
+<div>
+<a class="text-sm font-bold text-on-surface hover:text-primary transition-colors" href="candidate-detail.html?id=124">Trần Anh Vũ</a>
+<p class="text-xs text-on-surface-variant">Fullstack Developer</p>
+</div>
+</div>
+</td>
+<td class="py-5 px-6">
+<span class="matching-badge">88% Match</span>
+</td>
+<td class="py-5 px-6">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                        Hẹn phỏng vấn
+                                    </span>
+</td>
+<td class="py-5 px-6 text-right">
+<a class="text-primary hover:text-on-primary-fixed-variant font-bold text-sm underline-offset-4 hover:underline" href="candidate-detail.html?id=124">Chi tiết</a>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-lowest/50 transition-colors group">
+<td class="py-5 px-6">
+<input class="rounded border-outline-variant text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+</td>
+<td class="py-5 px-6">
+<div class="flex items-center gap-4">
+<img alt="Pham Minh" class="w-10 h-10 rounded-full object-cover ring-2 ring-white" data-alt="headshot of a young professional man, cheerful expression, urban outdoor background with soft focus" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBy_XOuVeAvvULzX9vQ7JPv6UJfLd_3VD1kHrB7-zp19HgZGj0CAJZpztVkWNR53ixL8r2NdvYFjznyC0GS2-SUro1aKNFmdnrSunkr4PzOk3Y38-51dAY4RGaC03NoeGUDhczJUSmGy8jrCmgFG-ctZyqx1-8SwAuBMBcfPAiMPO2LW8tDw5bR21XblI51Xe4UZWkitLAYltxNpM3If6fVpLxEhnwRJMo6TLro9bG9GvV8okhlbcC31Mj2a8XGVVRSp7QMHVTf8YO0"/>
+<div>
+<a class="text-sm font-bold text-on-surface hover:text-primary transition-colors" href="candidate-detail.html?id=125">Phạm Hoàng Minh</a>
+<p class="text-xs text-on-surface-variant">Marketing Specialist</p>
+</div>
+</div>
+</td>
+<td class="py-5 px-6">
+<span class="matching-badge" style="background: #FFF9E6; color: #D3A400; border-color: #D3A400;">70% Match</span>
+</td>
+<td class="py-5 px-6">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
+                                        Mới nộp
+                                    </span>
+</td>
+<td class="py-5 px-6 text-right">
+<a class="text-primary hover:text-on-primary-fixed-variant font-bold text-sm underline-offset-4 hover:underline" href="candidate-detail.html?id=125">Chi tiết</a>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-lowest/50 transition-colors group">
+<td class="py-5 px-6">
+<input class="rounded border-outline-variant text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+</td>
+<td class="py-5 px-6">
+<div class="flex items-center gap-4">
+<img alt="Le Hoa" class="w-10 h-10 rounded-full object-cover ring-2 ring-white" data-alt="modern corporate portrait of a female executive, sharp focus, professional attire, soft natural light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCtCIEB0hMWzY36Dw7GH8jssRIBNocuRM-RIfYOueCA-lZZinf-kUh9Vh3dbIE6bCC-TcKhFJ83oIhlC4Fibd4FiPy4Y71_yoBtXFX5lRJuZHkO-9ESK4Mj3pMIGIARV5DZsWfiRaLOeWGMzKc3g8Kf_SL3tU-hSES53xyL75-TZXlS7t8XITe8LOElUtPOwj7FEQ39sQK9mIX56aTZ1x7WtL2uoIHbTmEaxFhj0dQh6mli3-9UpnXY-5kk9-GMd6dF_PL75bSA6BBi"/>
+<div>
+<a class="text-sm font-bold text-on-surface hover:text-primary transition-colors" href="candidate-detail.html?id=126">Lê Thu Hòa</a>
+<p class="text-xs text-on-surface-variant">UX Researcher</p>
+</div>
+</div>
+</td>
+<td class="py-5 px-6">
+<span class="matching-badge">92% Match</span>
+</td>
+<td class="py-5 px-6">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                                        Đã lọc AI
+                                    </span>
+</td>
+<td class="py-5 px-6 text-right">
+<a class="text-primary hover:text-on-primary-fixed-variant font-bold text-sm underline-offset-4 hover:underline" href="candidate-detail.html?id=126">Chi tiết</a>
+</td>
+</tr>
+</tbody>
+</table>
+<!-- Pagination -->
+<div class="px-6 py-4 flex items-center justify-between bg-surface-container-low/30 border-t border-outline-variant/10">
+<span class="text-sm text-on-surface-variant">Hiển thị 1-4 trên 48 ứng viên</span>
+<div class="flex gap-2">
+<button class="p-2 rounded-lg hover:bg-surface-container-high transition-all">
+<span class="material-symbols-outlined text-sm">chevron_left</span>
+</button>
+<button class="px-3 py-1 rounded-lg bg-primary text-on-primary text-sm font-bold">1</button>
+<button class="px-3 py-1 rounded-lg hover:bg-surface-container-high text-sm font-medium transition-all">2</button>
+<button class="px-3 py-1 rounded-lg hover:bg-surface-container-high text-sm font-medium transition-all">3</button>
+<button class="p-2 rounded-lg hover:bg-surface-container-high transition-all">
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Footer Stats -->
+<div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10 shadow-sm flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center">
+<span class="material-symbols-outlined text-emerald-600">trending_up</span>
+</div>
+<div>
+<p class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Tỉ lệ phù hợp trung bình</p>
+<h3 class="text-2xl font-black text-on-surface">82.4%</h3>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10 shadow-sm flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center">
+<span class="material-symbols-outlined text-blue-600">group</span>
+</div>
+<div>
+<p class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Tổng ứng viên tuần này</p>
+<h3 class="text-2xl font-black text-on-surface">128</h3>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10 shadow-sm flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-tertiary-container/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary">star</span>
+</div>
+<div>
+<p class="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Top Match (&gt;90%)</p>
+<h3 class="text-2xl font-black text-on-surface">12</h3>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>
