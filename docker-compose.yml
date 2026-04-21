@@ -1,0 +1,61 @@
+services:
+  # ============================================================
+  # Option 1: Backend only (connect to Supabase / remote DB)
+  # Usage:  docker compose up backend
+  # ============================================================
+  backend:
+    build:
+      context: ./backend
+      target: development
+    ports:
+      - "${PORT:-3000}:3000"
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    restart: unless-stopped
+
+  # ============================================================
+  # Option 2: Backend + local PostgreSQL (full offline dev)
+  # Usage:  docker compose --profile local-db up
+  # ============================================================
+  postgres:
+    image: postgres:17-alpine
+    profiles: [local-db]
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: recruitment
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend-local:
+    build:
+      context: ./backend
+      target: development
+    profiles: [local-db]
+    ports:
+      - "${PORT:-3000}:3000"
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/recruitment
+      DIRECT_URL: postgresql://postgres:postgres@postgres:5432/recruitment
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:

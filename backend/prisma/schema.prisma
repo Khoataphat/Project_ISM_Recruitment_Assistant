@@ -1,0 +1,172 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  HR        @map("hr")
+  CANDIDATE @map("candidate")
+}
+
+enum ApplicationStatus {
+  PENDING      @map("pending")
+  SHORTLISTED  @map("shortlisted")
+  INTERVIEWING @map("interviewing")
+  OFFERED      @map("offered")
+  ACCEPTED     @map("accepted")
+  REJECTED     @map("rejected")
+  WITHDRAWN    @map("withdrawn")
+}
+
+enum AiProcessingStatus {
+  PENDING    @map("pending")
+  PROCESSING @map("processing")
+  COMPLETED  @map("completed")
+  FAILED     @map("failed")
+}
+
+model User {
+  userId           Int      @id @default(autoincrement()) @map("UserId")
+  passwordHash     String   @db.VarChar(255) @map("Password")
+  fullName         String   @db.VarChar(128) @map("FullName")
+  email            String   @unique @db.VarChar(64) @map("Email")
+  phoneNumber      String?  @db.VarChar(16) @map("PhoneNumber")
+  role             Role     @default(CANDIDATE) @map("Role")
+
+  dob              DateTime? @db.Date @map("DOB")
+  gender           String?   @db.VarChar(16) @map("Gender")
+  address          String?   @db.VarChar(256) @map("Address")
+
+  avatar           String?   @db.VarChar(256) @map("Avatar")
+  profileUrl       String?   @db.VarChar(128) @map("ProfileUrl")
+
+  isVerified       Boolean   @default(false) @map("IsVerified")
+
+  createdBy        Int       @default(1) @map("CreatedBy")
+  createdDate      DateTime  @default(now()) @map("CreatedDate")
+  updatedBy        Int       @default(1) @map("UpdatedBy")
+  updatedDate      DateTime  @updatedAt @map("UpdatedDate")
+
+  applications     Application[]
+  candidateProfile CandidateProfile?
+
+  @@map("user")
+}
+
+model Job {
+  jobId        Int       @id @default(autoincrement()) @map("JobId")
+  companyName  String?   @db.VarChar(128) @map("CompanyName")
+  title        String    @db.VarChar(256) @map("Title")
+  description  String    @map("Description")
+  location     String?   @db.VarChar(128) @map("Location")
+  workMode     String?   @db.VarChar(32) @map("WorkMode")
+  employmentType String? @db.VarChar(32) @map("EmploymentType")
+  salaryMin    Int?      @map("SalaryMin")
+  salaryMax    Int?      @map("SalaryMax")
+  salaryCurrency String  @default("VND") @db.VarChar(10) @map("SalaryCurrency")
+  isSalaryVisible Boolean @default(true) @map("IsSalaryVisible")
+  deadline     DateTime? @map("Deadline")
+  headcount    Int?      @default(1) @map("Headcount")
+  minExperienceYears Int? @default(0) @map("MinExperienceYears")
+  educationRequirement String? @db.VarChar(100) @map("EducationRequirement")
+  requirements String[]  @default([]) @map("Requirements")
+  benefits     String[]  @default([]) @map("Benefits")
+  applicationCount Int   @default(0) @map("ApplicationCount")
+  viewCount    Int       @default(0) @map("ViewCount")
+  status       String    @default("open") @db.VarChar(32) @map("Status")
+
+  createdBy    Int       @map("CreatedBy")
+  createdDate  DateTime  @default(now()) @map("CreatedDate")
+  updatedBy    Int       @default(1) @map("UpdatedBy")
+  updatedDate  DateTime  @updatedAt @map("UpdatedDate")
+
+  applications Application[]
+
+  @@map("job")
+}
+
+model CandidateProfile {
+  candidateProfileId Int      @id @default(autoincrement()) @map("CandidateProfileId")
+  userId             Int      @unique @map("UserId")
+  educationSummary   String?  @map("EducationSummary")
+  yearsOfExperience  Int?     @map("YearsOfExperience")
+  summary            String?  @map("Summary")
+  careerInterests    String[] @default([]) @map("CareerInterests")
+  preferredLocations String[] @default([]) @map("PreferredLocations")
+  createdDate        DateTime @default(now()) @map("CreatedDate")
+  updatedDate        DateTime @updatedAt @map("UpdatedDate")
+
+  user               User                 @relation(fields: [userId], references: [userId])
+  educations         CandidateEducation[]
+  skills             CandidateSkill[]
+
+  @@map("candidate_profile")
+}
+
+model CandidateEducation {
+  candidateEducationId Int      @id @default(autoincrement()) @map("CandidateEducationId")
+  candidateProfileId   Int      @map("CandidateProfileId")
+  institution          String?  @db.VarChar(255) @map("Institution")
+  degree               String?  @db.VarChar(100) @map("Degree")
+  major                String?  @db.VarChar(150) @map("Major")
+  educationText        String?  @map("EducationText")
+  startYear            Int?     @map("StartYear")
+  endYear              Int?     @map("EndYear")
+  gpa                  Float?   @map("GPA")
+  isCurrent            Boolean  @default(false) @map("IsCurrent")
+  createdDate          DateTime @default(now()) @map("CreatedDate")
+  updatedDate          DateTime @updatedAt @map("UpdatedDate")
+
+  candidateProfile     CandidateProfile @relation(fields: [candidateProfileId], references: [candidateProfileId])
+
+  @@map("candidate_education")
+}
+
+model CandidateSkill {
+  candidateSkillId   Int      @id @default(autoincrement()) @map("CandidateSkillId")
+  candidateProfileId Int      @map("CandidateProfileId")
+  name               String   @db.VarChar(128) @map("Name")
+  source             String?  @db.VarChar(32) @map("Source")
+  confidence         Float?   @map("Confidence")
+  createdDate        DateTime @default(now()) @map("CreatedDate")
+  updatedDate        DateTime @updatedAt @map("UpdatedDate")
+
+  candidateProfile   CandidateProfile @relation(fields: [candidateProfileId], references: [candidateProfileId])
+
+  @@unique([candidateProfileId, name], map: "candidate_skill_profile_name_key")
+  @@map("candidate_skill")
+}
+
+model Application {
+  applicationId Int       @id @default(autoincrement()) @map("ApplicationId")
+  userId        Int       @map("UserId")
+  jobId         Int       @map("JobId")
+  resumeUrl     String    @db.VarChar(512) @map("ResumeUrl")
+  coverLetter   String?   @map("CoverLetter")
+  status        ApplicationStatus @default(PENDING) @map("Status")
+  matchingScore Float?    @map("MatchingScore")
+  confidenceScore Float?  @map("ConfidenceScore")
+  aiStatus      AiProcessingStatus @default(PENDING) @map("AiStatus")
+  aiSummary     String?   @map("AiSummary")
+  aiExplanation Json?     @map("AiExplanation")
+  skillsRadar   Json?     @map("SkillsRadar")
+  rawAiResponse Json?     @map("RawAiResponse")
+  aiError       String?   @db.VarChar(512) @map("AiError")
+  processedAt   DateTime? @map("ProcessedAt")
+  hrNote        String?   @map("HrNote")
+  viewedByHrAt  DateTime? @map("ViewedByHrAt")
+  isWithdrawn   Boolean   @default(false) @map("IsWithdrawn")
+  withdrawnAt   DateTime? @map("WithdrawnAt")
+
+  submittedAt   DateTime  @default(now()) @map("SubmittedAt")
+  reviewedAt    DateTime? @map("ReviewedAt")
+  reviewedBy    Int?      @map("ReviewedBy")
+
+  user          User      @relation(fields: [userId], references: [userId])
+  job           Job       @relation(fields: [jobId], references: [jobId])
+
+  @@map("application")
+}

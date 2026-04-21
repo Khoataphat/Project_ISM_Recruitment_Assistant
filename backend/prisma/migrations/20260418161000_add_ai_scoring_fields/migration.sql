@@ -1,0 +1,7 @@
+-- AlterTable
+ALTER TABLE "application"
+ADD COLUMN "AiError" VARCHAR(512),
+ADD COLUMN "AiStatus" VARCHAR(32) NOT NULL DEFAULT 'pending',
+ADD COLUMN "ConfidenceScore" DOUBLE PRECISION,
+ADD COLUMN "MatchingScore" DOUBLE PRECISION,
+ADD COLUMN "ProcessedAt" TIMESTAMP(3);
