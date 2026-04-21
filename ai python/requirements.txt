@@ -1,0 +1,5 @@
+google-genai
+pymupdf
+python-dotenv
+sentence-transformers
+torch
