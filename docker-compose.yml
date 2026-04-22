@@ -1,25 +1,33 @@
 services:
-  # ============================================================
-  # Option 1: Backend only (connect to Supabase / remote DB)
-  # Usage:  docker compose up backend
-  # ============================================================
+  # 1. Khai báo Redis (BẮT BUỘC vì code backend yêu cầu)
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  # 2. Service Backend
   backend:
     build:
       context: ./backend
       target: development
     ports:
       - "${PORT:-3000}:3000"
+      - "5555:5555"
     env_file:
       - ./backend/.env
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - NODE_ENV=development
     volumes:
       - ./backend:/app
       - /app/node_modules
+    depends_on:
+      - redis
     restart: unless-stopped
 
-  # ============================================================
-  # Option 2: Backend + local PostgreSQL (full offline dev)
-  # Usage:  docker compose --profile local-db up
-  # ============================================================
+  # 3. Các Option phụ (Postgres local)
   postgres:
     image: postgres:17-alpine
     profiles: [local-db]
@@ -47,14 +55,18 @@ services:
     env_file:
       - ./backend/.env
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/recruitment
-      DIRECT_URL: postgresql://postgres:postgres@postgres:5432/recruitment
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/recruitment
+      - DIRECT_URL=postgresql://postgres:postgres@postgres:5432/recruitment
     volumes:
       - ./backend:/app
       - /app/node_modules
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_started
     restart: unless-stopped
 
 volumes:

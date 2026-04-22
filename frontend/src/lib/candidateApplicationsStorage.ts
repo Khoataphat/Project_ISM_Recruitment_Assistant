@@ -1,3 +1,4 @@
+import { apiClient } from '@/lib/api'
 import { getCandidateProfile } from '@/lib/candidateProfileStorage'
 
 export type ApplicationStatus = 'applied' | 'interviewing' | 'under_review' | 'closed'
@@ -67,26 +68,22 @@ export function updateJobApplicationStatus(id: string, status: ApplicationStatus
   return next
 }
 
-export function addJobApplication(
-  entry: Omit<StoredJobApplication, 'id' | 'appliedAt'> & {
-    appliedAt?: string
-    applicantDisplayName?: string
-    applicantEmail?: string
-    applicantAvatarUrl?: string
-  },
-) {
-  const profile = getCandidateProfile()
-  const list = readRaw()
-  const row: StoredJobApplication = {
-    ...entry,
-    applicantDisplayName: entry.applicantDisplayName ?? profile.displayName,
-    applicantEmail: entry.applicantEmail ?? profile.email,
-    applicantAvatarUrl: entry.applicantAvatarUrl ?? profile.avatarUrl,
-    id: typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
-    appliedAt: entry.appliedAt ?? new Date().toISOString(),
-  }
-  writeRaw([row, ...list])
-  return row
+/**
+ * Sends a job application to the backend API.
+ * Uses multipart/form-data to include the resume file.
+ */
+export async function addJobApplication(jobId: string, file: File) {
+  const formData = new FormData()
+  formData.append('jobId', jobId)
+  formData.append('resume', file)
+
+  const response = await apiClient.post('/applications', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  })
+
+  return response.data
 }
 
 export function fileToDataUrl(file: File): Promise<string> {

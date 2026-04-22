@@ -143,16 +143,7 @@ export function CandidateJobDetailsPage() {
         jobTitle={job.title}
         subtitle="Complete your application for the Design Systems team."
         onSubmit={async (file) => {
-          const resumeDataUrl = await fileToDataUrl(file)
-          addJobApplication({
-            jobId: job.id,
-            jobTitle: job.title,
-            company: job.company,
-            logoUrl: job.logoUrl,
-            status: 'applied',
-            resumeFileName: file.name,
-            resumeDataUrl,
-          })
+          await addJobApplication(job.id, file)
         }}
       />
 

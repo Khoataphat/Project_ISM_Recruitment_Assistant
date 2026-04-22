@@ -1,5 +1,7 @@
 import { Button, Card, Checkbox, Form, Input, Typography, message } from 'antd'
 import { Link, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { apiClient } from '@/lib/api'
 
 type LoginFormValues = {
   email: string
@@ -10,6 +12,38 @@ type LoginFormValues = {
 export function LoginPage() {
   const navigate = useNavigate()
   const [form] = Form.useForm<LoginFormValues>()
+  const [loading, setLoading] = useState(false)
+
+  const onFinish = async (values: LoginFormValues) => {
+    setLoading(true)
+    try {
+      const response = await apiClient.post('/auth/login', {
+        email: values.email,
+        password: values.password,
+      })
+
+      const { data } = response.data
+      const { user, token } = data
+
+      // Store token
+      localStorage.setItem('accessToken', token)
+      localStorage.setItem('user', JSON.stringify(user))
+
+      message.success(`Welcome back, ${user.fullName}!`)
+
+      // Role-based redirection
+      if (user.role === 'hr') {
+        navigate('/hr/dashboard')
+      } else {
+        navigate('/candidate/jobs')
+      }
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.message || 'Invalid email or password'
+      message.error(errorMsg)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <Card variant="borderless" styles={{ body: { padding: 0 } }}>
@@ -27,11 +61,7 @@ export function LoginPage() {
         layout="vertical"
         requiredMark={false}
         initialValues={{ remember: true }}
-        onFinish={(values) => {
-          console.log('login.submit', values)
-          message.success('Signed in successfully')
-          navigate('/')
-        }}
+        onFinish={onFinish}
       >
         <Form.Item
           label="Corporate Email"
@@ -65,7 +95,7 @@ export function LoginPage() {
           </Checkbox>
         </Form.Item>
 
-        <Button type="primary" htmlType="submit" size="large" block>
+        <Button type="primary" htmlType="submit" size="large" block loading={loading}>
           Sign In
         </Button>
       </Form>
