@@ -1,5 +1,5 @@
 import express from "express";
-import { Role } from "@prisma/client";
+import { user_role } from "@prisma/client";
 import { authMiddleware, authorizeRole } from "../auth/auth.middleware";
 import {
     createJobHandler,
@@ -9,21 +9,17 @@ import {
     listPublicJobs,
     updateJobHandler,
 } from "./job.controller";
-import {
-    createJobSchema,
-    jobIdParamSchema,
-    updateJobSchema,
-    validateBody,
-    validateParams,
-} from "./dto/job.validator";
 
 const router = express.Router();
 
-router.get("/hr/manage", authMiddleware, authorizeRole(Role.HR), listHrJobs);
-router.get("/hr/manage/:id", authMiddleware, authorizeRole(Role.HR), validateParams(jobIdParamSchema), getHrJobDetail);
-router.post("/", authMiddleware, authorizeRole(Role.HR), validateBody(createJobSchema), createJobHandler);
-router.patch("/:id", authMiddleware, authorizeRole(Role.HR), validateParams(jobIdParamSchema), validateBody(updateJobSchema), updateJobHandler);
+// HR-specific routes (authenticated)
+router.get("/hr", authMiddleware, authorizeRole(user_role.HR), listHrJobs);
+router.get("/hr/:id", authMiddleware, authorizeRole(user_role.HR), getHrJobDetail);
+router.post("/", authMiddleware, authorizeRole(user_role.HR), createJobHandler);
+router.patch("/:id", authMiddleware, authorizeRole(user_role.HR), updateJobHandler);
+
+// Public routes
 router.get("/", listPublicJobs);
-router.get("/:id", validateParams(jobIdParamSchema), getPublicJobDetail);
+router.get("/:id", getPublicJobDetail);
 
 export default router;

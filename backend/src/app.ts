@@ -6,7 +6,7 @@ import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import multer from "multer";
-import { Role } from "@prisma/client";
+import { user_role } from "@prisma/client";
 import { connectDB, disconnectDB } from "../prisma/prisma.service";
 import { connectRedis, disconnectRedis } from "./shared/redis.service";
 
@@ -38,8 +38,8 @@ app.use("/uploads", express.static(path.resolve(process.cwd(), "uploads")));
 
 app.use("/auth", authRoute);
 app.use("/jobs", jobRoute);
-app.use("/applications", authMiddleware, authorizeRole(Role.CANDIDATE), applicationRoute);
-app.use("/dashboard", authMiddleware, authorizeRole(Role.HR), dashboardRoute);
+app.use("/applications", authMiddleware, authorizeRole(user_role.User), applicationRoute);
+app.use("/dashboard", authMiddleware, authorizeRole(user_role.HR), dashboardRoute);
 
 // Global error handler (Multer + general)
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

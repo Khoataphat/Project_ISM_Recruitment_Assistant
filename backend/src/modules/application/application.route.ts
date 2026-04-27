@@ -1,19 +1,19 @@
 import express from "express";
-import { submit, getMyApplications } from "./application.controller";
+import { submit, getMyApplications, getApplicationDetail, patchApplicationStatus } from "./application.controller";
 import { uploadResume } from "../../shared/middleware/upload.middleware";
-import { validateFile } from "../../shared/middleware/fileValidation.middleware";
-import { applicationSchema, validateBody } from "./dto/application.validator";
 
 const router = express.Router();
 
-router.post(
-    "/",
-    uploadResume.single("resume"),
-    validateFile("resume"),
-    validateBody(applicationSchema),
-    submit,
-);
+// POST /applications - submit a new application (multipart with resume file)
+router.post("/", uploadResume.single("resume"), submit);
 
+// GET /applications - get logged-in candidate's applications
 router.get("/", getMyApplications);
+
+// GET /applications/:id - get one application detail
+router.get("/:id", getApplicationDetail);
+
+// PATCH /applications/:id/status - update status (HR action)
+router.patch("/:id/status", patchApplicationStatus);
 
 export default router;

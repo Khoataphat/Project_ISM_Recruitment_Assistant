@@ -1,23 +1,60 @@
 import { EyeOutlined, SearchOutlined } from '@ant-design/icons'
-import { Button, Card, Flex, Input, Select, Space, Table, Tag, Typography, theme } from 'antd'
+import {
+  Alert,
+  Avatar,
+  Button,
+  Card,
+  Flex,
+  Input,
+  Select,
+  Table,
+  Tag,
+  Typography,
+  theme,
+  message,
+} from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { useMemo, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
-
-import { candidateJobs } from '@/data/candidateJobs'
-import type { ApplicationStatus, StoredJobApplication } from '@/lib/candidateApplicationsStorage'
-import { listJobApplications } from '@/lib/candidateApplicationsStorage'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { apiClient } from '@/lib/api'
 
 const { Title, Text } = Typography
 
-const STATUS_LABEL: Record<ApplicationStatus, string> = {
-  applied: 'Applied',
-  interviewing: 'Interviewing',
-  under_review: 'Under review',
-  closed: 'Closed',
+type ApiApplication = {
+  id: string
+  hr_status: string
+  applied_at: string
+  jobs: {
+    id: string
+    title: string
+    companies: { name: string; logo_url?: string }
+  }
+  candidates: {
+    id: string
+    users: { id: string; full_name: string; email: string; avatar_url?: string }
+  }
 }
 
-function formatAppliedDate(iso: string) {
+const HR_STATUS_OPTIONS = [
+  { label: 'All statuses', value: 'all' },
+  { label: 'Pending', value: 'Pending' },
+  { label: 'Shortlisted', value: 'Shortlisted' },
+  { label: 'Interviewing', value: 'Interviewing' },
+  { label: 'Offered', value: 'Offered' },
+  { label: 'Accepted', value: 'Accepted' },
+  { label: 'Rejected', value: 'Rejected' },
+]
+
+const STATUS_COLOR: Record<string, string> = {
+  Pending: 'default',
+  Shortlisted: 'blue',
+  Interviewing: 'processing',
+  Offered: 'gold',
+  Accepted: 'success',
+  Rejected: 'error',
+}
+
+function formatDate(iso: string) {
   try {
     return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso))
   } catch {
@@ -25,68 +62,85 @@ function formatAppliedDate(iso: string) {
   }
 }
 
-function statusTagColor(status: ApplicationStatus, token: ReturnType<typeof theme.useToken>['token']) {
-  switch (status) {
-    case 'interviewing':
-      return { color: token.colorPrimary, bg: token.colorPrimaryBg }
-    case 'under_review':
-      return { color: token.colorSuccess, bg: token.colorSuccessBg }
-    case 'closed':
-      return { color: token.colorError, bg: token.colorErrorBg }
-    default:
-      return { color: token.colorTextSecondary, bg: token.colorFillSecondary }
-  }
-}
-
 export function HrCandidatesPage() {
   const { token } = theme.useToken()
-  const location = useLocation()
+  const [applications, setApplications] = useState<ApiApplication[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
-  const [jobId, setJobId] = useState<string | undefined>(undefined)
-  const [status, setStatus] = useState<ApplicationStatus | 'all'>('all')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [updatingId, setUpdatingId] = useState<string | null>(null)
 
-  const rows = useMemo(() => listJobApplications(), [location.key])
+  const fetchApplications = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const res = await apiClient.get('/dashboard/applications')
+      setApplications(res.data.data.applications ?? [])
+    } catch (err: any) {
+      setError(err.response?.data?.message ?? 'Failed to load applications')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchApplications()
+  }, [fetchApplications])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
-    return rows.filter((a) => {
-      if (jobId && a.jobId !== jobId) return false
-      if (status !== 'all' && a.status !== status) return false
+    return applications.filter((a) => {
+      if (statusFilter !== 'all' && a.hr_status !== statusFilter) return false
       if (!q) return true
       const blob = [
-        a.jobTitle,
-        a.company,
-        a.resumeFileName,
-        a.applicantDisplayName,
-        a.applicantEmail,
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase()
+        a.candidates.users.full_name,
+        a.candidates.users.email,
+        a.jobs.title,
+        a.jobs.companies.name,
+      ].filter(Boolean).join(' ').toLowerCase()
       return blob.includes(q)
     })
-  }, [rows, search, jobId, status])
+  }, [applications, search, statusFilter])
 
-  const columns: ColumnsType<StoredJobApplication> = [
+  const handleStatusChange = async (applicationId: string, newStatus: string) => {
+    setUpdatingId(applicationId)
+    try {
+      await apiClient.patch(`/dashboard/applications/${applicationId}/status`, { status: newStatus })
+      message.success(`Status updated to ${newStatus}`)
+      // Optimistically update local state
+      setApplications((prev) =>
+        prev.map((a) => (a.id === applicationId ? { ...a, hr_status: newStatus } : a))
+      )
+    } catch (err: any) {
+      message.error(err.response?.data?.message ?? 'Failed to update status')
+    } finally {
+      setUpdatingId(null)
+    }
+  }
+
+  const columns: ColumnsType<ApiApplication> = [
     {
       title: 'Applied',
-      dataIndex: 'appliedAt',
-      key: 'appliedAt',
-      width: 200,
-      render: (iso: string) => <Text type="secondary">{formatAppliedDate(iso)}</Text>,
+      dataIndex: 'applied_at',
+      key: 'applied_at',
+      width: 180,
+      render: (d: string) => <Text type="secondary">{formatDate(d)}</Text>,
     },
     {
       title: 'Candidate',
       key: 'candidate',
       ellipsis: true,
       render: (_, a) => (
-        <div>
-          <Text strong>{a.applicantDisplayName ?? '—'}</Text>
-          <br />
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {a.applicantEmail ?? '—'}
-          </Text>
-        </div>
+        <Flex align="center" gap={8}>
+          <Avatar size={36} src={a.candidates.users.avatar_url}>
+            {a.candidates.users.full_name?.[0] ?? '?'}
+          </Avatar>
+          <div>
+            <Text strong style={{ display: 'block' }}>{a.candidates.users.full_name}</Text>
+            <Text type="secondary" style={{ fontSize: 12 }}>{a.candidates.users.email}</Text>
+          </div>
+        </Flex>
       ),
     },
     {
@@ -95,46 +149,41 @@ export function HrCandidatesPage() {
       ellipsis: true,
       render: (_, a) => (
         <div>
-          <Text strong>{a.jobTitle}</Text>
+          <Text strong>{a.jobs.title}</Text>
           <br />
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {a.company}
-          </Text>
+          <Text type="secondary" style={{ fontSize: 12 }}>{a.jobs.companies.name}</Text>
         </div>
       ),
     },
     {
       title: 'Status',
-      dataIndex: 'status',
       key: 'status',
-      width: 140,
-      render: (s: ApplicationStatus) => {
-        const c = statusTagColor(s, token)
-        return (
-          <Tag bordered={false} style={{ margin: 0, color: c.color, background: c.bg, fontWeight: 600 }}>
-            {STATUS_LABEL[s]}
-          </Tag>
-        )
-      },
-    },
-    {
-      title: 'Resume',
-      dataIndex: 'resumeFileName',
-      key: 'resume',
-      ellipsis: true,
-      width: 160,
-      render: (name: string) => <Text type="secondary">{name}</Text>,
+      width: 200,
+      render: (_, a) => (
+        <Select
+          size="small"
+          value={a.hr_status}
+          loading={updatingId === a.id}
+          disabled={updatingId === a.id}
+          onChange={(val) => handleStatusChange(a.id, val)}
+          style={{ minWidth: 140 }}
+          options={HR_STATUS_OPTIONS.filter((o) => o.value !== 'all').map((o) => ({
+            value: o.value,
+            label: (
+              <Tag color={STATUS_COLOR[o.value]} style={{ margin: 0 }}>{o.label}</Tag>
+            ),
+          }))}
+        />
+      ),
     },
     {
       title: '',
       key: 'actions',
-      width: 100,
+      width: 80,
       fixed: 'right',
       render: (_, a) => (
         <Link to={`/hr/candidate/${a.id}`}>
-          <Button type="link" icon={<EyeOutlined />} style={{ padding: 0 }}>
-            View
-          </Button>
+          <Button type="link" icon={<EyeOutlined />} style={{ padding: 0 }}>View</Button>
         </Link>
       ),
     },
@@ -148,59 +197,47 @@ export function HrCandidatesPage() {
             Candidates
           </Title>
           <Text type="secondary" style={{ fontWeight: 500 }}>
-            Applications submitted from public and candidate job flows (demo data in local storage).
+            All applications from the live database.
           </Text>
         </div>
+
+        {error && <Alert type="error" message={error} closable onClose={() => setError(null)} />}
 
         <Card
           variant="borderless"
           style={{
             borderRadius: token.borderRadiusLG * 1.25,
             border: `1px solid ${token.colorBorderSecondary}`,
-            background: token.colorBgContainer,
             boxShadow: token.boxShadowTertiary,
           }}
         >
-          <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
+          <Flex vertical gap={token.marginMD}>
             <Flex wrap gap={12}>
               <Input
                 allowClear
-                placeholder="Search name, email, job, company, file…"
+                placeholder="Search name, email, role, company…"
                 prefix={<SearchOutlined style={{ color: token.colorTextTertiary }} />}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 style={{ maxWidth: 360, minWidth: 200, flex: 1 }}
               />
               <Select
-                allowClear
-                placeholder="All jobs"
-                style={{ minWidth: 220 }}
-                value={jobId}
-                onChange={(v) => setJobId(v)}
-                options={candidateJobs.map((j) => ({ label: `${j.title} · ${j.company}`, value: j.id }))}
-              />
-              <Select<ApplicationStatus | 'all'>
-                style={{ minWidth: 160 }}
-                value={status}
-                onChange={(v) => setStatus(v)}
-                options={[
-                  { label: 'All statuses', value: 'all' },
-                  { label: STATUS_LABEL.applied, value: 'applied' },
-                  { label: STATUS_LABEL.interviewing, value: 'interviewing' },
-                  { label: STATUS_LABEL.under_review, value: 'under_review' },
-                  { label: STATUS_LABEL.closed, value: 'closed' },
-                ]}
+                style={{ minWidth: 180 }}
+                value={statusFilter}
+                onChange={setStatusFilter}
+                options={HR_STATUS_OPTIONS}
               />
             </Flex>
 
-            <Table<StoredJobApplication>
+            <Table<ApiApplication>
               rowKey="id"
               columns={columns}
               dataSource={filtered}
-              pagination={{ pageSize: 10, showSizeChanger: true, pageSizeOptions: [10, 20, 50] }}
+              loading={loading}
+              pagination={{ pageSize: 15, showSizeChanger: true, pageSizeOptions: [15, 30, 50] }}
               scroll={{ x: 900 }}
             />
-          </Space>
+          </Flex>
         </Card>
       </Flex>
     </div>

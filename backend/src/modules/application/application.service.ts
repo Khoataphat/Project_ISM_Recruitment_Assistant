@@ -1,31 +1,29 @@
-import { ApplicationStatus, AiProcessingStatus } from "@prisma/client";
+import { processing_status, hr_status } from "@prisma/client";
 import { prisma } from "../../../prisma/prisma.service";
-import { dispatchEmail } from "../email/email.worker";
-import { scoreApplicationWithAi, serializeApplication, serializeApplications } from "./ai.service";
 
 export const submitApplication = async (data: {
-    userId: number;
-    jobId: number;
-    resumeUrl: string;
-    coverLetter?: string;
+    candidateId: string;
+    jobId: string;
+    cv_url: string;
+    cover_letter?: string;
 }) => {
-    const { userId, jobId, resumeUrl, coverLetter } = data;
+    const { candidateId, jobId, cv_url, cover_letter } = data;
 
-    const job = await prisma.job.findUnique({ where: { jobId } });
+    const job = await prisma.jobs.findUnique({ where: { id: jobId } });
     if (!job) {
         const error: any = new Error("Job not found");
         error.code = "JOB_NOT_FOUND";
         throw error;
     }
 
-    if (job.status !== "open") {
+    if (job.status !== "Open") {
         const error: any = new Error("Job is not accepting applications");
         error.code = "JOB_CLOSED";
         throw error;
     }
 
-    const existing = await prisma.application.findFirst({
-        where: { userId, jobId },
+    const existing = await prisma.applications.findUnique({
+        where: { applications_unique_per_job: { job_id: jobId, candidate_id: candidateId } },
     });
     if (existing) {
         const error: any = new Error("Already applied");
@@ -33,164 +31,89 @@ export const submitApplication = async (data: {
         throw error;
     }
 
-    const user = await prisma.user.findUnique({ where: { userId } });
-
-    const application = await prisma.application.create({
+    const application = await prisma.applications.create({
         data: {
-            userId,
-            jobId,
-            resumeUrl,
-            coverLetter,
-            aiStatus: AiProcessingStatus.PENDING,
+            job_id: jobId,
+            candidate_id: candidateId,
+            cv_url,
+            cover_letter,
+            processing_status: processing_status.Pending,
+            hr_status: hr_status.Pending,
         },
     });
 
-    if (user) {
-        dispatchEmail({
-            type: "thank-you",
-            to: user.email,
-            fullName: user.fullName,
-            jobTitle: job.title,
+    // Increment application count on the job
+    await prisma.jobs.update({
+        where: { id: jobId },
+        data: { application_count: { increment: 1 } },
+    });
+
+    return application;
+};
+
+export const getApplicationsByCandidate = async (candidateId: string) => {
+    return prisma.applications.findMany({
+        where: { candidate_id: candidateId },
+        include: {
+            jobs: {
+                select: {
+                    id: true,
+                    title: true,
+                    status: true,
+                    companies: { select: { name: true, logo_url: true } },
+                },
+            },
+        },
+        orderBy: { applied_at: "desc" },
+    });
+};
+
+export const getApplicationById = async (applicationId: string) => {
+    const application = await prisma.applications.findUnique({
+        where: { id: applicationId },
+        include: {
+            candidates: {
+                include: {
+                    users: { select: { id: true, full_name: true, email: true, phone: true, avatar_url: true } },
+                },
+            },
+            jobs: {
+                select: {
+                    id: true,
+                    title: true,
+                    companies: { select: { name: true, logo_url: true } },
+                },
+            },
+        },
+    });
+
+    if (!application) return null;
+
+    // Mark viewed
+    if (!application.viewed_by_hr_at) {
+        await prisma.applications.update({
+            where: { id: applicationId },
+            data: { viewed_by_hr_at: new Date() },
         });
     }
 
-    return scoreApplicationWithAi(application.applicationId);
+    return application;
 };
 
-export const getApplicationsByUser = async (userId: number) => {
-    const applications = await prisma.application.findMany({
-        where: { userId },
-        include: { job: { select: { title: true, status: true } } },
-        orderBy: { submittedAt: "desc" },
-    });
-
-    return serializeApplications(applications);
-};
-
-export const getApplicationById = async (applicationId: number) => {
-    const application = await prisma.application.findUnique({
-        where: { applicationId },
-        include: {
-            user: {
-                select: {
-                    userId: true,
-                    email: true,
-                    fullName: true,
-                    phoneNumber: true,
-                    candidateProfile: {
-                        include: {
-                            educations: true,
-                            skills: true,
-                        },
-                    },
-                },
-            },
-            job: { select: { jobId: true, title: true } },
-        },
-    });
-
-    if (!application) {
-        return null;
-    }
-
-    await prisma.application.update({
-        where: { applicationId },
-        data: {
-            viewedByHrAt: application.viewedByHrAt ?? new Date(),
-        },
-    });
-
-    return serializeApplication({
-        ...application,
-        viewedByHrAt: application.viewedByHrAt ?? new Date(),
-    });
-};
-
-export const acceptApplication = async (
-    applicationId: number,
-    reviewedBy: number,
-    interviewDate: string,
-    interviewLocation: string,
-    hrName: string,
+export const updateApplicationStatus = async (
+    applicationId: string,
+    status: hr_status,
+    hrNote?: string,
 ) => {
-    const application = await prisma.application.findUnique({
-        where: { applicationId },
-        include: {
-            user: { select: { email: true, fullName: true } },
-            job: { select: { title: true } },
-        },
-    });
-
+    const application = await prisma.applications.findUnique({ where: { id: applicationId } });
     if (!application) {
         const error: any = new Error("Application not found");
         error.code = "APPLICATION_NOT_FOUND";
         throw error;
     }
 
-    if (application.status !== ApplicationStatus.PENDING) {
-        const error: any = new Error("Application already reviewed");
-        error.code = "ALREADY_REVIEWED";
-        throw error;
-    }
-
-    const updated = await prisma.application.update({
-        where: { applicationId },
-        data: {
-            status: ApplicationStatus.ACCEPTED,
-            reviewedAt: new Date(),
-            reviewedBy,
-        },
+    return prisma.applications.update({
+        where: { id: applicationId },
+        data: { hr_status: status, hr_note: hrNote },
     });
-
-    dispatchEmail({
-        type: "interview-invitation",
-        to: application.user.email,
-        fullName: application.user.fullName,
-        jobTitle: application.job.title,
-        interviewDate,
-        interviewLocation,
-        hrName,
-    });
-
-    return serializeApplication(updated);
-};
-
-export const rejectApplication = async (applicationId: number, reviewedBy: number) => {
-    const application = await prisma.application.findUnique({
-        where: { applicationId },
-        include: {
-            user: { select: { email: true, fullName: true } },
-            job: { select: { title: true } },
-        },
-    });
-
-    if (!application) {
-        const error: any = new Error("Application not found");
-        error.code = "APPLICATION_NOT_FOUND";
-        throw error;
-    }
-
-    if (application.status !== ApplicationStatus.PENDING) {
-        const error: any = new Error("Application already reviewed");
-        error.code = "ALREADY_REVIEWED";
-        throw error;
-    }
-
-    const updated = await prisma.application.update({
-        where: { applicationId },
-        data: {
-            status: ApplicationStatus.REJECTED,
-            reviewedAt: new Date(),
-            reviewedBy,
-        },
-    });
-
-    dispatchEmail({
-        type: "rejection",
-        to: application.user.email,
-        fullName: application.user.fullName,
-        jobTitle: application.job.title,
-    });
-
-    return serializeApplication(updated);
 };

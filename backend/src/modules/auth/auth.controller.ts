@@ -14,10 +14,10 @@ import bcrypt from 'bcrypt';
 
 const register = async (req: Request, res: Response) => {
     try {
-        const { email, password, fullName } = req.body;
+        const { email, password, fullName, role } = req.body;
 
-        const user = await createUser({ email, password, fullName });
-        const { accessToken } = generateTokens(user.userId, user.role, res);
+        const user = await createUser({ email, password, fullName, role });
+        const { accessToken } = generateTokens(user.id, user.role, res);
 
         res.status(201).json({
             status: "success",
@@ -41,32 +41,34 @@ const login = async (req: Request, res: Response) => {
             return res.status(401).json({ status: "error", message: "Invalid email or password" });
         }
 
-        const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+        const isPasswordValid = await bcrypt.compare(password, user.password_hash);
         if (!isPasswordValid) {
             return res.status(401).json({ status: "error", message: "Invalid email or password" });
         }
 
-        if (!user.isVerified) {
-            return res.status(403).json({ status: "error", message: "Please verify your email before logging in" });
+        if (user.is_active === false) {
+            return res.status(403).json({ status: "error", message: "Account is disabled" });
         }
 
-        const { accessToken } = generateTokens(user.userId, user.role, res);
+        const { accessToken } = generateTokens(user.id, user.role, res);
+        const profileId = user.role === "HR" ? (user as any).hr_profiles?.id : (user as any).candidates?.id;
 
         res.status(200).json({
             status: "success",
             data: {
                 user: {
-                    userId: user.userId,
+                    id: user.id,
+                    full_name: user.full_name,
                     email: user.email,
-                    fullName: user.fullName,
-                    role: user.role,
+                    role: user.role === "User" ? "CANDIDATE" : user.role,
+                    profile_id: profileId,
                 },
                 token: accessToken,
             },
         });
-    } catch (err) {
+    } catch (err: any) {
         console.error("Login error:", err);
-        res.status(500).json({ status: "error", message: "Internal server error" });
+        res.status(500).json({ status: "error", message: err.message, stack: err.stack });
     }
 };
 

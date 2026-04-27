@@ -1,35 +1,71 @@
 import { ArrowLeftOutlined, FilePdfOutlined } from '@ant-design/icons'
 import {
+  Alert,
+  Avatar,
   Breadcrumb,
   Button,
   Card,
   Descriptions,
   Flex,
-  Image,
   Result,
   Select,
   Space,
+  Spin,
   Tag,
   Typography,
   message,
   theme,
 } from 'antd'
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-
-import type { ApplicationStatus } from '@/lib/candidateApplicationsStorage'
-import { getJobApplicationById, updateJobApplicationStatus } from '@/lib/candidateApplicationsStorage'
+import { apiClient } from '@/lib/api'
 
 const { Title, Text } = Typography
 
-const STATUS_LABEL: Record<ApplicationStatus, string> = {
-  applied: 'Applied',
-  interviewing: 'Interviewing',
-  under_review: 'Under review',
-  closed: 'Closed',
+type ApplicationDetail = {
+  id: string
+  cv_url: string
+  cover_letter?: string
+  hr_status: string
+  hr_note?: string
+  processing_status: string
+  applied_at: string
+  jobs: {
+    id: string
+    title: string
+    companies: { name: string; logo_url?: string }
+  }
+  candidates: {
+    id: string
+    years_of_experience?: number
+    users: {
+      full_name: string
+      email: string
+      phone?: string
+      avatar_url?: string
+    }
+  }
 }
 
-function formatAppliedDate(iso: string) {
+const HR_STATUS_OPTIONS = [
+  { value: 'Pending', label: 'Pending' },
+  { value: 'Shortlisted', label: 'Shortlisted' },
+  { value: 'Interviewing', label: 'Interviewing' },
+  { value: 'Offered', label: 'Offered' },
+  { value: 'Accepted', label: 'Accepted' },
+  { value: 'Rejected', label: 'Rejected' },
+]
+
+const STATUS_COLOR: Record<string, string> = {
+  Pending: 'default',
+  Shortlisted: 'blue',
+  Interviewing: 'processing',
+  Offered: 'gold',
+  Accepted: 'success',
+  Rejected: 'error',
+}
+
+function formatDate(iso: string) {
   try {
     return new Intl.DateTimeFormat(undefined, { dateStyle: 'full', timeStyle: 'short' }).format(new Date(iso))
   } catch {
@@ -40,19 +76,64 @@ function formatAppliedDate(iso: string) {
 export function HrCandidateDetailsPage() {
   const { id } = useParams()
   const { token } = theme.useToken()
-  const [version, setVersion] = useState(0)
+  const [app, setApp] = useState<ApplicationDetail | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [updating, setUpdating] = useState(false)
 
-  const app = useMemo(() => {
-    void version
-    return getJobApplicationById(id)
-  }, [id, version])
+  useEffect(() => {
+    const fetchDetail = async () => {
+      if (!id) return
+      try {
+        setLoading(true)
+        setError(null)
+        const res = await apiClient.get(`/dashboard/applications/${id}`)
+        setApp(res.data.data)
+      } catch (err: any) {
+        if (err.response?.status === 404) {
+          setApp(null)
+        } else {
+          setError(err.response?.data?.message ?? 'Failed to load application')
+        }
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchDetail()
+  }, [id])
+
+  const handleStatusChange = async (newStatus: string) => {
+    if (!app) return
+    setUpdating(true)
+    try {
+      await apiClient.patch(`/dashboard/applications/${app.id}/status`, { status: newStatus })
+      setApp({ ...app, hr_status: newStatus })
+      message.success(`Status updated to ${newStatus}`)
+    } catch (err: any) {
+      message.error(err.response?.data?.message ?? 'Failed to update status')
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <Flex justify="center" align="center" style={{ minHeight: 300 }}>
+        <Spin size="large" />
+      </Flex>
+    )
+  }
+
+  if (error) {
+    return <Alert type="error" message={error} style={{ margin: 24 }} />
+  }
 
   if (!app) {
     return (
       <Result
         status="404"
         title="Application not found"
-        subTitle="This application id is invalid or was removed."
+        subTitle="This application ID is invalid or was removed."
         extra={
           <Link to="/hr/candidates">
             <Button type="primary">Back to candidates</Button>
@@ -60,16 +141,6 @@ export function HrCandidateDetailsPage() {
         }
       />
     )
-  }
-
-  const handleStatusChange = (next: ApplicationStatus) => {
-    const updated = updateJobApplicationStatus(app.id, next)
-    if (updated) {
-      message.success('Status updated')
-      setVersion((v) => v + 1)
-    } else {
-      message.error('Could not update status')
-    }
   }
 
   return (
@@ -84,12 +155,20 @@ export function HrCandidateDetailsPage() {
         />
 
         <Flex justify="space-between" align="flex-start" wrap gap={16}>
-          <div>
-            <Title level={2} style={{ margin: 0, fontWeight: 800 }}>
-              {app.applicantDisplayName ?? 'Candidate'}
-            </Title>
-            <Text type="secondary">{app.applicantEmail ?? '—'}</Text>
-          </div>
+          <Flex align="center" gap={16}>
+            <Avatar size={56} src={app.candidates.users.avatar_url} style={{ flexShrink: 0 }}>
+              {app.candidates.users.full_name?.[0] ?? '?'}
+            </Avatar>
+            <div>
+              <Title level={2} style={{ margin: 0, fontWeight: 800 }}>
+                {app.candidates.users.full_name}
+              </Title>
+              <Text type="secondary">{app.candidates.users.email}</Text>
+              {app.candidates.users.phone && (
+                <Text type="secondary"> · {app.candidates.users.phone}</Text>
+              )}
+            </div>
+          </Flex>
           <Link to="/hr/candidates">
             <Button icon={<ArrowLeftOutlined />}>Back to list</Button>
           </Link>
@@ -103,74 +182,91 @@ export function HrCandidateDetailsPage() {
             boxShadow: token.boxShadowTertiary,
           }}
         >
-          <Space orientation="vertical" size="large" style={{ width: '100%' }}>
+          <Space direction="vertical" size="large" style={{ width: '100%' }}>
+            {/* Job Info + Status Control */}
             <Flex align="center" gap={16} wrap>
-              <div
-                style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: token.borderRadiusLG,
-                  background: token.colorFillAlter,
-                  border: `1px solid ${token.colorBorderSecondary}`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: 8,
-                }}
-              >
-                <Image src={app.logoUrl} alt="" preview={false} style={{ width: '100%', objectFit: 'contain' }} />
-              </div>
+              {app.jobs.companies.logo_url && (
+                <Avatar size={56} src={app.jobs.companies.logo_url} shape="square"
+                  style={{ borderRadius: token.borderRadiusLG, border: `1px solid ${token.colorBorderSecondary}` }}
+                />
+              )}
               <div style={{ flex: 1, minWidth: 200 }}>
-                <Title level={4} style={{ margin: 0 }}>
-                  {app.jobTitle}
-                </Title>
-                <Text type="secondary">{app.company}</Text>
+                <Title level={4} style={{ margin: 0 }}>{app.jobs.title}</Title>
+                <Text type="secondary">{app.jobs.companies.name}</Text>
               </div>
               <Flex vertical gap={8} style={{ minWidth: 220 }}>
-                <Text type="secondary" style={{ fontSize: 12, fontWeight: 600 }}>
-                  Pipeline status
-                </Text>
-                <Select<ApplicationStatus>
-                  value={app.status}
+                <Text type="secondary" style={{ fontSize: 12, fontWeight: 600 }}>Pipeline status</Text>
+                <Select
+                  value={app.hr_status}
                   onChange={handleStatusChange}
+                  loading={updating}
+                  disabled={updating}
                   style={{ width: '100%' }}
-                  options={(Object.keys(STATUS_LABEL) as ApplicationStatus[]).map((k) => ({
-                    value: k,
-                    label: STATUS_LABEL[k],
+                  options={HR_STATUS_OPTIONS.map((o) => ({
+                    value: o.value,
+                    label: <Tag color={STATUS_COLOR[o.value]} style={{ margin: 0 }}>{o.label}</Tag>,
                   }))}
                 />
               </Flex>
             </Flex>
 
+            {/* Quick action buttons */}
+            <Flex gap={8} wrap>
+              {['Shortlisted', 'Interviewing', 'Accepted', 'Rejected'].map((s) => (
+                <Button
+                  key={s}
+                  size="small"
+                  type={app.hr_status === s ? 'primary' : 'default'}
+                  danger={s === 'Rejected'}
+                  loading={updating}
+                  onClick={() => handleStatusChange(s)}
+                  disabled={app.hr_status === s}
+                >
+                  {s}
+                </Button>
+              ))}
+            </Flex>
+
             <Descriptions
               column={1}
               size="small"
-              labelStyle={{ width: 160, fontWeight: 600, color: token.colorTextSecondary }}
+              labelStyle={{ width: 180, fontWeight: 600, color: token.colorTextSecondary }}
             >
               <Descriptions.Item label="Application ID">
                 <Text code>{app.id}</Text>
               </Descriptions.Item>
-              <Descriptions.Item label="Job ID">
-                <Link to={`/hr/job/${app.jobId}`}>
-                  <Text code>{app.jobId}</Text>
+              <Descriptions.Item label="Job">
+                <Link to={`/hr/job/${app.jobs.id}`}>
+                  <Text code>{app.jobs.id}</Text>
                 </Link>
               </Descriptions.Item>
-              <Descriptions.Item label="Applied at">{formatAppliedDate(app.appliedAt)}</Descriptions.Item>
-              <Descriptions.Item label="Resume file">{app.resumeFileName}</Descriptions.Item>
+              <Descriptions.Item label="Applied at">{formatDate(app.applied_at)}</Descriptions.Item>
+              <Descriptions.Item label="AI Processing">{app.processing_status}</Descriptions.Item>
+              {app.candidates.years_of_experience !== undefined && (
+                <Descriptions.Item label="Experience">
+                  {app.candidates.years_of_experience} years
+                </Descriptions.Item>
+              )}
+              {app.cover_letter && (
+                <Descriptions.Item label="Cover Letter">
+                  <Text style={{ whiteSpace: 'pre-wrap' }}>{app.cover_letter}</Text>
+                </Descriptions.Item>
+              )}
             </Descriptions>
 
             <Flex gap={12} wrap>
               <Button
                 type="primary"
                 icon={<FilePdfOutlined />}
-                href={app.resumeDataUrl}
-                download={app.resumeFileName}
+                href={app.cv_url}
                 target="_blank"
                 rel="noreferrer"
               >
-                Open / download CV
+                Open / Download CV
               </Button>
-              <Tag style={{ margin: 0, alignSelf: 'center' }}>{STATUS_LABEL[app.status]}</Tag>
+              <Tag style={{ margin: 0, alignSelf: 'center' }} color={STATUS_COLOR[app.hr_status]}>
+                {app.hr_status}
+              </Tag>
             </Flex>
           </Space>
         </Card>

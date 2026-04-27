@@ -30,10 +30,10 @@ export function LoginPage() {
       // Store token via context
       login(user, token)
 
-      message.success(`Welcome back, ${user.fullName}!`)
+      message.success(`Welcome back, ${user.full_name}!`)
 
       // Role-based redirection
-      if (user.role?.toLowerCase() === 'hr') {
+      if (user.role === 'HR') {
         navigate('/hr/dashboard')
       } else {
         navigate('/candidate/jobs')

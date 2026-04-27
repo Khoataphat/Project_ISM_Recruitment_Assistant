@@ -1,20 +1,63 @@
 import { BankOutlined, EnvironmentOutlined } from '@ant-design/icons'
-import { Button, Flex, Image, Pagination, Typography, theme } from 'antd'
-import { useMemo, useState } from 'react'
+import { Button, Flex, Image, Pagination, Typography, theme, Spin, Alert } from 'antd'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
-import { JOB_HEAT_BADGE_LABELS, candidateJobs } from '@/data/candidateJobs'
+import { apiClient } from '@/lib/api'
 
 const { Title, Text, Paragraph } = Typography
 
+type Job = {
+  id: string
+  title: string
+  location: string
+  salary: string
+  tags: string[]
+  description: string
+  companies: {
+    name: string
+    logo_url: string
+  }
+}
+
 export function CandidateJobsPage() {
   const { token } = theme.useToken()
-  const [selectedId, setSelectedId] = useState(() => candidateJobs[0]?.id ?? '')
+  const [jobs, setJobs] = useState<Job[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [selectedId, setSelectedId] = useState<string>('')
+
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        setLoading(true)
+        const res = await apiClient.get('/jobs')
+        const data = res.data.data
+        setJobs(data)
+        if (data.length > 0) {
+          setSelectedId(data[0].id)
+        }
+      } catch (err: any) {
+        setError(err.response?.data?.message ?? 'Failed to fetch jobs')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchJobs()
+  }, [])
 
   const selectedJob = useMemo(
-    () => candidateJobs.find((j) => j.id === selectedId) ?? candidateJobs[0],
-    [selectedId],
+    () => jobs.find((j) => j.id === selectedId) || jobs[0],
+    [jobs, selectedId],
   )
+
+  if (loading) {
+    return (
+      <Flex justify="center" align="center" style={{ minHeight: 500 }}>
+        <Spin size="large" tip="Finding matches..." />
+      </Flex>
+    )
+  }
 
   return (
     <main className="candidate-jobsMain">
@@ -22,17 +65,19 @@ export function CandidateJobsPage() {
         <div className="candidate-jobsHeroOverlay" aria-hidden />
         <div className="candidate-jobsHeroContent">
           <Title id="candidate-jobs-hero-title" level={2} className="candidate-jobsHeroTitle">
-            Architectural Engineering
+            Global Opportunities
           </Title>
-          <Text className="candidate-jobsHeroSubtitle">1,248 open positions in London, UK</Text>
+          <Text className="candidate-jobsHeroSubtitle">{jobs.length} open positions available for you</Text>
         </div>
       </section>
 
       <div className="candidate-jobsContainer">
+        {error && <Alert type="error" message={error} style={{ marginBottom: 24 }} />}
+        
         <div className="candidate-jobsSplit">
           <div className="candidate-jobsListCol">
             <div className="candidate-jobsListInner">
-              {candidateJobs.map((job) => (
+              {jobs.map((job) => (
                 <article
                   key={job.id}
                   className={`candidate-jobCard${job.id === selectedJob?.id ? ' candidate-jobCard--selected' : ''}`}
@@ -52,8 +97,8 @@ export function CandidateJobsPage() {
                       <div className="candidate-jobLogoBox">
                         <Image
                           className="candidate-jobLogo"
-                          src={job.logoUrl}
-                          alt={`${job.company} logo`}
+                          src={job.companies.logo_url}
+                          alt={`${job.companies.name} logo`}
                           preview={false}
                           width={84}
                           height={84}
@@ -63,19 +108,11 @@ export function CandidateJobsPage() {
 
                       <div>
                         <div className="candidate-jobTitleRow">
-                          {job.heatBadge ? (
-                            <span
-                              className={`candidate-jobHeatBadge candidate-jobHeatBadge--${job.heatBadge}`}
-                              aria-label={JOB_HEAT_BADGE_LABELS[job.heatBadge]}
-                            >
-                              {JOB_HEAT_BADGE_LABELS[job.heatBadge]}
-                            </span>
-                          ) : null}
                           <Text className="candidate-jobTitle">{job.title}</Text>
                         </div>
 
                         <Flex className="candidate-jobMeta" align="center" wrap gap={10}>
-                          <Text style={{ color: token.colorTextSecondary, fontWeight: 600 }}>{job.company}</Text>
+                          <Text style={{ color: token.colorTextSecondary, fontWeight: 600 }}>{job.companies.name}</Text>
                           <span className="candidate-dot" />
                           <Text style={{ color: token.colorTextSecondary, fontWeight: 600 }}>{job.location}</Text>
                           <span className="candidate-dot" />
@@ -83,7 +120,7 @@ export function CandidateJobsPage() {
                         </Flex>
 
                         <Flex className="candidate-jobTagList" wrap gap={10}>
-                          {job.tags.map((t) => (
+                          {(job.tags || []).map((t) => (
                             <span key={t} className="candidate-jobTag">
                               {t}
                             </span>
@@ -105,11 +142,11 @@ export function CandidateJobsPage() {
             </div>
 
             <div className="candidate-paginationBar">
-              <Text style={{ color: token.colorTextSecondary }}>Page 1 of 312</Text>
+              <Text style={{ color: token.colorTextSecondary }}>Page 1 of 1</Text>
               <Pagination
                 className="candidate-pagination"
                 current={1}
-                total={312 * 10}
+                total={jobs.length}
                 pageSize={10}
                 showSizeChanger={false}
                 showQuickJumper={false}
@@ -123,24 +160,17 @@ export function CandidateJobsPage() {
                 <div className="candidate-jobPreview">
                   <div className="candidate-jobPreviewMedia">
                     <Image
-                      src={selectedJob.coverImageUrl}
+                      src={selectedJob.companies.logo_url} // Placeholder for cover if missing
                       alt=""
                       preview={false}
                       width="100%"
-                      style={{ height: '100%', objectFit: 'cover' }}
+                      style={{ height: '100%', objectFit: 'cover', filter: 'blur(40px)', opacity: 0.3 }}
                     />
                     <div className="candidate-jobPreviewMediaShade" aria-hidden />
                   </div>
 
                   <div className="candidate-jobPreviewBody">
                     <Flex align="center" wrap gap={10} style={{ marginBottom: 10 }}>
-                      {selectedJob.heatBadge ? (
-                        <span
-                          className={`candidate-jobHeatBadge candidate-jobHeatBadge--lg candidate-jobHeatBadge--${selectedJob.heatBadge}`}
-                        >
-                          {JOB_HEAT_BADGE_LABELS[selectedJob.heatBadge]}
-                        </span>
-                      ) : null}
                       <Title level={3} className="candidate-jobPreviewTitle" style={{ margin: 0, flex: '1 1 200px' }}>
                         {selectedJob.title}
                       </Title>
@@ -149,7 +179,7 @@ export function CandidateJobsPage() {
                     <Flex wrap gap={16} align="center" style={{ marginBottom: 16 }}>
                       <Flex gap={8} align="center">
                         <BankOutlined style={{ fontSize: 16, color: token.colorTextSecondary }} />
-                        <Text style={{ fontWeight: 700, color: token.colorText }}>{selectedJob.company}</Text>
+                        <Text style={{ fontWeight: 700, color: token.colorText }}>{selectedJob.companies.name}</Text>
                       </Flex>
                       <Flex gap={8} align="center">
                         <EnvironmentOutlined style={{ fontSize: 16, color: token.colorTextSecondary }} />
@@ -162,7 +192,7 @@ export function CandidateJobsPage() {
                     </Flex>
 
                     <Flex wrap gap={8} className="candidate-jobPills" style={{ marginBottom: 16 }}>
-                      {selectedJob.tags.map((t) => (
+                      {(selectedJob.tags || []).map((t) => (
                         <span key={t} className="candidate-pill">
                           {t}
                         </span>
@@ -170,10 +200,10 @@ export function CandidateJobsPage() {
                     </Flex>
 
                     <Paragraph
-                      style={{ marginBottom: 20, color: token.colorTextSecondary }}
+                      style={{ marginBottom: 20, color: token.colorTextSecondary, maxHeight: 200, overflow: 'hidden' }}
                       className="candidate-jobPreviewSummary"
                     >
-                      {selectedJob.summary}
+                      {selectedJob.description}
                     </Paragraph>
 
                     <Flex gap={10} wrap>

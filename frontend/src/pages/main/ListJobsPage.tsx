@@ -12,6 +12,7 @@ import {
   ThunderboltOutlined,
 } from '@ant-design/icons'
 import type { ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Avatar,
   Badge,
@@ -27,13 +28,27 @@ import {
   Tag,
   Typography,
   theme,
+  Spin,
+  Alert,
 } from 'antd'
 import { Link } from 'react-router-dom'
 
 import landingHero from '@/assets/images/landing-hero.png'
-import { candidateJobs } from '@/data/candidateJobs'
+import { apiClient } from '@/lib/api'
 
 const { Title, Text, Paragraph } = Typography
+
+type Job = {
+  id: string
+  title: string
+  location: string
+  salary: string
+  tags: string[]
+  companies: {
+    name: string
+    logo_url: string
+  }
+}
 
 function cardGradient(index: number, token: ReturnType<typeof theme.useToken>['token']) {
   const pairs: [string, string][] = [
@@ -56,6 +71,34 @@ function cardGradient(index: number, token: ReturnType<typeof theme.useToken>['t
 
 export function ListJobsPage() {
   const { token } = theme.useToken()
+  const [jobs, setJobs] = useState<Job[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        setLoading(true)
+        const res = await apiClient.get('/jobs')
+        setJobs(res.data.data)
+      } catch (err: any) {
+        setError(err.response?.data?.message ?? 'Failed to fetch jobs')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchJobs()
+  }, [])
+
+  const filteredJobs = jobs.filter((job) => {
+    const q = search.toLowerCase()
+    return (
+      job.title.toLowerCase().includes(q) ||
+      job.companies.name.toLowerCase().includes(q) ||
+      job.location.toLowerCase().includes(q)
+    )
+  })
 
   const statCard = (icon: ReactNode, label: string, value: string) => (
     <Card
@@ -99,8 +142,18 @@ export function ListJobsPage() {
     </Card>
   )
 
+  if (loading) {
+    return (
+      <Flex justify="center" align="center" style={{ minHeight: 400 }}>
+        <Spin size="large" tip="Discovering opportunities..." />
+      </Flex>
+    )
+  }
+
   return (
     <main style={{ maxWidth: 1120, margin: '0 auto', padding: '24px 16px 56px' }}>
+      {error && <Alert type="error" message={error} style={{ marginBottom: 24 }} />}
+
       <Card
         variant="borderless"
         style={{
@@ -134,6 +187,8 @@ export function ListJobsPage() {
                 allowClear
                 placeholder="Search by title, company, or skill…"
                 prefix={<SearchOutlined style={{ color: token.colorTextTertiary }} />}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 style={{
                   maxWidth: 440,
                   borderRadius: token.borderRadiusLG,
@@ -178,8 +233,8 @@ export function ListJobsPage() {
                 <Flex align="center" justify="space-between" gap={12} wrap>
                   <Flex align="center" gap={10}>
                     <Avatar.Group maxCount={3} size="small">
-                      {candidateJobs.map((j) => (
-                        <Avatar key={j.id} src={j.logoUrl} />
+                      {jobs.slice(0, 5).map((j) => (
+                        <Avatar key={j.id} src={j.companies.logo_url} />
                       ))}
                     </Avatar.Group>
                     <Text style={{ fontSize: 12, fontWeight: 600, color: token.colorText }}>
@@ -196,7 +251,7 @@ export function ListJobsPage() {
 
       <Row gutter={[12, 12]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={8}>
-          {statCard(<TeamOutlined />, 'Active roles', `${candidateJobs.length}+`)}
+          {statCard(<TeamOutlined />, 'Active roles', `${jobs.length}+`)}
         </Col>
         <Col xs={24} sm={8}>
           {statCard(<FileSearchOutlined />, 'New this week', '48')}
@@ -223,7 +278,7 @@ export function ListJobsPage() {
       <Divider style={{ margin: '0 0 20px', borderColor: token.colorBorderSecondary }} />
 
       <Row gutter={[16, 16]}>
-        {candidateJobs.map((job, index) => (
+        {filteredJobs.map((job, index) => (
           <Col xs={24} md={12} key={job.id}>
             <Card
               variant="borderless"
@@ -256,7 +311,7 @@ export function ListJobsPage() {
                         }}
                       >
                         <Image
-                          src={job.logoUrl}
+                          src={job.companies.logo_url}
                           alt=""
                           preview={false}
                           style={{ width: '100%', objectFit: 'contain' }}
@@ -272,7 +327,7 @@ export function ListJobsPage() {
                       <Flex align="center" gap={6} wrap style={{ marginTop: 4 }}>
                         <BankOutlined style={{ color: token.colorTextTertiary, fontSize: 13 }} />
                         <Text type="secondary" style={{ fontWeight: 600, fontSize: 13 }}>
-                          {job.company}
+                          {job.companies.name}
                         </Text>
                       </Flex>
                     </div>
@@ -298,7 +353,7 @@ export function ListJobsPage() {
                 </Flex>
 
                 <Flex align="center" gap={8} wrap>
-                  {job.tags.map((t) => (
+                  {(job.tags || []).map((t) => (
                     <Tag key={t} icon={<ThunderboltOutlined />} style={{ margin: 0 }}>
                       {t}
                     </Tag>

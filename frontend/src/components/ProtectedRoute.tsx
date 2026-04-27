@@ -2,6 +2,7 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 
 type ProtectedRouteProps = {
+  /** e.g. ['HR'] or ['CANDIDATE'] */
   allowedRoles?: string[];
 };
 
@@ -12,16 +13,15 @@ export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
     return <Navigate to="/login" replace />;
   }
 
-  const userRole = user.role?.toLowerCase();
+  const userRole = user.role; // 'HR' | 'CANDIDATE'
 
   if (allowedRoles && !allowedRoles.includes(userRole)) {
-    if (userRole === 'hr') {
+    // Role mismatch — redirect to their correct home
+    if (userRole === 'HR') {
       return <Navigate to="/hr/dashboard" replace />;
-    } else if (userRole === 'candidate') {
-      return <Navigate to="/candidate/jobs" replace />;
     }
-    // Default fallback
-    return <Navigate to="/" replace />;
+    // 'CANDIDATE'
+    return <Navigate to="/candidate/jobs" replace />;
   }
 
   return <Outlet />;

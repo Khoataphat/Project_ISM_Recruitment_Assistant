@@ -1,71 +1,105 @@
-import { AiProcessingStatus, ApplicationStatus } from "@prisma/client";
 import { Response } from "express";
 import { AuthRequest } from "../auth/auth.middleware";
 import { prisma } from "../../../prisma/prisma.service";
-import {
-    getApplicationById,
-    acceptApplication,
-    rejectApplication,
-} from "../application/application.service";
-import { findUserById } from "../auth/auth.service";
-import { serializeApplications } from "../application/ai.service";
+import { getApplicationById, updateApplicationStatus } from "../application/application.service";
+import { hr_status } from "@prisma/client";
 
-const statusMap: Record<string, ApplicationStatus> = {
-    pending: ApplicationStatus.PENDING,
-    shortlisted: ApplicationStatus.SHORTLISTED,
-    interviewing: ApplicationStatus.INTERVIEWING,
-    offered: ApplicationStatus.OFFERED,
-    accepted: ApplicationStatus.ACCEPTED,
-    rejected: ApplicationStatus.REJECTED,
-    withdrawn: ApplicationStatus.WITHDRAWN,
+const hrStatusMap: Record<string, hr_status> = {
+    Pending: hr_status.Pending,
+    Shortlisted: hr_status.Shortlisted,
+    Interviewing: hr_status.Interviewing,
+    Offered: hr_status.Offered,
+    Accepted: hr_status.Accepted,
+    Rejected: hr_status.Rejected,
 };
 
-const aiStatusMap: Record<string, AiProcessingStatus> = {
-    pending: AiProcessingStatus.PENDING,
-    processing: AiProcessingStatus.PROCESSING,
-    completed: AiProcessingStatus.COMPLETED,
-    failed: AiProcessingStatus.FAILED,
-};
-
-export const getApplications = async (req: AuthRequest, res: Response) => {
+export const getDashboardStats = async (_req: AuthRequest, res: Response) => {
     try {
-        const { page, limit, status, aiStatus, search, sortBy, sortOrder } = res.locals.query;
-        const skip = (page - 1) * limit;
-
-        const where: any = {};
-        if (status) where.status = statusMap[status];
-        if (aiStatus) where.aiStatus = aiStatusMap[aiStatus];
-        if (search) {
-            where.OR = [
-                { user: { fullName: { contains: search, mode: "insensitive" } } },
-                { user: { email: { contains: search, mode: "insensitive" } } },
-                { job: { title: { contains: search, mode: "insensitive" } } },
-            ];
-        }
-
-        const [applications, total] = await Promise.all([
-            prisma.application.findMany({
-                where,
+        const [totalJobs, totalApplications, totalCandidates, recentApplications] = await Promise.all([
+            prisma.jobs.count({ where: { status: "Open" } }),
+            prisma.applications.count(),
+            prisma.candidates.count(),
+            prisma.applications.findMany({
+                take: 5,
+                orderBy: { applied_at: "desc" },
                 include: {
-                    user: { select: { userId: true, email: true, fullName: true } },
-                    job: { select: { jobId: true, title: true } },
+                    candidates: {
+                        include: {
+                            users: { select: { full_name: true, email: true, avatar_url: true } },
+                        },
+                    },
+                    jobs: { select: { id: true, title: true } },
                 },
-                orderBy: { [sortBy]: sortOrder },
-                skip,
-                take: limit,
             }),
-            prisma.application.count({ where }),
         ]);
 
         res.status(200).json({
             status: "success",
             data: {
-                applications: serializeApplications(applications),
+                stats: {
+                    totalJobs,
+                    totalApplications,
+                    totalCandidates,
+                },
+                recentApplications,
+            },
+        });
+    } catch (err) {
+        console.error("Dashboard stats error:", err);
+        res.status(500).json({ status: "error", message: "Internal server error" });
+    }
+};
+
+export const getApplications = async (req: AuthRequest, res: Response) => {
+    try {
+        const { status, search, page = "1", limit = "20" } = req.query as Record<string, string>;
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+
+        const where: any = {};
+        if (status && hrStatusMap[status]) {
+            where.hr_status = hrStatusMap[status];
+        }
+        if (search) {
+            where.OR = [
+                { candidates: { users: { full_name: { contains: search, mode: "insensitive" } } } },
+                { candidates: { users: { email: { contains: search, mode: "insensitive" } } } },
+                { jobs: { title: { contains: search, mode: "insensitive" } } },
+            ];
+        }
+
+        const [applications, total] = await Promise.all([
+            prisma.applications.findMany({
+                where,
+                include: {
+                    candidates: {
+                        include: {
+                            users: { select: { id: true, full_name: true, email: true, avatar_url: true } },
+                        },
+                    },
+                    jobs: {
+                        select: {
+                            id: true,
+                            title: true,
+                            companies: { select: { name: true, logo_url: true } },
+                        },
+                    },
+                },
+                orderBy: { applied_at: "desc" },
+                skip,
+                take: parseInt(limit),
+            }),
+            prisma.applications.count({ where }),
+        ]);
+
+        res.status(200).json({
+            status: "success",
+            data: {
+                applications,
                 pagination: {
-                    page,
-                    limit,
+                    page: parseInt(page),
+                    limit: parseInt(limit),
                     total,
-                    totalPages: Math.ceil(total / limit),
+                    totalPages: Math.ceil(total / parseInt(limit)),
                 },
             },
         });
@@ -77,8 +111,8 @@ export const getApplications = async (req: AuthRequest, res: Response) => {
 
 export const getApplicationDetail = async (req: AuthRequest, res: Response) => {
     try {
-        const applicationId = Number(req.params.id);
-        const application = await getApplicationById(applicationId);
+        const id = String(req.params.id);
+        const application = await getApplicationById(id);
 
         if (!application) {
             return res.status(404).json({ status: "error", message: "Application not found" });
@@ -91,62 +125,28 @@ export const getApplicationDetail = async (req: AuthRequest, res: Response) => {
     }
 };
 
-export const accept = async (req: AuthRequest, res: Response) => {
+export const patchStatus = async (req: AuthRequest, res: Response) => {
     try {
-        const applicationId = Number(req.params.id);
-        const { interviewDate, interviewLocation } = req.body;
+        const id = String(req.params.id);
+        const { status, hr_note } = req.body;
 
-        const hr = await findUserById(req.userId!);
-        const hrName = hr?.fullName ?? "HR Team";
+        const mappedStatus = hrStatusMap[status];
+        if (!mappedStatus) {
+            return res.status(400).json({ status: "error", message: "Invalid status value" });
+        }
 
-        const updated = await acceptApplication(
-            applicationId, req.userId!, interviewDate, interviewLocation, hrName,
-        );
+        const updated = await updateApplicationStatus(id, mappedStatus, hr_note);
 
         res.status(200).json({
             status: "success",
-            message: "Application accepted and interview invitation sent",
+            message: `Application marked as ${status}`,
             data: updated,
         });
     } catch (err: any) {
-        const errorMap: Record<string, { status: number; message: string }> = {
-            APPLICATION_NOT_FOUND: { status: 404, message: "Application not found" },
-            ALREADY_REVIEWED: { status: 400, message: "Application has already been reviewed" },
-        };
-
-        const mapped = errorMap[err.code];
-        if (mapped) {
-            return res.status(mapped.status).json({ status: "error", message: mapped.message });
+        if (err.code === "APPLICATION_NOT_FOUND") {
+            return res.status(404).json({ status: "error", message: "Application not found" });
         }
-
-        console.error("Dashboard accept error:", err);
-        res.status(500).json({ status: "error", message: "Internal server error" });
-    }
-};
-
-export const reject = async (req: AuthRequest, res: Response) => {
-    try {
-        const applicationId = Number(req.params.id);
-
-        const updated = await rejectApplication(applicationId, req.userId!);
-
-        res.status(200).json({
-            status: "success",
-            message: "Application rejected",
-            data: updated,
-        });
-    } catch (err: any) {
-        const errorMap: Record<string, { status: number; message: string }> = {
-            APPLICATION_NOT_FOUND: { status: 404, message: "Application not found" },
-            ALREADY_REVIEWED: { status: 400, message: "Application has already been reviewed" },
-        };
-
-        const mapped = errorMap[err.code];
-        if (mapped) {
-            return res.status(mapped.status).json({ status: "error", message: mapped.message });
-        }
-
-        console.error("Dashboard reject error:", err);
+        console.error("Dashboard patchStatus error:", err);
         res.status(500).json({ status: "error", message: "Internal server error" });
     }
 };

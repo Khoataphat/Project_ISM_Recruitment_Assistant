@@ -40,7 +40,7 @@ const App = () => (
         <Route path="job/:id" element={<JobDetailsPage />} />
         <Route path="job/:id/status" element={<JobStatusPage />} />
       </Route>
-        <Route element={<ProtectedRoute allowedRoles={['hr']} />}>
+        <Route element={<ProtectedRoute allowedRoles={['HR']} />}>
           <Route path="hr" element={<HrLayout />}>
             <Route path="dashboard" element={<HrDashboardPage />} />
             <Route path="my-job" element={<HrMyJobPage />} />
@@ -50,7 +50,7 @@ const App = () => (
             <Route path="candidate/:id" element={<HrCandidateDetailsPage />} />
           </Route>
         </Route>
-        <Route element={<ProtectedRoute allowedRoles={['candidate']} />}>
+        <Route element={<ProtectedRoute allowedRoles={['CANDIDATE']} />}>
           <Route path="candidate" element={<CandidateLayout />}>
             <Route path="jobs" element={<CandidateJobsPage />} />
             <Route path="applications" element={<CandidateApplicationsPage />} />
