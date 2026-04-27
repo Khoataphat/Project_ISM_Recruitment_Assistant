@@ -8,6 +8,7 @@ import {
     listOpenJobs,
     updateJob,
 } from "./job.service";
+import { prisma } from "../../../prisma/prisma.service";
 
 export const listPublicJobs = async (_req: Request, res: Response) => {
     try {
@@ -19,9 +20,11 @@ export const listPublicJobs = async (_req: Request, res: Response) => {
     }
 };
 
-export const listHrJobs = async (_req: AuthRequest, res: Response) => {
+export const listHrJobs = async (req: AuthRequest, res: Response) => {
     try {
-        const jobs = await listJobsForHr();
+        // Get hr_profile for this user to filter by their jobs only
+        const hrProfile = await prisma.hr_profiles.findUnique({ where: { user_id: req.userId! } });
+        const jobs = await listJobsForHr(hrProfile?.id);
         res.status(200).json({ status: "success", data: jobs });
     } catch (err) {
         console.error("List HR jobs error:", err);
@@ -31,7 +34,7 @@ export const listHrJobs = async (_req: AuthRequest, res: Response) => {
 
 export const getPublicJobDetail = async (req: Request, res: Response) => {
     try {
-        const jobId = Number(req.params.id);
+        const jobId = String(req.params.id);
         const job = await getVisibleJobById(jobId);
 
         if (!job) {
@@ -47,7 +50,7 @@ export const getPublicJobDetail = async (req: Request, res: Response) => {
 
 export const getHrJobDetail = async (req: AuthRequest, res: Response) => {
     try {
-        const jobId = Number(req.params.id);
+        const jobId = String(req.params.id);
         const job = await getJobById(jobId);
 
         if (!job) {
@@ -63,9 +66,16 @@ export const getHrJobDetail = async (req: AuthRequest, res: Response) => {
 
 export const createJobHandler = async (req: AuthRequest, res: Response) => {
     try {
+        // Get HR profile to get company_id and hr_id
+        const hrProfile = await prisma.hr_profiles.findUnique({ where: { user_id: req.userId! } });
+        if (!hrProfile) {
+            return res.status(403).json({ status: "error", message: "No HR profile found" });
+        }
+
         const job = await createJob({
             ...req.body,
-            createdBy: req.userId!,
+            company_id: req.body.company_id || hrProfile.company_id,
+            hr_id: hrProfile.id,
         });
 
         res.status(201).json({
@@ -81,11 +91,8 @@ export const createJobHandler = async (req: AuthRequest, res: Response) => {
 
 export const updateJobHandler = async (req: AuthRequest, res: Response) => {
     try {
-        const jobId = Number(req.params.id);
-        const job = await updateJob(jobId, {
-            ...req.body,
-            updatedBy: req.userId!,
-        });
+        const jobId = String(req.params.id);
+        const job = await updateJob(jobId, req.body);
 
         res.status(200).json({
             status: "success",

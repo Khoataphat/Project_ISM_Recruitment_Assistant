@@ -18,31 +18,27 @@ import {
   Tag,
   Typography,
   theme,
+  Spin,
+  Alert,
 } from 'antd'
 import type { CSSProperties } from 'react'
-import { useMemo, useState } from 'react'
-import { Link, useLocation, useParams } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
 
-import { getCandidateJobById } from '@/data/candidateJobs'
-import type { ApplicationStatus, StoredJobApplication } from '@/lib/candidateApplicationsStorage'
-import { listJobApplications } from '@/lib/candidateApplicationsStorage'
+import { apiClient } from '@/lib/api'
 
 const PIPELINE_BG =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuBmrWT5hOOytaPJF8g5Hg4lP0mNxMaL3NyyHm_hv6YAprmcgngacokNZqQIVIYY_piu4ZjkwwVDDV8uGqjwnrzLIx8BNspsgRMPu-RN7-Q09SLjvzMO5kChuj5XF4ScN2A1JXvWSopmh8wWdc9B-or1gCUTAwzaGkWv3W0VBPlU6xOxvysUw6yPp_K3c1_t-CdY-WCIt-IMm-YA05wboIJmzi5bH_jOMcKIMaLbwYMyrurRxKqSUOgRe4Oc0OOqsE2AGgWS4ygCew'
 
 type PipelineFilter = 'all' | 'interviewing' | 'new'
 
-type PipelineUiStatus = 'interviewing' | 'applied' | 'screening' | 'rejected'
-
 type PipelineRow = {
   applicationId: string
   name: string
   subtitle: string
-  uiStatus: PipelineUiStatus
+  status: string
   appliedAtLabel: string
-  avatarUrl?: string
-  resumeDataUrl: string
-  resumeFileName: string
+  resumeUrl: string
 }
 
 function formatAppliedShort(iso: string) {
@@ -53,66 +49,17 @@ function formatAppliedShort(iso: string) {
   }
 }
 
-function applicationToUiStatus(s: ApplicationStatus): PipelineUiStatus {
-  if (s === 'interviewing') return 'interviewing'
-  if (s === 'applied') return 'applied'
-  if (s === 'under_review') return 'screening'
-  return 'rejected'
-}
-
-function toPipelineRow(a: StoredJobApplication): PipelineRow {
-  return {
-    applicationId: a.id,
-    name: a.applicantDisplayName ?? '—',
-    subtitle: a.applicantEmail ?? a.jobTitle,
-    uiStatus: applicationToUiStatus(a.status),
-    appliedAtLabel: formatAppliedShort(a.appliedAt),
-    avatarUrl: a.applicantAvatarUrl,
-    resumeDataUrl: a.resumeDataUrl,
-    resumeFileName: a.resumeFileName,
-  }
-}
-
-function statusTag(
-  status: PipelineUiStatus,
-  token: ReturnType<typeof theme.useToken>['token'],
-): { label: string; style: CSSProperties } {
-  const base: CSSProperties = {
-    margin: 0,
-    borderRadius: 999,
-    fontSize: 10,
-    fontWeight: 800,
-    letterSpacing: '0.08em',
-    border: 'none',
-    textTransform: 'uppercase',
-  }
-  switch (status) {
-    case 'interviewing':
-      return {
-        label: 'Interviewing',
-        style: { ...base, background: token.colorPrimaryBg, color: token.colorPrimary },
-      }
-    case 'applied':
-      return {
-        label: 'Applied',
-        style: { ...base, background: token.colorSuccessBg, color: token.colorSuccess },
-      }
-    case 'screening':
-      return {
-        label: 'Under review',
-        style: { ...base, background: token.colorFillSecondary, color: token.colorTextSecondary },
-      }
-    default:
-      return {
-        label: 'Closed',
-        style: { ...base, background: token.colorErrorBg, color: token.colorError },
-      }
-  }
+const HR_STATUS_COLOR: Record<string, string> = {
+  Pending: 'default',
+  Shortlisted: 'blue',
+  Interviewing: 'processing',
+  Offered: 'gold',
+  Accepted: 'success',
+  Rejected: 'error',
 }
 
 function CandidateTableRow({ row, token }: { row: PipelineRow; token: ReturnType<typeof theme.useToken>['token'] }) {
   const [hovered, setHovered] = useState(false)
-  const st = statusTag(row.uiStatus, token)
 
   const rowStyle: CSSProperties = {
     padding: `${token.paddingLG}px ${token.paddingLG * 1.5}px`,
@@ -143,22 +90,18 @@ function CandidateTableRow({ row, token }: { row: PipelineRow; token: ReturnType
     >
       <Col xs={24} lg={8}>
         <Flex align="center" gap={token.margin}>
-          {row.avatarUrl ? (
-            <Avatar src={row.avatarUrl} size={48} shape="square" style={{ borderRadius: token.borderRadiusLG }} alt="" />
-          ) : (
-            <Avatar
-              size={48}
-              shape="square"
-              style={{
-                borderRadius: token.borderRadiusLG,
-                background: token.colorFillSecondary,
-                color: token.colorPrimary,
-                fontWeight: 700,
-              }}
-            >
-              {initials}
-            </Avatar>
-          )}
+          <Avatar
+            size={48}
+            shape="square"
+            style={{
+              borderRadius: token.borderRadiusLG,
+              background: token.colorFillSecondary,
+              color: token.colorPrimary,
+              fontWeight: 700,
+            }}
+          >
+            {initials}
+          </Avatar>
           <div>
             <Typography.Text
               strong
@@ -177,7 +120,9 @@ function CandidateTableRow({ row, token }: { row: PipelineRow; token: ReturnType
         </Flex>
       </Col>
       <Col xs={24} lg={5} style={{ textAlign: 'center' }}>
-        <Tag style={st.style}>{st.label}</Tag>
+        <Tag color={HR_STATUS_COLOR[row.status] || 'default'} style={{ borderRadius: 999, fontWeight: 700, textTransform: 'uppercase' }}>
+          {row.status}
+        </Tag>
       </Col>
       <Col xs={24} lg={4} style={{ textAlign: 'center' }}>
         <Typography.Text type="secondary" style={{ fontSize: token.fontSize }}>
@@ -194,9 +139,7 @@ function CandidateTableRow({ row, token }: { row: PipelineRow; token: ReturnType
               boxShadow: token.boxShadowTertiary,
               borderColor: `color-mix(in srgb, ${token.colorBorder} 55%, transparent)`,
             }}
-            aria-label="Resume"
-            href={row.resumeDataUrl}
-            download={row.resumeFileName}
+            href={row.resumeUrl}
             target="_blank"
             rel="noreferrer"
           />
@@ -222,38 +165,59 @@ function CandidateTableRow({ row, token }: { row: PipelineRow; token: ReturnType
 
 export function HrJobDetailsPage() {
   const { id } = useParams()
-  const location = useLocation()
-  const jobId = id ?? ''
   const { token } = theme.useToken()
   const [pipelineFilter, setPipelineFilter] = useState<PipelineFilter>('all')
   const [page, setPage] = useState(1)
+  const [job, setJob] = useState<any>(null)
+  const [applications, setApplications] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const catalogJob = getCandidateJobById(jobId)
-  const appsForJob = useMemo(
-    () => listJobApplications().filter((a) => a.jobId === jobId),
-    [jobId, location.key],
-  )
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!id) return
+      try {
+        setLoading(true)
+        const [jobRes, appsRes] = await Promise.all([
+          apiClient.get(`/jobs/${id}`),
+          apiClient.get('/dashboard/applications'), // Need to filter by jobId in frontend or backend
+        ])
+        setJob(jobRes.data.data)
+        // Filter apps by jobId
+        const filteredApps = appsRes.data.data.filter((a: any) => a.job_id === id)
+        setApplications(filteredApps)
+      } catch (err: any) {
+        setError(err.response?.data?.message ?? 'Failed to fetch job details')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [id])
 
-  const jobTitle = catalogJob?.title ?? appsForJob[0]?.jobTitle
-  const jobLocation = catalogJob?.location ?? '—'
-
-  const pipelineRows = useMemo(() => appsForJob.map(toPipelineRow), [appsForJob])
+  const pipelineRows = useMemo(() => applications.map((a: any) => ({
+    applicationId: a.id,
+    name: a.candidates.users.full_name,
+    subtitle: a.candidates.users.email,
+    status: a.hr_status,
+    appliedAtLabel: formatAppliedShort(a.applied_at),
+    resumeUrl: a.cv_url,
+  })), [applications])
 
   const filteredRows = useMemo(() => {
     if (pipelineFilter === 'all') return pipelineRows
-    if (pipelineFilter === 'interviewing') return pipelineRows.filter((r) => r.uiStatus === 'interviewing')
-    return pipelineRows.filter((r) => r.uiStatus === 'applied' || r.uiStatus === 'screening')
+    if (pipelineFilter === 'interviewing') return pipelineRows.filter((r) => r.status === 'Interviewing')
+    return pipelineRows.filter((r) => r.status === 'Pending')
   }, [pipelineFilter, pipelineRows])
 
   const stats = useMemo(() => {
-    const apps = appsForJob
     return {
-      total: apps.length,
-      applied: apps.filter((a) => a.status === 'applied').length,
-      interviewing: apps.filter((a) => a.status === 'interviewing').length,
-      closed: apps.filter((a) => a.status === 'closed').length,
+      total: applications.length,
+      applied: applications.filter((a) => a.hr_status === 'Pending').length,
+      interviewing: applications.filter((a) => a.hr_status === 'Interviewing').length,
+      closed: applications.filter((a) => a.hr_status === 'Rejected' || a.hr_status === 'Accepted').length,
     }
-  }, [appsForJob])
+  }, [applications])
 
   const pageSize = 4
   const paged = useMemo(() => {
@@ -325,13 +289,17 @@ export function HrJobDetailsPage() {
     )
   }
 
-  if (!jobId || (!catalogJob && appsForJob.length === 0)) {
+  if (loading) {
+    return <Flex justify="center" align="center" style={{ minHeight: 500 }}><Spin size="large" /></Flex>
+  }
+
+  if (error || !job) {
     return (
       <div style={{ maxWidth: 640, margin: '48px auto' }}>
         <Result
           status="404"
           title="Job not found"
-          subTitle="There is no job with this id, or no applications yet."
+          subTitle={error ?? "There is no job with this id."}
           extra={
             <Link to="/hr/jobs">
               <Button type="primary">Back to jobs</Button>
@@ -372,7 +340,7 @@ export function HrJobDetailsPage() {
               separator={<RightOutlined style={{ fontSize: 10, color: token.colorTextTertiary }} />}
             />
             <Typography.Title level={2} style={{ margin: 0, fontWeight: 800, letterSpacing: '-0.02em' }}>
-              {jobTitle ?? 'Role'}
+              {job.title}
             </Typography.Title>
             <Flex gap={token.marginSM} wrap="wrap" style={{ marginTop: token.margin }}>
               <Tag
@@ -412,7 +380,7 @@ export function HrJobDetailsPage() {
                   color: token.colorTextSecondary,
                 }}
               >
-                {jobLocation}
+                {job.location}
               </Tag>
             </Flex>
           </div>

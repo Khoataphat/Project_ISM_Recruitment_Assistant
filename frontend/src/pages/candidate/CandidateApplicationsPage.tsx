@@ -1,31 +1,34 @@
 import { BulbOutlined, FilePdfOutlined } from '@ant-design/icons'
-import { Button, Card, Col, Empty, Flex, Image, Row, Tag, Typography, theme } from 'antd'
-import { useMemo } from 'react'
+import { Button, Card, Col, Empty, Flex, Image, Row, Tag, Typography, theme, Spin, Alert } from 'antd'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
-import type { ApplicationStatus, StoredJobApplication } from '@/lib/candidateApplicationsStorage'
-import { listJobApplications } from '@/lib/candidateApplicationsStorage'
+import { apiClient } from '@/lib/api'
 
 const { Title, Text } = Typography
 
-const statusLabel: Record<ApplicationStatus, string> = {
-  applied: 'Applied',
-  interviewing: 'Interviewing',
-  under_review: 'Under Review',
-  closed: 'Closed',
+type Application = {
+  id: string
+  cv_url: string
+  hr_status: string
+  applied_at: string
+  jobs: {
+    id: string
+    title: string
+    companies: {
+      name: string
+      logo_url: string
+    }
+  }
 }
 
-function statusTagStyle(status: ApplicationStatus, token: ReturnType<typeof theme.useToken>['token']) {
-  switch (status) {
-    case 'interviewing':
-      return { background: token.colorInfoBg, color: token.colorInfo }
-    case 'under_review':
-      return { background: token.colorSuccessBg, color: token.colorSuccess }
-    case 'closed':
-      return { background: token.colorErrorBg, color: token.colorError }
-    default:
-      return { background: token.colorFillSecondary, color: token.colorTextSecondary }
-  }
+const HR_STATUS_COLOR: Record<string, string> = {
+  Pending: 'default',
+  Shortlisted: 'blue',
+  Interviewing: 'processing',
+  Offered: 'gold',
+  Accepted: 'success',
+  Rejected: 'error',
 }
 
 function formatAppliedDate(iso: string) {
@@ -41,10 +44,27 @@ function formatAppliedDate(iso: string) {
 export function CandidateApplicationsPage() {
   const { token } = theme.useToken()
   const navigate = useNavigate()
+  const [applications, setApplications] = useState<Application[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const applications = useMemo(() => listJobApplications(), [])
+  useEffect(() => {
+    const fetchApplications = async () => {
+      try {
+        setLoading(true)
+        const res = await apiClient.get('/applications')
+        setApplications(res.data.data)
+      } catch (err: any) {
+        setError(err.response?.data?.message ?? 'Failed to fetch applications')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchApplications()
+  }, [])
+
   const totalSent = applications.length
-  const interviewCount = applications.filter((a) => a.status === 'interviewing').length
+  const interviewCount = applications.filter((a) => a.hr_status === 'Interviewing').length
 
   const statBoxStyle = {
     background: token.colorBgContainer,
@@ -74,18 +94,17 @@ export function CandidateApplicationsPage() {
     transition: 'background 0.2s ease',
   } as const
 
-  const renderRow = (app: StoredJobApplication) => {
-    const st = statusTagStyle(app.status, token)
+  const renderRow = (app: Application) => {
     return (
       <div
         key={app.id}
         role="button"
         tabIndex={0}
-        onClick={() => navigate(`/candidate/job/${app.jobId}`)}
+        onClick={() => navigate(`/candidate/job/${app.jobs.id}`)}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault()
-            navigate(`/candidate/job/${app.jobId}`)
+            navigate(`/candidate/job/${app.jobs.id}`)
           }
         }}
         style={{ ...rowGridStyle, minWidth: 520 }}
@@ -111,39 +130,39 @@ export function CandidateApplicationsPage() {
             }}
           >
             <Image
-              src={app.logoUrl}
-              alt={`${app.company} logo`}
+              src={app.jobs.companies.logo_url}
+              alt={`${app.jobs.companies.name} logo`}
               preview={false}
               style={{ width: '100%', objectFit: 'contain' }}
             />
           </div>
           <div style={{ minWidth: 0 }}>
             <Text strong style={{ display: 'block', color: token.colorText }}>
-              {app.jobTitle}
+              {app.jobs.title}
             </Text>
             <Text type="secondary" style={{ fontSize: 13 }}>
-              {app.company}
+              {app.jobs.companies.name}
             </Text>
           </div>
         </Flex>
         <div style={{ textAlign: 'center' }}>
           <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>
-            {formatAppliedDate(app.appliedAt)}
+            {formatAppliedDate(app.applied_at)}
           </Text>
         </div>
         <Flex justify="flex-end">
           <Tag
             bordered={false}
+            color={HR_STATUS_COLOR[app.hr_status] || 'default'}
             style={{
               margin: 0,
               fontWeight: 700,
               fontSize: 11,
               padding: '4px 14px',
               borderRadius: 999,
-              ...st,
             }}
           >
-            {statusLabel[app.status]}
+            {app.hr_status}
           </Tag>
         </Flex>
         <Flex justify="flex-end" onClick={(e) => e.stopPropagation()}>
@@ -151,8 +170,7 @@ export function CandidateApplicationsPage() {
             type="link"
             size="small"
             icon={<FilePdfOutlined />}
-            href={app.resumeDataUrl}
-            download={app.resumeFileName}
+            href={app.cv_url}
             target="_blank"
             rel="noreferrer"
             style={{ fontWeight: 600, paddingInline: 4 }}
@@ -161,6 +179,14 @@ export function CandidateApplicationsPage() {
           </Button>
         </Flex>
       </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <Flex justify="center" align="center" style={{ minHeight: 500 }}>
+        <Spin size="large" tip="Loading applications..." />
+      </Flex>
     )
   }
 
@@ -211,6 +237,8 @@ export function CandidateApplicationsPage() {
             </div>
           </Flex>
         </Flex>
+
+        {error && <Alert type="error" message={error} style={{ marginBottom: 24 }} />}
 
         <Row gutter={[32, 32]}>
           <Col xs={24} lg={16}>
@@ -322,7 +350,7 @@ export function CandidateApplicationsPage() {
                 <Flex vertical gap={20} style={{ position: 'relative' }}>
                   <Flex justify="space-between" align="center">
                     <Text type="secondary" style={{ fontWeight: 500 }}>
-                      Profile views (demo)
+                      Profile views
                     </Text>
                     <Text strong style={{ color: token.colorPrimary }}>
                       —
@@ -347,7 +375,7 @@ export function CandidateApplicationsPage() {
                   </div>
                   <Flex justify="space-between" align="center">
                     <Text type="secondary" style={{ fontWeight: 500 }}>
-                      Search appearances (demo)
+                      Search appearances
                     </Text>
                     <Text strong style={{ color: token.colorPrimary }}>
                       —
@@ -403,7 +431,7 @@ export function CandidateApplicationsPage() {
             <Text className="candidate-detailFooterBrand">Editorial Enterprise Recruitment</Text>
             <div style={{ height: 6 }} />
             <Text className="candidate-detailFooterCopy">
-              © 2024 Editorial Enterprise Recruitment. All rights reserved.
+              © 2026 Editorial Enterprise Recruitment. All rights reserved.
             </Text>
           </div>
 

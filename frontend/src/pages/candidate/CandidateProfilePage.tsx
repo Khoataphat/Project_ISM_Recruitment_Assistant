@@ -27,41 +27,39 @@ import {
   Upload,
   message,
   theme,
+  Spin,
 } from 'antd'
 import type { UploadFile } from 'antd'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
-import type { ApplicationStatus } from '@/lib/candidateApplicationsStorage'
-import { fileToDataUrl, listJobApplications } from '@/lib/candidateApplicationsStorage'
-import { addLibraryCv, listLibraryCvs } from '@/lib/candidateCvLibraryStorage'
-import {
-  getCandidateProfile,
-  saveCandidateProfile,
-  touchPasswordChanged,
-  type CandidateProfile,
-} from '@/lib/candidateProfileStorage'
+import { apiClient } from '@/lib/api'
+import { useAuth } from '@/context/AuthContext'
 
 const { Title, Text, Paragraph } = Typography
 
-const statusLabel: Record<ApplicationStatus, string> = {
-  applied: 'Applied',
-  interviewing: 'Interviewing',
-  under_review: 'Under Review',
-  closed: 'Closed',
+type Application = {
+  id: string
+  cv_url: string
+  hr_status: string
+  applied_at: string
+  jobs: {
+    id: string
+    title: string
+    companies: {
+      name: string
+      logo_url: string
+    }
+  }
 }
 
-function statusTagStyle(status: ApplicationStatus, token: ReturnType<typeof theme.useToken>['token']) {
-  switch (status) {
-    case 'interviewing':
-      return { background: token.colorInfoBg, color: token.colorInfo }
-    case 'under_review':
-      return { background: token.colorSuccessBg, color: token.colorSuccess }
-    case 'closed':
-      return { background: token.colorErrorBg, color: token.colorError }
-    default:
-      return { background: token.colorFillSecondary, color: token.colorTextSecondary }
-  }
+const HR_STATUS_COLOR: Record<string, string> = {
+  Pending: 'default',
+  Shortlisted: 'blue',
+  Interviewing: 'processing',
+  Offered: 'gold',
+  Accepted: 'success',
+  Rejected: 'error',
 }
 
 function formatCalendarDate(iso: string) {
@@ -70,23 +68,6 @@ function formatCalendarDate(iso: string) {
   } catch {
     return iso
   }
-}
-
-function formatRelativePast(iso: string) {
-  const then = new Date(iso).getTime()
-  const now = Date.now()
-  const sec = Math.floor((now - then) / 1000)
-  if (sec < 60) return 'just now'
-  const min = Math.floor(sec / 60)
-  if (min < 60) return `${min} minute${min === 1 ? '' : 's'} ago`
-  const hr = Math.floor(min / 60)
-  if (hr < 24) return `${hr} hour${hr === 1 ? '' : 's'} ago`
-  const day = Math.floor(hr / 24)
-  if (day < 30) return `${day} day${day === 1 ? '' : 's'} ago`
-  const mo = Math.floor(day / 30)
-  if (mo < 12) return `${mo} month${mo === 1 ? '' : 's'} ago`
-  const yr = Math.floor(mo / 12)
-  return `${yr} year${yr === 1 ? '' : 's'} ago`
 }
 
 type CvTableRow = {
@@ -99,35 +80,39 @@ type CvTableRow = {
 
 export function CandidateProfilePage() {
   const { token } = theme.useToken()
-  const [profile, setProfile] = useState<CandidateProfile>(() => getCandidateProfile())
-  const [version, setVersion] = useState(0)
-  const refresh = useCallback(() => setVersion((v) => v + 1), [])
+  const { user } = useAuth()
+  const [applications, setApplications] = useState<Application[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const applications = useMemo(() => listJobApplications(), [version])
-  const libraryCvs = useMemo(() => listLibraryCvs(), [version])
+  useEffect(() => {
+    const fetchApplications = async () => {
+      try {
+        setLoading(true)
+        const res = await apiClient.get('/applications')
+        setApplications(res.data.data)
+      } catch (err: any) {
+        setError(err.response?.data?.message ?? 'Failed to fetch applications')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchApplications()
+  }, [])
+
   const latest = applications[0]
 
   const cvRows: CvTableRow[] = useMemo(() => {
-    const fromApps = applications.map((a) => ({
-      key: `app-${a.id}`,
-      fileName: a.resumeFileName,
-      uploadedAt: a.appliedAt,
-      dataUrl: a.resumeDataUrl,
+    return applications.map((a) => ({
+      key: a.id,
+      fileName: a.cv_url.split('/').pop() || 'resume.pdf',
+      uploadedAt: a.applied_at,
+      dataUrl: a.cv_url,
       isPdf: true,
-    }))
-    const fromLib = libraryCvs.map((l) => ({
-      key: `lib-${l.id}`,
-      fileName: l.fileName,
-      uploadedAt: l.uploadedAt,
-      dataUrl: l.dataUrl,
-      isPdf:
-        l.fileName.toLowerCase().endsWith('.pdf') ||
-        l.dataUrl.startsWith('data:application/pdf'),
-    }))
-    return [...fromApps, ...fromLib].sort(
+    })).sort(
       (a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime(),
     )
-  }, [applications, libraryCvs])
+  }, [applications])
 
   const [editOpen, setEditOpen] = useState(false)
   const [pwdOpen, setPwdOpen] = useState(false)
@@ -139,24 +124,26 @@ export function CandidateProfilePage() {
   const [uploading, setUploading] = useState(false)
 
   const openEdit = () => {
-    editForm.setFieldsValue({ displayName: profile.displayName, email: profile.email })
+    editForm.setFieldsValue({ displayName: user?.full_name || '', email: user?.email || '' })
     setEditOpen(true)
   }
 
   const handleDownloadResume = () => {
-    const src = latest?.resumeDataUrl ?? cvRows[0]?.dataUrl
+    const src = latest?.cv_url ?? cvRows[0]?.dataUrl
     if (!src) {
-      message.warning('Add a CV from applications or upload one first.')
+      message.warning('Apply to a job first to see your resume here.')
       return
     }
-    const a = document.createElement('a')
-    a.href = src
-    a.download = latest?.resumeFileName ?? cvRows[0]?.fileName ?? 'resume.pdf'
-    a.rel = 'noreferrer'
-    a.click()
+    window.open(src, '_blank')
   }
 
-  const st = latest ? statusTagStyle(latest.status, token) : null
+  if (loading) {
+    return (
+      <Flex justify="center" align="center" style={{ minHeight: 500 }}>
+        <Spin size="large" tip="Loading profile..." />
+      </Flex>
+    )
+  }
 
   return (
     <main style={{ maxWidth: 1152, margin: '0 auto', paddingTop: 8, paddingBottom: 48 }}>
@@ -190,7 +177,7 @@ export function CandidateProfilePage() {
                       size={128}
                       shape="square"
                       style={{ borderRadius: token.borderRadiusLG }}
-                      src={profile.avatarUrl}
+                      icon={<PlusOutlined />}
                     />
                   </div>
                   <Button
@@ -211,10 +198,10 @@ export function CandidateProfilePage() {
 
                 <div style={{ textAlign: 'left', flex: '1 1 200px', minWidth: 200 }}>
                   <Title level={2} style={{ margin: 0, marginBottom: 4, fontWeight: 900, letterSpacing: '-0.02em' }}>
-                    {profile.displayName}
+                    {user?.full_name}
                   </Title>
                   <Text style={{ fontSize: 17, fontWeight: 500, color: token.colorTextSecondary }}>
-                    {profile.email}
+                    {user?.email}
                   </Text>
                 </div>
               </Flex>
@@ -224,7 +211,7 @@ export function CandidateProfilePage() {
                   Edit profile
                 </Button>
                 <Button type="primary" size="large" style={{ fontWeight: 700 }} onClick={handleDownloadResume}>
-                  Download resume
+                  View resume
                 </Button>
               </Flex>
             </Flex>
@@ -271,12 +258,6 @@ export function CandidateProfilePage() {
                 <Paragraph style={{ marginBottom: 16, fontSize: 13, color: token.colorTextSecondary }}>
                   Protect your account by regularly updating your password and monitoring login activity.
                 </Paragraph>
-                <Flex justify="space-between" align="center" style={{ paddingTop: 12, paddingBottom: 12 }}>
-                  <Text style={{ fontWeight: 500 }}>Password last changed</Text>
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    {formatRelativePast(profile.passwordChangedAt)}
-                  </Text>
-                </Flex>
               </div>
               <Button
                 block
@@ -310,7 +291,7 @@ export function CandidateProfilePage() {
                 Latest application
               </Title>
               {latest ? (
-                <Link to={`/candidate/job/${latest.jobId}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                <Link to={`/candidate/job/${latest.jobs.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                   <Flex
                     vertical
                     gap={16}
@@ -345,7 +326,7 @@ export function CandidateProfilePage() {
                           }}
                         >
                           <Image
-                            src={latest.logoUrl}
+                            src={latest.jobs.companies.logo_url}
                             alt=""
                             width={36}
                             height={36}
@@ -355,33 +336,31 @@ export function CandidateProfilePage() {
                         </div>
                         <div>
                           <Title level={4} style={{ margin: 0, marginBottom: 4 }}>
-                            {latest.jobTitle}
+                            {latest.jobs.title}
                           </Title>
                           <Text style={{ color: token.colorTextSecondary, fontWeight: 500 }}>
-                            {latest.company} • Applied role
+                            {latest.jobs.companies.name} • Applied role
                           </Text>
                         </div>
                       </Flex>
                       <Flex vertical align="flex-end" gap={8}>
-                        {st ? (
-                          <Tag
-                            bordered={false}
-                            style={{
-                              margin: 0,
-                              fontWeight: 700,
-                              fontSize: 11,
-                              padding: '4px 14px',
-                              borderRadius: 999,
-                              textTransform: 'uppercase',
-                              letterSpacing: '0.06em',
-                              ...st,
-                            }}
-                          >
-                            {statusLabel[latest.status]}
-                          </Tag>
-                        ) : null}
+                        <Tag
+                          bordered={false}
+                          color={HR_STATUS_COLOR[latest.hr_status] || 'default'}
+                          style={{
+                            margin: 0,
+                            fontWeight: 700,
+                            fontSize: 11,
+                            padding: '4px 14px',
+                            borderRadius: 999,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.06em',
+                          }}
+                        >
+                          {latest.hr_status}
+                        </Tag>
                         <Text type="secondary" style={{ fontSize: 12 }}>
-                          Applied on {formatCalendarDate(latest.appliedAt)}
+                          Applied on {formatCalendarDate(latest.applied_at)}
                         </Text>
                       </Flex>
                     </Flex>
@@ -437,20 +416,10 @@ export function CandidateProfilePage() {
                   dataSource={cvRows}
                   locale={{
                     emptyText: (
-                      <Empty description="No CVs yet — apply to a job or upload a file." style={{ padding: 24 }}>
-                        <Flex gap={8} justify="center" wrap>
-                          <Link to="/candidate/jobs">
-                            <Button type="primary">Find jobs</Button>
-                          </Link>
-                          <Button
-                            onClick={() => {
-                              setCvUploadList([])
-                              setUploadOpen(true)
-                            }}
-                          >
-                            Upload
-                          </Button>
-                        </Flex>
+                      <Empty description="No CVs yet — apply to a job to see your resumes here." style={{ padding: 24 }}>
+                        <Link to="/candidate/jobs">
+                          <Button type="primary">Find jobs</Button>
+                        </Link>
                       </Empty>
                     ),
                   }}
@@ -528,7 +497,6 @@ export function CandidateProfilePage() {
                           icon={<DownloadOutlined />}
                           aria-label={`Download ${row.fileName}`}
                           href={row.dataUrl}
-                          download={row.fileName}
                           target="_blank"
                           rel="noreferrer"
                           style={{ color: token.colorTextSecondary }}
@@ -557,20 +525,8 @@ export function CandidateProfilePage() {
           form={editForm}
           layout="vertical"
           onFinish={async (v) => {
-            let avatarUrl = profile.avatarUrl
-            const file = editPhotoList[0]?.originFileObj as File | undefined
-            if (file) {
-              avatarUrl = await fileToDataUrl(file)
-            }
-            const next = saveCandidateProfile({
-              displayName: v.displayName.trim(),
-              email: v.email.trim(),
-              avatarUrl,
-            })
-            setProfile(next)
-            setEditPhotoList([])
-            setEditOpen(false)
-            message.success('Profile updated.')
+             message.info('Profile update is coming soon in the production environment.')
+             setEditOpen(false)
           }}
         >
           <Form.Item name="displayName" label="Display name" rules={[{ required: true }]}>
@@ -607,11 +563,8 @@ export function CandidateProfilePage() {
           form={pwdForm}
           layout="vertical"
           onFinish={() => {
-            touchPasswordChanged()
-            setProfile(getCandidateProfile())
-            pwdForm.resetFields()
+            message.info('Password change is coming soon in the production environment.')
             setPwdOpen(false)
-            message.success('Password updated.')
           }}
         >
           <Form.Item
@@ -650,21 +603,8 @@ export function CandidateProfilePage() {
         okText="Add"
         confirmLoading={uploading}
         onOk={async () => {
-          const file = cvUploadList[0]?.originFileObj as File | undefined
-          if (!file) {
-            message.warning('Choose a file to upload.')
-            return
-          }
-          setUploading(true)
-          try {
-            await addLibraryCv(file)
-            refresh()
-            setCvUploadList([])
-            setUploadOpen(false)
-            message.success('CV added to your library.')
-          } finally {
-            setUploading(false)
-          }
+          message.info('CV Library upload is coming soon. Please apply to jobs to upload CVs.')
+          setUploadOpen(false)
         }}
       >
         <Upload.Dragger

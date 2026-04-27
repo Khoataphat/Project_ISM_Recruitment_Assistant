@@ -2,6 +2,7 @@ import { Button, Card, Checkbox, Form, Input, Typography, message } from 'antd'
 import { Link, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { apiClient } from '@/lib/api'
+import { useAuth } from '@/context/AuthContext'
 
 type LoginFormValues = {
   email: string
@@ -11,6 +12,7 @@ type LoginFormValues = {
 
 export function LoginPage() {
   const navigate = useNavigate()
+  const { login } = useAuth()
   const [form] = Form.useForm<LoginFormValues>()
   const [loading, setLoading] = useState(false)
 
@@ -25,14 +27,13 @@ export function LoginPage() {
       const { data } = response.data
       const { user, token } = data
 
-      // Store token
-      localStorage.setItem('accessToken', token)
-      localStorage.setItem('user', JSON.stringify(user))
+      // Store token via context
+      login(user, token)
 
-      message.success(`Welcome back, ${user.fullName}!`)
+      message.success(`Welcome back, ${user.full_name}!`)
 
       // Role-based redirection
-      if (user.role === 'hr') {
+      if (user.role === 'HR') {
         navigate('/hr/dashboard')
       } else {
         navigate('/candidate/jobs')

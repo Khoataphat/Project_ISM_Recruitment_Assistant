@@ -1,39 +1,64 @@
-import { RightOutlined, TeamOutlined } from '@ant-design/icons'
-import { Button, Card, Col, Flex, Row, Space, Table, Tag, Typography, theme } from 'antd'
+import { RightOutlined, PlusOutlined } from '@ant-design/icons'
+import {
+  Alert,
+  Button,
+  Card,
+  Col,
+  Flex,
+  Row,
+  Spin,
+  Table,
+  Tag,
+  Typography,
+  theme,
+} from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { useMemo } from 'react'
-import { Link, useLocation } from 'react-router-dom'
-
-import { candidateJobs } from '@/data/candidateJobs'
-import { listJobApplications } from '@/lib/candidateApplicationsStorage'
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { apiClient } from '@/lib/api'
 
 const { Title, Text } = Typography
 
-type JobRow = {
+type ApiJob = {
   id: string
   title: string
-  company: string
-  location: string
-  applications: number
+  location?: string
+  status: string
+  _count: { applications: number }
+  companies: { name: string; logo_url?: string }
+}
+
+const STATUS_COLOR: Record<string, string> = {
+  Open: 'success',
+  Closed: 'error',
+  Draft: 'default',
 }
 
 export function HrJobsPage() {
   const { token } = theme.useToken()
-  const location = useLocation()
+  const [jobs, setJobs] = useState<ApiJob[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const applications = useMemo(() => listJobApplications(), [location.key])
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        const res = await apiClient.get('/jobs/hr')
+        setJobs(res.data.data ?? [])
+      } catch (err: any) {
+        setError(err.response?.data?.message ?? 'Failed to load jobs')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchJobs()
+  }, [])
 
-  const data: JobRow[] = useMemo(() => {
-    return candidateJobs.map((j) => ({
-      id: j.id,
-      title: j.title,
-      company: j.company,
-      location: j.location,
-      applications: applications.filter((a) => a.jobId === j.id).length,
-    }))
-  }, [applications])
+  const totalApplications = jobs.reduce((sum, j) => sum + (j._count?.applications ?? 0), 0)
 
-  const columns: ColumnsType<JobRow> = [
+  const columns: ColumnsType<ApiJob> = [
     {
       title: 'Role',
       key: 'role',
@@ -41,9 +66,7 @@ export function HrJobsPage() {
         <div>
           <Text strong>{r.title}</Text>
           <br />
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {r.company}
-          </Text>
+          <Text type="secondary" style={{ fontSize: 12 }}>{r.companies.name}</Text>
         </div>
       ),
     },
@@ -52,17 +75,25 @@ export function HrJobsPage() {
       dataIndex: 'location',
       key: 'location',
       width: 200,
-      render: (loc: string) => <Text type="secondary">{loc}</Text>,
+      render: (loc: string) => <Text type="secondary">{loc ?? '—'}</Text>,
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      width: 120,
+      render: (s: string) => (
+        <Tag color={STATUS_COLOR[s] ?? 'default'} style={{ margin: 0, fontWeight: 600 }}>{s}</Tag>
+      ),
     },
     {
       title: 'Applications',
-      dataIndex: 'applications',
       key: 'applications',
       width: 140,
       align: 'center',
-      render: (n: number) => (
-        <Tag icon={<TeamOutlined />} color={n > 0 ? 'blue' : 'default'} style={{ margin: 0 }}>
-          {n}
+      render: (_, r) => (
+        <Tag color={r._count.applications > 0 ? 'blue' : 'default'} style={{ margin: 0 }}>
+          {r._count.applications}
         </Tag>
       ),
     },
@@ -81,17 +112,32 @@ export function HrJobsPage() {
     },
   ]
 
+  if (loading) {
+    return (
+      <Flex justify="center" align="center" style={{ minHeight: 300 }}>
+        <Spin size="large" tip="Loading jobs..." />
+      </Flex>
+    )
+  }
+
   return (
     <div style={{ maxWidth: 1120, margin: '0 auto' }}>
       <Flex vertical gap={token.marginLG}>
-        <div>
-          <Title level={2} style={{ margin: 0, fontWeight: 800, letterSpacing: '-0.02em' }}>
-            Jobs
-          </Title>
-          <Text type="secondary" style={{ fontWeight: 500 }}>
-            Open roles aligned with the candidate job board. Application counts come from submitted CVs (demo).
-          </Text>
-        </div>
+        <Flex justify="space-between" align="center" wrap="wrap" gap={12}>
+          <div>
+            <Title level={2} style={{ margin: 0, fontWeight: 800, letterSpacing: '-0.02em' }}>
+              Jobs
+            </Title>
+            <Text type="secondary" style={{ fontWeight: 500 }}>
+              Live job postings from the database.
+            </Text>
+          </div>
+          <Link to="/hr/my-job">
+            <Button type="primary" icon={<PlusOutlined />}>Post New Job</Button>
+          </Link>
+        </Flex>
+
+        {error && <Alert type="error" message={error} />}
 
         <Card
           variant="borderless"
@@ -101,16 +147,14 @@ export function HrJobsPage() {
             boxShadow: token.boxShadowTertiary,
           }}
         >
-          <Space orientation="vertical" size="large" style={{ width: '100%' }}>
+          <Flex vertical gap={token.marginMD}>
             <Row gutter={[16, 16]}>
               <Col xs={24} md={8}>
                 <Card size="small" style={{ background: token.colorFillAlter, borderColor: token.colorBorderSecondary }}>
                   <Text type="secondary" style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase' }}>
                     Total applications
                   </Text>
-                  <Title level={3} style={{ margin: '8px 0 0' }}>
-                    {applications.length}
-                  </Title>
+                  <Title level={3} style={{ margin: '8px 0 0' }}>{totalApplications}</Title>
                 </Card>
               </Col>
               <Col xs={24} md={8}>
@@ -119,14 +163,19 @@ export function HrJobsPage() {
                     Active job posts
                   </Text>
                   <Title level={3} style={{ margin: '8px 0 0' }}>
-                    {candidateJobs.length}
+                    {jobs.filter((j) => j.status === 'Open').length}
                   </Title>
                 </Card>
               </Col>
             </Row>
 
-            <Table<JobRow> rowKey="id" columns={columns} dataSource={data} pagination={false} />
-          </Space>
+            <Table<ApiJob>
+              rowKey="id"
+              columns={columns}
+              dataSource={jobs}
+              pagination={{ pageSize: 15 }}
+            />
+          </Flex>
         </Card>
       </Flex>
     </div>
