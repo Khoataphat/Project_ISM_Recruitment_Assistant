@@ -1,4 +1,6 @@
 import { BrowserRouter, Route, Routes } from 'react-router'
+import { AuthProvider } from '@/context/AuthContext'
+import { ProtectedRoute } from '@/components/ProtectedRoute'
 
 import { AuthLayout } from '@/layouts/AuthLayout'
 import { CandidateLayout } from '@/layouts/CandidateLayout.tsx'
@@ -22,8 +24,9 @@ import { LoginPage } from '@/pages/auth/LoginPage'
 import { RegisterPage } from '@/pages/auth/RegisterPage'
 
 const App = () => (
-  <BrowserRouter>
-    <Routes>
+  <AuthProvider>
+    <BrowserRouter>
+      <Routes>
       <Route element={<AuthLayout />}>
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />
@@ -37,23 +40,28 @@ const App = () => (
         <Route path="job/:id" element={<JobDetailsPage />} />
         <Route path="job/:id/status" element={<JobStatusPage />} />
       </Route>
-      <Route path="hr" element={<HrLayout />}>
-        <Route path="dashboard" element={<HrDashboardPage />} />
-        <Route path="my-job" element={<HrMyJobPage />} />
-        <Route path="jobs" element={<HrJobsPage />} />
-        <Route path="job/:id" element={<HrJobDetailsPage />} />
-        <Route path="candidates" element={<HrCandidatesPage />} />
-        <Route path="candidate/:id" element={<HrCandidateDetailsPage />} />
-      </Route>
-      <Route path="candidate" element={<CandidateLayout />}>
-        <Route path="jobs" element={<CandidateJobsPage />} />
-        <Route path="applications" element={<CandidateApplicationsPage />} />
-        <Route path="your-applications" element={<CandidateApplicationsPage />} />
-        <Route path="profile" element={<CandidateProfilePage />} />
-        <Route path="job/:id" element={<CandidateJobDetailsPage />} />
-      </Route>
-    </Routes>
-  </BrowserRouter>
+        <Route element={<ProtectedRoute allowedRoles={['hr']} />}>
+          <Route path="hr" element={<HrLayout />}>
+            <Route path="dashboard" element={<HrDashboardPage />} />
+            <Route path="my-job" element={<HrMyJobPage />} />
+            <Route path="jobs" element={<HrJobsPage />} />
+            <Route path="job/:id" element={<HrJobDetailsPage />} />
+            <Route path="candidates" element={<HrCandidatesPage />} />
+            <Route path="candidate/:id" element={<HrCandidateDetailsPage />} />
+          </Route>
+        </Route>
+        <Route element={<ProtectedRoute allowedRoles={['candidate']} />}>
+          <Route path="candidate" element={<CandidateLayout />}>
+            <Route path="jobs" element={<CandidateJobsPage />} />
+            <Route path="applications" element={<CandidateApplicationsPage />} />
+            <Route path="your-applications" element={<CandidateApplicationsPage />} />
+            <Route path="profile" element={<CandidateProfilePage />} />
+            <Route path="job/:id" element={<CandidateJobDetailsPage />} />
+          </Route>
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  </AuthProvider>
 );
 
 export default App;
