@@ -84,7 +84,7 @@ export function LatestJobsSection() {
               <Card
                 className="landing-jobCard shadow-soft-blue-hover"
                 style={{
-                  borderRadius: token.borderRadiusXL,
+                  borderRadius: token.borderRadiusLG,
                   borderColor: token.colorBorderSecondary,
                   background: token.colorBgContainer,
                 }}

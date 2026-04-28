@@ -1,5 +1,7 @@
 import { Button, Card, Checkbox, Form, Input, Typography, message } from 'antd'
 import { Link, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { register } from '@/services/authService'
 
 type RegisterFormValues = {
   fullName: string
@@ -12,6 +14,33 @@ type RegisterFormValues = {
 export function RegisterPage() {
   const navigate = useNavigate()
   const [form] = Form.useForm<RegisterFormValues>()
+  const [loading, setLoading] = useState(false)
+
+  const onFinish = async (values: RegisterFormValues) => {
+    setLoading(true)
+    try {
+      await register({
+        fullName: values.fullName,
+        email: values.email,
+        password: values.password,
+      })
+
+      message.success('Account created successfully')
+      navigate('/login')
+    } catch (err: unknown) {
+      if (err && typeof err === 'object') {
+        const maybe = err as { response?: { data?: { message?: unknown } } }
+        const apiMessage = maybe.response?.data?.message
+        if (typeof apiMessage === 'string' && apiMessage.trim()) {
+          message.error(apiMessage)
+          return
+        }
+      }
+      message.error('Unable to create account. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <Card variant="borderless" styles={{ body: { padding: 0 } }}>
@@ -28,11 +57,7 @@ export function RegisterPage() {
         form={form}
         layout="vertical"
         requiredMark={false}
-        onFinish={(values) => {
-          console.log('register.submit', values)
-          message.success('Account created successfully')
-          navigate('/login')
-        }}
+        onFinish={onFinish}
       >
         <Form.Item
           label="Full Name"
@@ -109,7 +134,7 @@ export function RegisterPage() {
           </Checkbox>
         </Form.Item>
 
-        <Button type="primary" htmlType="submit" size="large" block>
+        <Button type="primary" htmlType="submit" size="large" block loading={loading}>
           Create Account
         </Button>
       </Form>

@@ -1,8 +1,9 @@
 import { Button, Card, Checkbox, Form, Input, Typography, message } from 'antd'
 import { Link, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
-import { apiClient } from '@/lib/api'
+import type { AuthUser } from '@/context/AuthContext'
 import { useAuth } from '@/context/AuthContext'
+import { login as loginService } from '@/services/authService'
 
 type LoginFormValues = {
   email: string
@@ -19,6 +20,16 @@ function getApiErrorMessage(err: unknown, fallback: string) {
   return fallback
 }
 
+function toContextAuthUser(user: Record<string, unknown>): AuthUser {
+  return {
+    id: String(user.id ?? user.userId ?? ''),
+    email: String(user.email ?? ''),
+    role: user.role === 'HR' ? 'HR' : 'CANDIDATE',
+    full_name: String(user.full_name ?? user.fullName ?? ''),
+    profile_id: user.profile_id ? String(user.profile_id) : undefined,
+  }
+}
+
 export function LoginPage() {
   const navigate = useNavigate()
   const { login } = useAuth()
@@ -28,21 +39,19 @@ export function LoginPage() {
   const onFinish = async (values: LoginFormValues) => {
     setLoading(true)
     try {
-      const response = await apiClient.post('/auth/login', {
+      const { user, token } = await loginService({
         email: values.email,
         password: values.password,
       })
-
-      const { data } = response.data
-      const { user, token } = data
+      const contextUser = toContextAuthUser(user)
 
       // Store token via context
-      login(user, token)
+      login(contextUser, token)
 
-      message.success(`Welcome back, ${user.full_name}!`)
+      message.success(`Welcome back, ${contextUser.full_name}!`)
 
       // Role-based redirection
-      if (user.role === 'HR') {
+      if (contextUser.role === 'HR') {
         navigate('/hr/dashboard')
       } else {
         navigate('/candidate/jobs')

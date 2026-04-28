@@ -7,7 +7,7 @@ function readString(key: string, fallback: string) {
 
 export const appEnv = {
   appName: readString('VITE_APP_NAME', 'Editorial Enterprise'),
-  apiUrl: readString('VITE_API_URL', ''),
+  apiUrl: readString('VITE_API_URL', 'http://localhost:3000'),
   appVersion: __APP_VERSION__,
   mode: import.meta.env.MODE,
   isProd: import.meta.env.PROD,
