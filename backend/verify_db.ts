@@ -4,7 +4,7 @@ import { prisma } from './prisma/prisma.service';
 
 async function main() {
   console.log('Fetching database stats...');
-  
+
   const [userCount, companyCount, jobCount, candidateCount, hrProfileCount] = await Promise.all([
     prisma.users.count(),
     prisma.companies.count(),

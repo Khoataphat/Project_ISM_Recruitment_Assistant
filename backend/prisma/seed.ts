@@ -70,7 +70,7 @@ function parseBenefits(benefitsStr: string): string[] {
 
 async function main() {
   console.log('🚀 Starting strict referential seed process...');
-  
+
   const passwordHash = await bcrypt.hash('password123', 10);
 
   // 1. Create Company First
@@ -78,19 +78,19 @@ async function main() {
   const company = await prisma.companies.upsert({
     where: { id: '00000000-0000-0000-0000-000000000001' }, // Static UUID for deterministic seed
     update: {
-        name: 'Editorial Enterprise Recruitment',
-        description: 'Leading technology recruitment firm specialized in AI and data science.',
-        industry: 'Information Technology',
-        website_url: 'https://editorial-recruitment.example.com',
-        logo_url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBmrWT5hOOytaPJF8g5Hg4lP0mNxMaL3NyyHm_hv6YAprmcgngacokNZqQIVIYY_piu4ZjkwwVDDV8uGqjwnrzLIx8BNspsgRMPu-RN7-Q09SLjvzMO5kChuj5XF4ScN2A1JXvWSopmh8wWdc9B-or1gCUTAwzaGkWv3W0VBPlU6xOxvysUw6yPp_K3c1_t-CdY-WCIt-IMm-YA05wboIJmzi5bH_jOMcKIMaLbwYMyrurRxKqSUOgRe4Oc0OOqsE2AGgWS4ygCew',
+      name: 'Editorial Enterprise Recruitment',
+      description: 'Leading technology recruitment firm specialized in AI and data science.',
+      industry: 'Information Technology',
+      website_url: 'https://editorial-recruitment.example.com',
+      logo_url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBmrWT5hOOytaPJF8g5Hg4lP0mNxMaL3NyyHm_hv6YAprmcgngacokNZqQIVIYY_piu4ZjkwwVDDV8uGqjwnrzLIx8BNspsgRMPu-RN7-Q09SLjvzMO5kChuj5XF4ScN2A1JXvWSopmh8wWdc9B-or1gCUTAwzaGkWv3W0VBPlU6xOxvysUw6yPp_K3c1_t-CdY-WCIt-IMm-YA05wboIJmzi5bH_jOMcKIMaLbwYMyrurRxKqSUOgRe4Oc0OOqsE2AGgWS4ygCew',
     },
     create: {
-        id: '00000000-0000-0000-0000-000000000001',
-        name: 'Editorial Enterprise Recruitment',
-        description: 'Leading technology recruitment firm specialized in AI and data science.',
-        industry: 'Information Technology',
-        website_url: 'https://editorial-recruitment.example.com',
-        logo_url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBmrWT5hOOytaPJF8g5Hg4lP0mNxMaL3NyyHm_hv6YAprmcgngacokNZqQIVIYY_piu4ZjkwwVDDV8uGqjwnrzLIx8BNspsgRMPu-RN7-Q09SLjvzMO5kChuj5XF4ScN2A1JXvWSopmh8wWdc9B-or1gCUTAwzaGkWv3W0VBPlU6xOxvysUw6yPp_K3c1_t-CdY-WCIt-IMm-YA05wboIJmzi5bH_jOMcKIMaLbwYMyrurRxKqSUOgRe4Oc0OOqsE2AGgWS4ygCew',
+      id: '00000000-0000-0000-0000-000000000001',
+      name: 'Editorial Enterprise Recruitment',
+      description: 'Leading technology recruitment firm specialized in AI and data science.',
+      industry: 'Information Technology',
+      website_url: 'https://editorial-recruitment.example.com',
+      logo_url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBmrWT5hOOytaPJF8g5Hg4lP0mNxMaL3NyyHm_hv6YAprmcgngacokNZqQIVIYY_piu4ZjkwwVDDV8uGqjwnrzLIx8BNspsgRMPu-RN7-Q09SLjvzMO5kChuj5XF4ScN2A1JXvWSopmh8wWdc9B-or1gCUTAwzaGkWv3W0VBPlU6xOxvysUw6yPp_K3c1_t-CdY-WCIt-IMm-YA05wboIJmzi5bH_jOMcKIMaLbwYMyrurRxKqSUOgRe4Oc0OOqsE2AGgWS4ygCew',
     }
   });
 
@@ -209,22 +209,22 @@ async function main() {
 
   for (const row of uniqueRows) {
     const jobTitle = (row['jobs : title'] || row['title']).trim();
-    const level    = mapExperienceToLevel(row['experience_level']);
-    const salary   = parseSalary(row['currency']);
+    const level = mapExperienceToLevel(row['experience_level']);
+    const salary = parseSalary(row['currency']);
     const deadline = parseDate(row['totalJobOpenings']);
     const benefits = parseBenefits(row['jobBenefits']);
     const description = `**Yêu cầu công việc:**\n${row['candidate_requirements'] || ''}\n\n**Tổng quan:**\n${row['employerOverview'] || ''}`;
 
     const jobData = {
-      hr_id:                hrProfile.id,
+      hr_id: hrProfile.id,
       level,
       description,
-      location:             row['addressRegion'] || 'Remote',
-      salary_min:           salary.min,
-      salary_max:           salary.max,
+      location: row['addressRegion'] || 'Remote',
+      salary_min: salary.min,
+      salary_max: salary.max,
       application_deadline: deadline,
       benefits,
-      status:               job_status.Open,
+      status: job_status.Open,
     };
 
     const existing = await prisma.jobs.findFirst({

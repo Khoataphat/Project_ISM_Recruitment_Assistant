@@ -1,36 +1,16 @@
 services:
-  # 1. Khai báo Redis (BẮT BUỘC vì code backend yêu cầu)
+  # 1. Redis
   redis:
     image: redis:alpine
+    container_name: recruitment-redis
     ports:
       - "6379:6379"
     restart: unless-stopped
 
-  # 2. Service Backend
-  backend:
-    build:
-      context: ./backend
-      target: development
-    ports:
-      - "${PORT:-3000}:3000"
-      - "5555:5555"
-    env_file:
-      - ./backend/.env
-    environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - NODE_ENV=development
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
-    depends_on:
-      - redis
-    restart: unless-stopped
-
-  # 3. Các Option phụ (Postgres local)
+  # 2. Local Postgres (Optional, but included for standard environment)
   postgres:
     image: postgres:17-alpine
-    profiles: [local-db]
+    container_name: recruitment-postgres
     ports:
       - "5432:5432"
     environment:
@@ -44,29 +24,53 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
-  backend-local:
+  # 3. Backend
+  backend:
     build:
       context: ./backend
       target: development
-    profiles: [local-db]
+    container_name: recruitment-backend
     ports:
-      - "${PORT:-3000}:3000"
+      - "3000:3000"
+      - "5555:5555" # Prisma Studio
     env_file:
       - ./backend/.env
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - NODE_ENV=development
+      # Override DB URLs if using local postgres
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/recruitment
       - DIRECT_URL=postgresql://postgres:postgres@postgres:5432/recruitment
     volumes:
       - ./backend:/app
       - /app/node_modules
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_started
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # 4. Frontend
+  frontend:
+    build:
+      context: ./frontend
+      target: development
+    container_name: recruitment-frontend
+    ports:
+      - "5173:5173"
+    env_file:
+      - ./frontend/.env
+    environment:
+      - VITE_API_URL=http://localhost:3000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
     restart: unless-stopped
 
 volumes:
