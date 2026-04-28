@@ -30,11 +30,14 @@ export function CandidateJobFilters() {
         { key: 'contract' as const, label: 'Contract' },
         { key: 'remote' as const, label: 'Remote' },
       ] satisfies Array<{ key: JobTypeKey; label: string }>,
-    [],
+    []
   )
 
   return (
-    <div className="candidate-filters" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <div
+      className="candidate-filters"
+      style={{ display: 'flex', flexDirection: 'column', gap: 24 }}
+    >
       <div>
         <Title
           level={5}
@@ -163,4 +166,3 @@ export function CandidateJobFilters() {
     </div>
   )
 }
-

@@ -1,17 +1,5 @@
 import { RightOutlined, PlusOutlined } from '@ant-design/icons'
-import {
-  Alert,
-  Button,
-  Card,
-  Col,
-  Flex,
-  Row,
-  Spin,
-  Table,
-  Tag,
-  Typography,
-  theme,
-} from 'antd'
+import { Alert, Button, Card, Col, Flex, Row, Spin, Table, Tag, Typography, theme } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -34,6 +22,15 @@ const STATUS_COLOR: Record<string, string> = {
   Draft: 'default',
 }
 
+function getApiErrorMessage(err: unknown, fallback: string) {
+  if (err && typeof err === 'object') {
+    const maybe = err as { response?: { data?: { message?: unknown } } }
+    const msg = maybe.response?.data?.message
+    if (typeof msg === 'string' && msg.trim()) return msg
+  }
+  return fallback
+}
+
 export function HrJobsPage() {
   const { token } = theme.useToken()
   const [jobs, setJobs] = useState<ApiJob[]>([])
@@ -47,8 +44,8 @@ export function HrJobsPage() {
         setError(null)
         const res = await apiClient.get('/jobs/hr')
         setJobs(res.data.data ?? [])
-      } catch (err: any) {
-        setError(err.response?.data?.message ?? 'Failed to load jobs')
+      } catch (err: unknown) {
+        setError(getApiErrorMessage(err, 'Failed to load jobs'))
       } finally {
         setLoading(false)
       }
@@ -66,7 +63,9 @@ export function HrJobsPage() {
         <div>
           <Text strong>{r.title}</Text>
           <br />
-          <Text type="secondary" style={{ fontSize: 12 }}>{r.companies.name}</Text>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            {r.companies.name}
+          </Text>
         </div>
       ),
     },
@@ -83,7 +82,9 @@ export function HrJobsPage() {
       key: 'status',
       width: 120,
       render: (s: string) => (
-        <Tag color={STATUS_COLOR[s] ?? 'default'} style={{ margin: 0, fontWeight: 600 }}>{s}</Tag>
+        <Tag color={STATUS_COLOR[s] ?? 'default'} style={{ margin: 0, fontWeight: 600 }}>
+          {s}
+        </Tag>
       ),
     },
     {
@@ -133,7 +134,9 @@ export function HrJobsPage() {
             </Text>
           </div>
           <Link to="/hr/my-job">
-            <Button type="primary" icon={<PlusOutlined />}>Post New Job</Button>
+            <Button type="primary" icon={<PlusOutlined />}>
+              Post New Job
+            </Button>
           </Link>
         </Flex>
 
@@ -150,16 +153,36 @@ export function HrJobsPage() {
           <Flex vertical gap={token.marginMD}>
             <Row gutter={[16, 16]}>
               <Col xs={24} md={8}>
-                <Card size="small" style={{ background: token.colorFillAlter, borderColor: token.colorBorderSecondary }}>
-                  <Text type="secondary" style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase' }}>
+                <Card
+                  size="small"
+                  style={{
+                    background: token.colorFillAlter,
+                    borderColor: token.colorBorderSecondary,
+                  }}
+                >
+                  <Text
+                    type="secondary"
+                    style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase' }}
+                  >
                     Total applications
                   </Text>
-                  <Title level={3} style={{ margin: '8px 0 0' }}>{totalApplications}</Title>
+                  <Title level={3} style={{ margin: '8px 0 0' }}>
+                    {totalApplications}
+                  </Title>
                 </Card>
               </Col>
               <Col xs={24} md={8}>
-                <Card size="small" style={{ background: token.colorFillAlter, borderColor: token.colorBorderSecondary }}>
-                  <Text type="secondary" style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase' }}>
+                <Card
+                  size="small"
+                  style={{
+                    background: token.colorFillAlter,
+                    borderColor: token.colorBorderSecondary,
+                  }}
+                >
+                  <Text
+                    type="secondary"
+                    style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase' }}
+                  >
                     Active job posts
                   </Text>
                   <Title level={3} style={{ margin: '8px 0 0' }}>

@@ -8,6 +8,14 @@ import { CandidateJobFilters } from '@/layouts/candidate/CandidateJobFilters'
 
 const HEADER_HEIGHT = 80
 const SIDEBAR_WIDTH = 256
+type CandidateCssVarKey =
+  | '--candidate-primary'
+  | '--candidate-text'
+  | '--candidate-text-secondary'
+  | '--candidate-text-tertiary'
+  | '--candidate-border'
+  | '--candidate-bg'
+  | '--candidate-bg-layout'
 
 export function CandidateLayout() {
   const { token } = theme.useToken()
@@ -19,22 +27,23 @@ export function CandidateLayout() {
     location.pathname !== '/candidate/profile'
 
   const candidateMenuKey =
-    location.pathname === '/candidate/applications' || location.pathname === '/candidate/your-applications'
+    location.pathname === '/candidate/applications' ||
+    location.pathname === '/candidate/your-applications'
       ? 'applications'
       : location.pathname === '/candidate/profile'
         ? 'profile'
         : 'jobs'
 
-  const cssVars = {
+  const cssVars: CSSProperties & Record<CandidateCssVarKey, string> = {
     // Used by `candidate-layout.css` for hover/focus styling.
-    ['--candidate-primary' as any]: token.colorPrimary,
-    ['--candidate-text' as any]: token.colorText,
-    ['--candidate-text-secondary' as any]: token.colorTextSecondary,
-    ['--candidate-text-tertiary' as any]: token.colorTextTertiary,
-    ['--candidate-border' as any]: token.colorBorderSecondary,
-    ['--candidate-bg' as any]: token.colorBgContainer,
-    ['--candidate-bg-layout' as any]: token.colorBgLayout,
-  } satisfies CSSProperties
+    '--candidate-primary': token.colorPrimary,
+    '--candidate-text': token.colorText,
+    '--candidate-text-secondary': token.colorTextSecondary,
+    '--candidate-text-tertiary': token.colorTextTertiary,
+    '--candidate-border': token.colorBorderSecondary,
+    '--candidate-bg': token.colorBgContainer,
+    '--candidate-bg-layout': token.colorBgLayout,
+  }
 
   return (
     <Layout className="candidate-shell" style={cssVars}>
@@ -101,4 +110,3 @@ export function CandidateLayout() {
     </Layout>
   )
 }
-

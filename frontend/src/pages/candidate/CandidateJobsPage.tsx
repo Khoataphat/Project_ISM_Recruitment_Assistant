@@ -20,6 +20,15 @@ type Job = {
   }
 }
 
+function getApiErrorMessage(err: unknown, fallback: string) {
+  if (err && typeof err === 'object') {
+    const maybe = err as { response?: { data?: { message?: unknown } } }
+    const msg = maybe.response?.data?.message
+    if (typeof msg === 'string' && msg.trim()) return msg
+  }
+  return fallback
+}
+
 export function CandidateJobsPage() {
   const { token } = theme.useToken()
   const [jobs, setJobs] = useState<Job[]>([])
@@ -37,8 +46,8 @@ export function CandidateJobsPage() {
         if (data.length > 0) {
           setSelectedId(data[0].id)
         }
-      } catch (err: any) {
-        setError(err.response?.data?.message ?? 'Failed to fetch jobs')
+      } catch (err: unknown) {
+        setError(getApiErrorMessage(err, 'Failed to fetch jobs'))
       } finally {
         setLoading(false)
       }
@@ -48,7 +57,7 @@ export function CandidateJobsPage() {
 
   const selectedJob = useMemo(
     () => jobs.find((j) => j.id === selectedId) || jobs[0],
-    [jobs, selectedId],
+    [jobs, selectedId]
   )
 
   if (loading) {
@@ -67,13 +76,15 @@ export function CandidateJobsPage() {
           <Title id="candidate-jobs-hero-title" level={2} className="candidate-jobsHeroTitle">
             Global Opportunities
           </Title>
-          <Text className="candidate-jobsHeroSubtitle">{jobs.length} open positions available for you</Text>
+          <Text className="candidate-jobsHeroSubtitle">
+            {jobs.length} open positions available for you
+          </Text>
         </div>
       </section>
 
       <div className="candidate-jobsContainer">
         {error && <Alert type="error" message={error} style={{ marginBottom: 24 }} />}
-        
+
         <div className="candidate-jobsSplit">
           <div className="candidate-jobsListCol">
             <div className="candidate-jobsListInner">
@@ -112,9 +123,13 @@ export function CandidateJobsPage() {
                         </div>
 
                         <Flex className="candidate-jobMeta" align="center" wrap gap={10}>
-                          <Text style={{ color: token.colorTextSecondary, fontWeight: 600 }}>{job.companies.name}</Text>
+                          <Text style={{ color: token.colorTextSecondary, fontWeight: 600 }}>
+                            {job.companies.name}
+                          </Text>
                           <span className="candidate-dot" />
-                          <Text style={{ color: token.colorTextSecondary, fontWeight: 600 }}>{job.location}</Text>
+                          <Text style={{ color: token.colorTextSecondary, fontWeight: 600 }}>
+                            {job.location}
+                          </Text>
                           <span className="candidate-dot" />
                           <Text className="candidate-jobSalary">{job.salary}</Text>
                         </Flex>
@@ -164,14 +179,23 @@ export function CandidateJobsPage() {
                       alt=""
                       preview={false}
                       width="100%"
-                      style={{ height: '100%', objectFit: 'cover', filter: 'blur(40px)', opacity: 0.3 }}
+                      style={{
+                        height: '100%',
+                        objectFit: 'cover',
+                        filter: 'blur(40px)',
+                        opacity: 0.3,
+                      }}
                     />
                     <div className="candidate-jobPreviewMediaShade" aria-hidden />
                   </div>
 
                   <div className="candidate-jobPreviewBody">
                     <Flex align="center" wrap gap={10} style={{ marginBottom: 10 }}>
-                      <Title level={3} className="candidate-jobPreviewTitle" style={{ margin: 0, flex: '1 1 200px' }}>
+                      <Title
+                        level={3}
+                        className="candidate-jobPreviewTitle"
+                        style={{ margin: 0, flex: '1 1 200px' }}
+                      >
                         {selectedJob.title}
                       </Title>
                     </Flex>
@@ -179,11 +203,17 @@ export function CandidateJobsPage() {
                     <Flex wrap gap={16} align="center" style={{ marginBottom: 16 }}>
                       <Flex gap={8} align="center">
                         <BankOutlined style={{ fontSize: 16, color: token.colorTextSecondary }} />
-                        <Text style={{ fontWeight: 700, color: token.colorText }}>{selectedJob.companies.name}</Text>
+                        <Text style={{ fontWeight: 700, color: token.colorText }}>
+                          {selectedJob.companies.name}
+                        </Text>
                       </Flex>
                       <Flex gap={8} align="center">
-                        <EnvironmentOutlined style={{ fontSize: 16, color: token.colorTextSecondary }} />
-                        <Text style={{ color: token.colorTextSecondary }}>{selectedJob.location}</Text>
+                        <EnvironmentOutlined
+                          style={{ fontSize: 16, color: token.colorTextSecondary }}
+                        />
+                        <Text style={{ color: token.colorTextSecondary }}>
+                          {selectedJob.location}
+                        </Text>
                       </Flex>
                       <Flex gap={8} align="center">
                         <span className="candidate-moneyIcon" />
@@ -200,7 +230,12 @@ export function CandidateJobsPage() {
                     </Flex>
 
                     <Paragraph
-                      style={{ marginBottom: 20, color: token.colorTextSecondary, maxHeight: 200, overflow: 'hidden' }}
+                      style={{
+                        marginBottom: 20,
+                        color: token.colorTextSecondary,
+                        maxHeight: 200,
+                        overflow: 'hidden',
+                      }}
                       className="candidate-jobPreviewSummary"
                     >
                       {selectedJob.description}

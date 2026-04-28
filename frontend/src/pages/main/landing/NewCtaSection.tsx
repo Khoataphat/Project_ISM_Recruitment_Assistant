@@ -22,7 +22,6 @@ export function NewCtaSection() {
           }}
           styles={{ body: { padding: 0 } }}
         >
-
           <Row gutter={0} style={{ minHeight: 420 }}>
             <Col xs={24} lg={12}>
               <div style={{ padding: 56, position: 'relative', zIndex: 1 }}>
@@ -53,23 +52,22 @@ export function NewCtaSection() {
                 </Typography.Paragraph>
 
                 <Space direction="vertical" size={10} style={{ width: '100%' }}>
-   
-                    <Button
-                      type="default"
-                      style={{
-                        border: 0,
-                        borderRadius: 14,
-                        fontWeight: 900,
-                        paddingInline: 18,
-                        color: token.colorPrimary,
-                        background: token.colorTextLightSolid,
-                      }}
-                      onClick={() => {
-                        navigate('/candidate/jobs')
-                      }}
-                    >
-                      Subscribe Now
-                    </Button>
+                  <Button
+                    type="default"
+                    style={{
+                      border: 0,
+                      borderRadius: 14,
+                      fontWeight: 900,
+                      paddingInline: 18,
+                      color: token.colorPrimary,
+                      background: token.colorTextLightSolid,
+                    }}
+                    onClick={() => {
+                      navigate('/candidate/jobs')
+                    }}
+                  >
+                    Subscribe Now
+                  </Button>
 
                   <Typography.Text style={{ color: 'rgba(255,255,255,0.72)', fontSize: 12 }}>
                     No spam. Only high-impact opportunities. Unsubscribe at any time.

@@ -10,6 +10,15 @@ type LoginFormValues = {
   remember: boolean
 }
 
+function getApiErrorMessage(err: unknown, fallback: string) {
+  if (err && typeof err === 'object') {
+    const maybe = err as { response?: { data?: { message?: unknown } } }
+    const msg = maybe.response?.data?.message
+    if (typeof msg === 'string' && msg.trim()) return msg
+  }
+  return fallback
+}
+
 export function LoginPage() {
   const navigate = useNavigate()
   const { login } = useAuth()
@@ -38,9 +47,8 @@ export function LoginPage() {
       } else {
         navigate('/candidate/jobs')
       }
-    } catch (err: any) {
-      const errorMsg = err.response?.data?.message || 'Invalid email or password'
-      message.error(errorMsg)
+    } catch (err: unknown) {
+      message.error(getApiErrorMessage(err, 'Invalid email or password'))
     } finally {
       setLoading(false)
     }
@@ -84,11 +92,7 @@ export function LoginPage() {
           <Input.Password placeholder="••••••••" size="large" />
         </Form.Item>
 
-        <Form.Item
-          name="remember"
-          valuePropName="checked"
-          style={{ marginBottom: 12 }}
-        >
+        <Form.Item name="remember" valuePropName="checked" style={{ marginBottom: 12 }}>
           <Checkbox>
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
               Remember me on this device

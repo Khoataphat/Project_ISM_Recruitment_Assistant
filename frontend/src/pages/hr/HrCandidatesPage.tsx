@@ -54,9 +54,20 @@ const STATUS_COLOR: Record<string, string> = {
   Rejected: 'error',
 }
 
+function getApiErrorMessage(err: unknown, fallback: string) {
+  if (err && typeof err === 'object') {
+    const maybe = err as { response?: { data?: { message?: unknown } } }
+    const msg = maybe.response?.data?.message
+    if (typeof msg === 'string' && msg.trim()) return msg
+  }
+  return fallback
+}
+
 function formatDate(iso: string) {
   try {
-    return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso))
+    return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(
+      new Date(iso)
+    )
   } catch {
     return iso
   }
@@ -77,8 +88,8 @@ export function HrCandidatesPage() {
       setError(null)
       const res = await apiClient.get('/dashboard/applications')
       setApplications(res.data.data.applications ?? [])
-    } catch (err: any) {
-      setError(err.response?.data?.message ?? 'Failed to load applications')
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, 'Failed to load applications'))
     } finally {
       setLoading(false)
     }
@@ -98,7 +109,10 @@ export function HrCandidatesPage() {
         a.candidates.users.email,
         a.jobs.title,
         a.jobs.companies.name,
-      ].filter(Boolean).join(' ').toLowerCase()
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
       return blob.includes(q)
     })
   }, [applications, search, statusFilter])
@@ -106,14 +120,16 @@ export function HrCandidatesPage() {
   const handleStatusChange = async (applicationId: string, newStatus: string) => {
     setUpdatingId(applicationId)
     try {
-      await apiClient.patch(`/dashboard/applications/${applicationId}/status`, { status: newStatus })
+      await apiClient.patch(`/dashboard/applications/${applicationId}/status`, {
+        status: newStatus,
+      })
       message.success(`Status updated to ${newStatus}`)
       // Optimistically update local state
       setApplications((prev) =>
         prev.map((a) => (a.id === applicationId ? { ...a, hr_status: newStatus } : a))
       )
-    } catch (err: any) {
-      message.error(err.response?.data?.message ?? 'Failed to update status')
+    } catch (err: unknown) {
+      message.error(getApiErrorMessage(err, 'Failed to update status'))
     } finally {
       setUpdatingId(null)
     }
@@ -137,8 +153,12 @@ export function HrCandidatesPage() {
             {a.candidates.users.full_name?.[0] ?? '?'}
           </Avatar>
           <div>
-            <Text strong style={{ display: 'block' }}>{a.candidates.users.full_name}</Text>
-            <Text type="secondary" style={{ fontSize: 12 }}>{a.candidates.users.email}</Text>
+            <Text strong style={{ display: 'block' }}>
+              {a.candidates.users.full_name}
+            </Text>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {a.candidates.users.email}
+            </Text>
           </div>
         </Flex>
       ),
@@ -151,7 +171,9 @@ export function HrCandidatesPage() {
         <div>
           <Text strong>{a.jobs.title}</Text>
           <br />
-          <Text type="secondary" style={{ fontSize: 12 }}>{a.jobs.companies.name}</Text>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            {a.jobs.companies.name}
+          </Text>
         </div>
       ),
     },
@@ -170,7 +192,9 @@ export function HrCandidatesPage() {
           options={HR_STATUS_OPTIONS.filter((o) => o.value !== 'all').map((o) => ({
             value: o.value,
             label: (
-              <Tag color={STATUS_COLOR[o.value]} style={{ margin: 0 }}>{o.label}</Tag>
+              <Tag color={STATUS_COLOR[o.value]} style={{ margin: 0 }}>
+                {o.label}
+              </Tag>
             ),
           }))}
         />
@@ -183,7 +207,9 @@ export function HrCandidatesPage() {
       fixed: 'right',
       render: (_, a) => (
         <Link to={`/hr/candidate/${a.id}`}>
-          <Button type="link" icon={<EyeOutlined />} style={{ padding: 0 }}>View</Button>
+          <Button type="link" icon={<EyeOutlined />} style={{ padding: 0 }}>
+            View
+          </Button>
         </Link>
       ),
     },

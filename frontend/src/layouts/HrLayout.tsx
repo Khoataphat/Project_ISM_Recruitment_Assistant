@@ -65,7 +65,7 @@ export function HrLayout() {
         label: 'Settings',
       },
     ],
-    [],
+    []
   )
 
   const siderStyle: CSSProperties = {
@@ -128,7 +128,12 @@ export function HrLayout() {
 
       <Layout.Sider width={SIDEBAR_WIDTH} style={siderStyle} theme="light">
         <Flex vertical style={{ minHeight: '100%' }}>
-          <div style={{ marginBottom: token.marginLG, padding: `${token.paddingXS}px ${token.paddingSM}px` }}>
+          <div
+            style={{
+              marginBottom: token.marginLG,
+              padding: `${token.paddingXS}px ${token.paddingSM}px`,
+            }}
+          >
             <Flex align="center" gap={token.marginSM}>
               <div style={logoMarkStyle} aria-hidden>
                 <BuildOutlined />
@@ -137,7 +142,9 @@ export function HrLayout() {
                 <Typography.Title level={5} style={brandTitleStyle}>
                   Recruitment Hub
                 </Typography.Title>
-                <Typography.Paragraph style={brandSubtitleStyle}>Enterprise Edition</Typography.Paragraph>
+                <Typography.Paragraph style={brandSubtitleStyle}>
+                  Enterprise Edition
+                </Typography.Paragraph>
               </div>
             </Flex>
           </div>

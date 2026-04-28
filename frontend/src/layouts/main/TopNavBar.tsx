@@ -8,7 +8,7 @@ type NavItem = { key: string; label: string; to: string }
 
 const navItems: NavItem[] = [
   { key: 'home', label: 'Home', to: '/' },
-  { key: 'jobs', label: 'Find Jobs', to: '/candidate/jobs' },  
+  { key: 'jobs', label: 'Find Jobs', to: '/candidate/jobs' },
   { key: 'your-applications', label: 'Your Applications', to: '/candidate/your-applications' },
 ]
 
@@ -39,7 +39,7 @@ export function TopNavBar() {
           </Link>
         ),
       })),
-    [token.colorTextSecondary],
+    [token.colorTextSecondary]
   )
 
   const headerHeight = 80
@@ -186,4 +186,3 @@ export function TopNavBar() {
     </Layout.Header>
   )
 }
-

@@ -6,7 +6,7 @@ export function HeroSection() {
   return (
     <section className="main-hero">
       <div className="main-heroBg" aria-hidden />
-      <div style={{width: '75%', margin: '0 auto'}}>
+      <div style={{ width: '75%', margin: '0 auto' }}>
         <Row gutter={[48, 48]} align="middle">
           <Col xs={24} lg={14}>
             <Tag color="blue" className="main-heroBadge">
@@ -22,18 +22,23 @@ export function HeroSection() {
               at the intersection of innovation and editorial excellence.
             </Typography.Paragraph>
 
-                <Row gutter={[12, 12]}>
-                  <Col md={8}>
-                  <Button type="primary" size="large" block onClick={() => navigate('/candidate/jobs')}>
+            <Row gutter={[12, 12]}>
+              <Col md={8}>
+                <Button
+                  type="primary"
+                  size="large"
+                  block
+                  onClick={() => navigate('/candidate/jobs')}
+                >
                   Find My Future
                 </Button>
-                  </Col>
-                  <Col  md={8}>
-                  <Button type="default" size="large" block onClick={() => navigate('/hr/jobs')}>
+              </Col>
+              <Col md={8}>
+                <Button type="default" size="large" block onClick={() => navigate('/hr/jobs')}>
                   Post a Job
                 </Button>
-                  </Col>
-                </Row>
+              </Col>
+            </Row>
           </Col>
 
           <Col xs={0} lg={10}>
@@ -59,4 +64,3 @@ export function HeroSection() {
     </section>
   )
 }
-

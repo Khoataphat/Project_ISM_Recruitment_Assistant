@@ -1,9 +1,4 @@
-import {
-  EnvironmentOutlined,
-  FileTextOutlined,
-  RightOutlined,
-  StarFilled,
-} from '@ant-design/icons'
+import { EnvironmentOutlined, FileTextOutlined, RightOutlined, StarFilled } from '@ant-design/icons'
 import {
   Avatar,
   Breadcrumb,
@@ -19,7 +14,6 @@ import {
   Typography,
   theme,
   Spin,
-  Alert,
 } from 'antd'
 import type { CSSProperties } from 'react'
 import { useEffect, useMemo, useState } from 'react'
@@ -41,9 +35,42 @@ type PipelineRow = {
   resumeUrl: string
 }
 
+type HrJob = {
+  id: string
+  title: string
+  location?: string
+}
+
+type HrApplication = {
+  id: string
+  job_id: string
+  hr_status: string
+  applied_at: string
+  cv_url: string
+  candidates: {
+    users: {
+      full_name: string
+      email: string
+    }
+  }
+}
+
+function getApiErrorMessage(err: unknown, fallback: string) {
+  if (err && typeof err === 'object') {
+    const maybe = err as { response?: { data?: { message?: unknown } } }
+    const msg = maybe.response?.data?.message
+    if (typeof msg === 'string' && msg.trim()) return msg
+  }
+  return fallback
+}
+
 function formatAppliedShort(iso: string) {
   try {
-    return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(iso))
+    return new Intl.DateTimeFormat(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    }).format(new Date(iso))
   } catch {
     return iso
   }
@@ -58,7 +85,13 @@ const HR_STATUS_COLOR: Record<string, string> = {
   Rejected: 'error',
 }
 
-function CandidateTableRow({ row, token }: { row: PipelineRow; token: ReturnType<typeof theme.useToken>['token'] }) {
+function CandidateTableRow({
+  row,
+  token,
+}: {
+  row: PipelineRow
+  token: ReturnType<typeof theme.useToken>['token']
+}) {
   const [hovered, setHovered] = useState(false)
 
   const rowStyle: CSSProperties = {
@@ -120,7 +153,10 @@ function CandidateTableRow({ row, token }: { row: PipelineRow; token: ReturnType
         </Flex>
       </Col>
       <Col xs={24} lg={5} style={{ textAlign: 'center' }}>
-        <Tag color={HR_STATUS_COLOR[row.status] || 'default'} style={{ borderRadius: 999, fontWeight: 700, textTransform: 'uppercase' }}>
+        <Tag
+          color={HR_STATUS_COLOR[row.status] || 'default'}
+          style={{ borderRadius: 999, fontWeight: 700, textTransform: 'uppercase' }}
+        >
           {row.status}
         </Tag>
       </Col>
@@ -168,8 +204,8 @@ export function HrJobDetailsPage() {
   const { token } = theme.useToken()
   const [pipelineFilter, setPipelineFilter] = useState<PipelineFilter>('all')
   const [page, setPage] = useState(1)
-  const [job, setJob] = useState<any>(null)
-  const [applications, setApplications] = useState<any[]>([])
+  const [job, setJob] = useState<HrJob | null>(null)
+  const [applications, setApplications] = useState<HrApplication[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -184,10 +220,11 @@ export function HrJobDetailsPage() {
         ])
         setJob(jobRes.data.data)
         // Filter apps by jobId
-        const filteredApps = appsRes.data.data.filter((a: any) => a.job_id === id)
+        const apps: HrApplication[] = appsRes.data.data
+        const filteredApps = apps.filter((a) => a.job_id === id)
         setApplications(filteredApps)
-      } catch (err: any) {
-        setError(err.response?.data?.message ?? 'Failed to fetch job details')
+      } catch (err: unknown) {
+        setError(getApiErrorMessage(err, 'Failed to fetch job details'))
       } finally {
         setLoading(false)
       }
@@ -195,18 +232,23 @@ export function HrJobDetailsPage() {
     fetchData()
   }, [id])
 
-  const pipelineRows = useMemo(() => applications.map((a: any) => ({
-    applicationId: a.id,
-    name: a.candidates.users.full_name,
-    subtitle: a.candidates.users.email,
-    status: a.hr_status,
-    appliedAtLabel: formatAppliedShort(a.applied_at),
-    resumeUrl: a.cv_url,
-  })), [applications])
+  const pipelineRows = useMemo(
+    () =>
+      applications.map((a) => ({
+        applicationId: a.id,
+        name: a.candidates.users.full_name,
+        subtitle: a.candidates.users.email,
+        status: a.hr_status,
+        appliedAtLabel: formatAppliedShort(a.applied_at),
+        resumeUrl: a.cv_url,
+      })),
+    [applications]
+  )
 
   const filteredRows = useMemo(() => {
     if (pipelineFilter === 'all') return pipelineRows
-    if (pipelineFilter === 'interviewing') return pipelineRows.filter((r) => r.status === 'Interviewing')
+    if (pipelineFilter === 'interviewing')
+      return pipelineRows.filter((r) => r.status === 'Interviewing')
     return pipelineRows.filter((r) => r.status === 'Pending')
   }, [pipelineFilter, pipelineRows])
 
@@ -215,7 +257,8 @@ export function HrJobDetailsPage() {
       total: applications.length,
       applied: applications.filter((a) => a.hr_status === 'Pending').length,
       interviewing: applications.filter((a) => a.hr_status === 'Interviewing').length,
-      closed: applications.filter((a) => a.hr_status === 'Rejected' || a.hr_status === 'Accepted').length,
+      closed: applications.filter((a) => a.hr_status === 'Rejected' || a.hr_status === 'Accepted')
+        .length,
     }
   }, [applications])
 
@@ -290,7 +333,11 @@ export function HrJobDetailsPage() {
   }
 
   if (loading) {
-    return <Flex justify="center" align="center" style={{ minHeight: 500 }}><Spin size="large" /></Flex>
+    return (
+      <Flex justify="center" align="center" style={{ minHeight: 500 }}>
+        <Spin size="large" />
+      </Flex>
+    )
   }
 
   if (error || !job) {
@@ -299,7 +346,7 @@ export function HrJobDetailsPage() {
         <Result
           status="404"
           title="Job not found"
-          subTitle={error ?? "There is no job with this id."}
+          subTitle={error ?? 'There is no job with this id.'}
           extra={
             <Link to="/hr/jobs">
               <Button type="primary">Back to jobs</Button>
@@ -339,7 +386,10 @@ export function HrJobDetailsPage() {
               ]}
               separator={<RightOutlined style={{ fontSize: 10, color: token.colorTextTertiary }} />}
             />
-            <Typography.Title level={2} style={{ margin: 0, fontWeight: 800, letterSpacing: '-0.02em' }}>
+            <Typography.Title
+              level={2}
+              style={{ margin: 0, fontWeight: 800, letterSpacing: '-0.02em' }}
+            >
               {job.title}
             </Typography.Title>
             <Flex gap={token.marginSM} wrap="wrap" style={{ marginTop: token.margin }}>
@@ -396,7 +446,11 @@ export function HrJobDetailsPage() {
             >
               Export List
             </Button>
-            <Button type="primary" size="large" style={{ fontWeight: 600, borderRadius: token.borderRadiusLG }}>
+            <Button
+              type="primary"
+              size="large"
+              style={{ fontWeight: 600, borderRadius: token.borderRadiusLG }}
+            >
               Edit Job Detail
             </Button>
           </Space>
@@ -406,10 +460,16 @@ export function HrJobDetailsPage() {
           <Col xs={24} lg={16}>
             <div style={pipelineCardStyle}>
               <div style={{ position: 'relative', zIndex: 1 }}>
-                <Typography.Text type="secondary" style={{ fontWeight: 500, fontSize: token.fontSize }}>
+                <Typography.Text
+                  type="secondary"
+                  style={{ fontWeight: 500, fontSize: token.fontSize }}
+                >
                   Total Pipeline
                 </Typography.Text>
-                <Typography.Title level={2} style={{ margin: `${token.marginXXS}px 0 0`, fontSize: 48, fontWeight: 800 }}>
+                <Typography.Title
+                  level={2}
+                  style={{ margin: `${token.marginXXS}px 0 0`, fontSize: 48, fontWeight: 800 }}
+                >
                   {stats.total}
                 </Typography.Title>
                 <Flex gap={token.marginLG} wrap="wrap" style={{ marginTop: token.marginLG }}>
@@ -441,7 +501,10 @@ export function HrJobDetailsPage() {
                     >
                       INTERVIEWING
                     </Typography.Text>
-                    <Typography.Text strong style={{ fontSize: token.fontSizeHeading3, color: token.colorPrimary }}>
+                    <Typography.Text
+                      strong
+                      style={{ fontSize: token.fontSizeHeading3, color: token.colorPrimary }}
+                    >
                       {stats.interviewing}
                     </Typography.Text>
                   </div>
@@ -474,7 +537,12 @@ export function HrJobDetailsPage() {
                   pointerEvents: 'none',
                 }}
               >
-                <Image src={PIPELINE_BG} alt="" preview={false} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <Image
+                  src={PIPELINE_BG}
+                  alt=""
+                  preview={false}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
               </div>
             </div>
           </Col>
@@ -493,7 +561,12 @@ export function HrJobDetailsPage() {
               </Typography.Text>
               <Typography.Title
                 level={4}
-                style={{ color: token.colorTextLightSolid, margin: `${token.marginSM}px 0 ${token.margin}px`, fontWeight: 700, lineHeight: 1.35 }}
+                style={{
+                  color: token.colorTextLightSolid,
+                  margin: `${token.marginSM}px 0 ${token.margin}px`,
+                  fontWeight: 700,
+                  lineHeight: 1.35,
+                }}
               >
                 {stats.total === 0
                   ? 'No applications yet for this role'
@@ -527,7 +600,13 @@ export function HrJobDetailsPage() {
         </Row>
 
         <div style={listCardStyle}>
-          <Flex justify="space-between" align="center" wrap="wrap" gap={token.margin} style={listHeaderStyle}>
+          <Flex
+            justify="space-between"
+            align="center"
+            wrap="wrap"
+            gap={token.margin}
+            style={listHeaderStyle}
+          >
             <Typography.Title level={5} style={{ margin: 0, fontWeight: 700 }}>
               Active Pipeline
             </Typography.Title>
@@ -559,7 +638,9 @@ export function HrJobDetailsPage() {
                 <Typography.Text type="secondary">No candidates in this view.</Typography.Text>
               </div>
             ) : (
-              paged.map((row) => <CandidateTableRow key={row.applicationId} row={row} token={token} />)
+              paged.map((row) => (
+                <CandidateTableRow key={row.applicationId} row={row} token={token} />
+              ))
             )}
           </div>
 
@@ -573,9 +654,12 @@ export function HrJobDetailsPage() {
               background: `color-mix(in srgb, ${token.colorFillAlter} 50%, transparent)`,
             }}
           >
-            <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM, fontWeight: 500 }}>
-              Showing {paged.length === 0 ? 0 : (page - 1) * pageSize + 1}–{(page - 1) * pageSize + paged.length} of{' '}
-              {filteredRows.length} candidates
+            <Typography.Text
+              type="secondary"
+              style={{ fontSize: token.fontSizeSM, fontWeight: 500 }}
+            >
+              Showing {paged.length === 0 ? 0 : (page - 1) * pageSize + 1}–
+              {(page - 1) * pageSize + paged.length} of {filteredRows.length} candidates
             </Typography.Text>
             <Pagination
               size="small"

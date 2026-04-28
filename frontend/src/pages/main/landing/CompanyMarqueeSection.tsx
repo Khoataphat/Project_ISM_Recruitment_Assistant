@@ -15,7 +15,12 @@ export function CompanyMarqueeSection() {
         </Row>
 
         <div style={{ marginTop: 24 }}>
-          <Space size={36} wrap className="main-marqueeRow" style={{justifyContent: 'center', display: 'flex'}}>
+          <Space
+            size={36}
+            wrap
+            className="main-marqueeRow"
+            style={{ justifyContent: 'center', display: 'flex' }}
+          >
             {companies.map((c) => (
               <Typography.Text key={c} className="main-company">
                 {c}
@@ -27,4 +32,3 @@ export function CompanyMarqueeSection() {
     </section>
   )
 }
-

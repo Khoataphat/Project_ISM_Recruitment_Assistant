@@ -1,5 +1,17 @@
 import { BankOutlined, EnvironmentOutlined, LeftOutlined } from '@ant-design/icons'
-import { Breadcrumb, Button, Col, Flex, Image, Result, Row, Typography, theme, Spin, Alert, message } from 'antd'
+import {
+  Breadcrumb,
+  Button,
+  Col,
+  Flex,
+  Image,
+  Result,
+  Row,
+  Typography,
+  theme,
+  Spin,
+  message,
+} from 'antd'
 import { useEffect, useState } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 
@@ -24,6 +36,15 @@ type JobDetail = {
   }
 }
 
+function getApiErrorMessage(err: unknown, fallback: string) {
+  if (err && typeof err === 'object') {
+    const maybe = err as { response?: { data?: { message?: unknown } } }
+    const msg = maybe.response?.data?.message
+    if (typeof msg === 'string' && msg.trim()) return msg
+  }
+  return fallback
+}
+
 export function JobDetailsPage() {
   const { token } = theme.useToken()
   const { id } = useParams()
@@ -41,8 +62,8 @@ export function JobDetailsPage() {
         setLoading(true)
         const res = await apiClient.get(`/jobs/${id}`)
         setJob(res.data.data)
-      } catch (err: any) {
-        setError(err.response?.data?.message ?? 'Failed to fetch job details')
+      } catch (err: unknown) {
+        setError(getApiErrorMessage(err, 'Failed to fetch job details'))
       } finally {
         setLoading(false)
       }
@@ -71,8 +92,8 @@ export function JobDetailsPage() {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
       message.success('Your application has been submitted successfully!')
-    } catch (err: any) {
-      throw new Error(err.response?.data?.message ?? 'Failed to submit application')
+    } catch (err: unknown) {
+      throw new Error(getApiErrorMessage(err, 'Failed to submit application'))
     }
   }
 
@@ -89,7 +110,7 @@ export function JobDetailsPage() {
       <Result
         status="404"
         title="Job not found"
-        subTitle={error ?? "This listing is unavailable or the link is incorrect."}
+        subTitle={error ?? 'This listing is unavailable or the link is incorrect.'}
         extra={
           <Link to="/main/jobs">
             <Button type="primary">Back to jobs</Button>
@@ -108,7 +129,11 @@ export function JobDetailsPage() {
               style={{ marginBottom: 12, fontSize: 12 }}
               items={[
                 { title: <Link to="/main/jobs">Jobs</Link> },
-                { title: <span style={{ color: token.colorTextSecondary }}>{job.companies.name}</span> },
+                {
+                  title: (
+                    <span style={{ color: token.colorTextSecondary }}>{job.companies.name}</span>
+                  ),
+                },
                 { title: <span style={{ color: token.colorText }}>{job.title}</span> },
               ]}
             />
@@ -157,27 +182,37 @@ export function JobDetailsPage() {
             </div>
             <section style={{ marginTop: 24 }}>
               <Title level={4}>About the role</Title>
-              <Paragraph style={{ whiteSpace: 'pre-wrap' }}>
-                {job.description}
-              </Paragraph>
-              
+              <Paragraph style={{ whiteSpace: 'pre-wrap' }}>{job.description}</Paragraph>
+
               {job.requirements && (
                 <>
-                  <Title level={4} style={{ marginTop: 24 }}>Requirements</Title>
+                  <Title level={4} style={{ marginTop: 24 }}>
+                    Requirements
+                  </Title>
                   <Paragraph style={{ whiteSpace: 'pre-wrap' }}>{job.requirements}</Paragraph>
                 </>
               )}
 
               {job.benefits && (
                 <>
-                  <Title level={4} style={{ marginTop: 24 }}>Benefits</Title>
+                  <Title level={4} style={{ marginTop: 24 }}>
+                    Benefits
+                  </Title>
                   <Paragraph style={{ whiteSpace: 'pre-wrap' }}>{job.benefits}</Paragraph>
                 </>
               )}
             </section>
           </Col>
           <Col xs={24} md={8}>
-            <Flex vertical gap={8} style={{ padding: token.paddingMD, background: token.colorFillAlter, borderRadius: token.borderRadiusLG }}>
+            <Flex
+              vertical
+              gap={8}
+              style={{
+                padding: token.paddingMD,
+                background: token.colorFillAlter,
+                borderRadius: token.borderRadiusLG,
+              }}
+            >
               <Text type="secondary" style={{ fontSize: 12 }}>
                 Job ID
               </Text>

@@ -14,6 +14,7 @@ import {
   Button,
   Card,
   Col,
+  Alert,
   Empty,
   Flex,
   Form,
@@ -30,7 +31,7 @@ import {
   Spin,
 } from 'antd'
 import type { UploadFile } from 'antd'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { apiClient } from '@/lib/api'
@@ -62,9 +63,22 @@ const HR_STATUS_COLOR: Record<string, string> = {
   Rejected: 'error',
 }
 
+function getApiErrorMessage(err: unknown, fallback: string) {
+  if (err && typeof err === 'object') {
+    const maybe = err as { response?: { data?: { message?: unknown } } }
+    const msg = maybe.response?.data?.message
+    if (typeof msg === 'string' && msg.trim()) return msg
+  }
+  return fallback
+}
+
 function formatCalendarDate(iso: string) {
   try {
-    return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(iso))
+    return new Intl.DateTimeFormat(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    }).format(new Date(iso))
   } catch {
     return iso
   }
@@ -91,8 +105,8 @@ export function CandidateProfilePage() {
         setLoading(true)
         const res = await apiClient.get('/applications')
         setApplications(res.data.data)
-      } catch (err: any) {
-        setError(err.response?.data?.message ?? 'Failed to fetch applications')
+      } catch (err: unknown) {
+        setError(getApiErrorMessage(err, 'Failed to fetch applications'))
       } finally {
         setLoading(false)
       }
@@ -103,15 +117,15 @@ export function CandidateProfilePage() {
   const latest = applications[0]
 
   const cvRows: CvTableRow[] = useMemo(() => {
-    return applications.map((a) => ({
-      key: a.id,
-      fileName: a.cv_url.split('/').pop() || 'resume.pdf',
-      uploadedAt: a.applied_at,
-      dataUrl: a.cv_url,
-      isPdf: true,
-    })).sort(
-      (a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime(),
-    )
+    return applications
+      .map((a) => ({
+        key: a.id,
+        fileName: a.cv_url.split('/').pop() || 'resume.pdf',
+        uploadedAt: a.applied_at,
+        dataUrl: a.cv_url,
+        isPdf: true,
+      }))
+      .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime())
   }, [applications])
 
   const [editOpen, setEditOpen] = useState(false)
@@ -121,7 +135,7 @@ export function CandidateProfilePage() {
   const [pwdForm] = Form.useForm<{ password: string; confirm: string }>()
   const [editPhotoList, setEditPhotoList] = useState<UploadFile[]>([])
   const [cvUploadList, setCvUploadList] = useState<UploadFile[]>([])
-  const [uploading, setUploading] = useState(false)
+  const [uploading] = useState(false)
 
   const openEdit = () => {
     editForm.setFieldsValue({ displayName: user?.full_name || '', email: user?.email || '' })
@@ -147,6 +161,7 @@ export function CandidateProfilePage() {
 
   return (
     <main style={{ maxWidth: 1152, margin: '0 auto', paddingTop: 8, paddingBottom: 48 }}>
+      {error && <Alert type="error" message={error} style={{ marginBottom: 24 }} />}
       <header style={{ marginBottom: 48 }}>
         <Flex vertical gap={24} align="center" style={{ textAlign: 'center' }}>
           <Flex
@@ -197,7 +212,15 @@ export function CandidateProfilePage() {
                 </div>
 
                 <div style={{ textAlign: 'left', flex: '1 1 200px', minWidth: 200 }}>
-                  <Title level={2} style={{ margin: 0, marginBottom: 4, fontWeight: 900, letterSpacing: '-0.02em' }}>
+                  <Title
+                    level={2}
+                    style={{
+                      margin: 0,
+                      marginBottom: 4,
+                      fontWeight: 900,
+                      letterSpacing: '-0.02em',
+                    }}
+                  >
                     {user?.full_name}
                   </Title>
                   <Text style={{ fontSize: 17, fontWeight: 500, color: token.colorTextSecondary }}>
@@ -210,7 +233,12 @@ export function CandidateProfilePage() {
                 <Button size="large" style={{ fontWeight: 600 }} onClick={openEdit}>
                   Edit profile
                 </Button>
-                <Button type="primary" size="large" style={{ fontWeight: 700 }} onClick={handleDownloadResume}>
+                <Button
+                  type="primary"
+                  size="large"
+                  style={{ fontWeight: 700 }}
+                  onClick={handleDownloadResume}
+                >
                   View resume
                 </Button>
               </Flex>
@@ -243,7 +271,16 @@ export function CandidateProfilePage() {
               }}
             />
             <div style={{ position: 'relative', zIndex: 1 }}>
-              <Title level={4} style={{ marginTop: 0, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Title
+                level={4}
+                style={{
+                  marginTop: 0,
+                  marginBottom: 24,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                }}
+              >
                 <SecurityScanOutlined style={{ color: token.colorPrimary }} />
                 Security
               </Title>
@@ -255,8 +292,11 @@ export function CandidateProfilePage() {
                   marginBottom: 24,
                 }}
               >
-                <Paragraph style={{ marginBottom: 16, fontSize: 13, color: token.colorTextSecondary }}>
-                  Protect your account by regularly updating your password and monitoring login activity.
+                <Paragraph
+                  style={{ marginBottom: 16, fontSize: 13, color: token.colorTextSecondary }}
+                >
+                  Protect your account by regularly updating your password and monitoring login
+                  activity.
                 </Paragraph>
               </div>
               <Button
@@ -286,12 +326,24 @@ export function CandidateProfilePage() {
               }}
               styles={{ body: { padding: 32 } }}
             >
-              <Title level={4} style={{ marginTop: 0, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Title
+                level={4}
+                style={{
+                  marginTop: 0,
+                  marginBottom: 24,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                }}
+              >
                 <RocketOutlined style={{ color: token.colorPrimary }} />
                 Latest application
               </Title>
               {latest ? (
-                <Link to={`/candidate/job/${latest.jobs.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                <Link
+                  to={`/candidate/job/${latest.jobs.id}`}
+                  style={{ textDecoration: 'none', color: 'inherit' }}
+                >
                   <Flex
                     vertical
                     gap={16}
@@ -383,8 +435,17 @@ export function CandidateProfilePage() {
               }}
               styles={{ body: { padding: 32 } }}
             >
-              <Flex justify="space-between" align="center" wrap gap={12} style={{ marginBottom: 24 }}>
-                <Title level={4} style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Flex
+                justify="space-between"
+                align="center"
+                wrap
+                gap={12}
+                style={{ marginBottom: 24 }}
+              >
+                <Title
+                  level={4}
+                  style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}
+                >
                   <FileTextOutlined style={{ color: token.colorPrimary }} />
                   Applied CVs
                 </Title>
@@ -416,7 +477,10 @@ export function CandidateProfilePage() {
                   dataSource={cvRows}
                   locale={{
                     emptyText: (
-                      <Empty description="No CVs yet — apply to a job to see your resumes here." style={{ padding: 24 }}>
+                      <Empty
+                        description="No CVs yet — apply to a job to see your resumes here."
+                        style={{ padding: 24 }}
+                      >
                         <Link to="/candidate/jobs">
                           <Button type="primary">Find jobs</Button>
                         </Link>
@@ -524,9 +588,9 @@ export function CandidateProfilePage() {
         <Form
           form={editForm}
           layout="vertical"
-          onFinish={async (v) => {
-             message.info('Profile update is coming soon in the production environment.')
-             setEditOpen(false)
+          onFinish={async () => {
+            message.info('Profile update is coming soon in the production environment.')
+            setEditOpen(false)
           }}
         >
           <Form.Item name="displayName" label="Display name" rules={[{ required: true }]}>
@@ -625,7 +689,6 @@ export function CandidateProfilePage() {
           </div>
         </Upload.Dragger>
       </Modal>
-
     </main>
   )
 }

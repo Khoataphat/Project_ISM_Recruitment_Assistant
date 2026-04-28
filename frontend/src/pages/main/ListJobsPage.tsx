@@ -50,6 +50,15 @@ type Job = {
   }
 }
 
+function getApiErrorMessage(err: unknown, fallback: string) {
+  if (err && typeof err === 'object') {
+    const maybe = err as { response?: { data?: { message?: unknown } } }
+    const msg = maybe.response?.data?.message
+    if (typeof msg === 'string' && msg.trim()) return msg
+  }
+  return fallback
+}
+
 function cardGradient(index: number, token: ReturnType<typeof theme.useToken>['token']) {
   const pairs: [string, string][] = [
     [token.colorPrimary, token.colorInfo],
@@ -82,8 +91,8 @@ export function ListJobsPage() {
         setLoading(true)
         const res = await apiClient.get('/jobs')
         setJobs(res.data.data)
-      } catch (err: any) {
-        setError(err.response?.data?.message ?? 'Failed to fetch jobs')
+      } catch (err: unknown) {
+        setError(getApiErrorMessage(err, 'Failed to fetch jobs'))
       } finally {
         setLoading(false)
       }
@@ -129,7 +138,15 @@ export function ListJobsPage() {
           {icon}
         </div>
         <div>
-          <Text type="secondary" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+          <Text
+            type="secondary"
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+            }}
+          >
             {label}
           </Text>
           <div>
@@ -173,12 +190,22 @@ export function ListJobsPage() {
                 <Tag icon={<RocketOutlined />} color="processing" style={{ marginBottom: 10 }}>
                   Curated listings
                 </Tag>
-                <Title level={2} style={{ margin: 0, marginBottom: 8, fontWeight: 800, letterSpacing: '-0.02em' }}>
+                <Title
+                  level={2}
+                  style={{ margin: 0, marginBottom: 8, fontWeight: 800, letterSpacing: '-0.02em' }}
+                >
                   Find your next role
                 </Title>
-                <Paragraph style={{ marginBottom: 0, color: token.colorTextSecondary, fontSize: 15, maxWidth: 520 }}>
-                  Search live openings, compare teams, and jump into full job briefs. Each card highlights location,
-                  compensation, and the skills employers care about most.
+                <Paragraph
+                  style={{
+                    marginBottom: 0,
+                    color: token.colorTextSecondary,
+                    fontSize: 15,
+                    maxWidth: 520,
+                  }}
+                >
+                  Search live openings, compare teams, and jump into full job briefs. Each card
+                  highlights location, compensation, and the skills employers care about most.
                 </Paragraph>
               </div>
 
@@ -216,7 +243,12 @@ export function ListJobsPage() {
                 boxShadow: token.boxShadowTertiary,
               }}
             >
-              <Image src={landingHero} alt="" preview={false} style={{ width: '100%', display: 'block' }} />
+              <Image
+                src={landingHero}
+                alt=""
+                preview={false}
+                style={{ width: '100%', display: 'block' }}
+              />
               <div
                 style={{
                   position: 'absolute',
@@ -319,7 +351,10 @@ export function ListJobsPage() {
                       </div>
                     </Badge.Ribbon>
                     <div style={{ minWidth: 0 }}>
-                      <Link to={`/main/job/${job.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                      <Link
+                        to={`/main/job/${job.id}`}
+                        style={{ textDecoration: 'none', color: 'inherit' }}
+                      >
                         <Title level={4} style={{ margin: 0, fontWeight: 700 }}>
                           {job.title}
                         </Title>
@@ -332,17 +367,26 @@ export function ListJobsPage() {
                       </Flex>
                     </div>
                   </Flex>
-                  <Button type="text" icon={<HeartOutlined />} aria-label="Save job" style={{ color: token.colorTextSecondary }} />
+                  <Button
+                    type="text"
+                    icon={<HeartOutlined />}
+                    aria-label="Save job"
+                    style={{ color: token.colorTextSecondary }}
+                  />
                 </Flex>
 
                 <Flex vertical gap={8}>
                   <Flex align="center" gap={8} wrap>
                     <EnvironmentOutlined style={{ color: token.colorPrimary }} />
-                    <Text style={{ color: token.colorTextSecondary, fontWeight: 500 }}>{job.location}</Text>
+                    <Text style={{ color: token.colorTextSecondary, fontWeight: 500 }}>
+                      {job.location}
+                    </Text>
                   </Flex>
                   <Flex align="center" gap={8} wrap>
                     <DollarOutlined style={{ color: token.colorSuccess }} />
-                    <Paragraph style={{ marginBottom: 0, color: token.colorText, fontWeight: 600 }}>{job.salary}</Paragraph>
+                    <Paragraph style={{ marginBottom: 0, color: token.colorText, fontWeight: 600 }}>
+                      {job.salary}
+                    </Paragraph>
                   </Flex>
                   <Flex align="center" gap={8}>
                     <ClockCircleOutlined style={{ color: token.colorWarning }} />

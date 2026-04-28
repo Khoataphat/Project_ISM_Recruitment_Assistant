@@ -8,7 +8,19 @@ import {
   RightOutlined,
   StarOutlined,
 } from '@ant-design/icons'
-import { Avatar, Breadcrumb, Button, Col, Flex, Row, Segmented, Space, Tag, Typography, theme } from 'antd'
+import {
+  Avatar,
+  Breadcrumb,
+  Button,
+  Col,
+  Flex,
+  Row,
+  Segmented,
+  Space,
+  Tag,
+  Typography,
+  theme,
+} from 'antd'
 import type { CSSProperties } from 'react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -138,7 +150,14 @@ function StatusTag({
           color: token.colorSuccess,
         }}
       >
-        <span style={{ ...dot, background: token.colorSuccess, display: 'inline-block', verticalAlign: 'middle' }} />
+        <span
+          style={{
+            ...dot,
+            background: token.colorSuccess,
+            display: 'inline-block',
+            verticalAlign: 'middle',
+          }}
+        />
         Active
       </Tag>
     )
@@ -156,7 +175,14 @@ function StatusTag({
           color: token.colorWarning,
         }}
       >
-        <span style={{ ...dot, background: token.colorWarning, display: 'inline-block', verticalAlign: 'middle' }} />
+        <span
+          style={{
+            ...dot,
+            background: token.colorWarning,
+            display: 'inline-block',
+            verticalAlign: 'middle',
+          }}
+        />
         Paused
       </Tag>
     )
@@ -173,13 +199,26 @@ function StatusTag({
         color: token.colorTextSecondary,
       }}
     >
-      <span style={{ ...dot, background: token.colorTextTertiary, display: 'inline-block', verticalAlign: 'middle' }} />
+      <span
+        style={{
+          ...dot,
+          background: token.colorTextTertiary,
+          display: 'inline-block',
+          verticalAlign: 'middle',
+        }}
+      />
       Filled
     </Tag>
   )
 }
 
-function JobListRow({ job, token }: { job: JobItem; token: ReturnType<typeof theme.useToken>['token'] }) {
+function JobListRow({
+  job,
+  token,
+}: {
+  job: JobItem
+  token: ReturnType<typeof theme.useToken>['token']
+}) {
   const [hovered, setHovered] = useState(false)
 
   const jobCardStyle: CSSProperties = {
@@ -244,7 +283,12 @@ function JobListRow({ job, token }: { job: JobItem; token: ReturnType<typeof the
         </Typography.Text>
       </Col>
       <Col xs={12} lg={2} style={{ textAlign: 'right' }}>
-        <Button type="text" icon={<EllipsisOutlined />} style={{ color: token.colorTextTertiary }} aria-label="Actions" />
+        <Button
+          type="text"
+          icon={<EllipsisOutlined />}
+          style={{ color: token.colorTextTertiary }}
+          aria-label="Actions"
+        />
       </Col>
     </Row>
   )
@@ -357,11 +401,17 @@ export function HrMyJobPage() {
           />
           <Flex justify="space-between" align="flex-end" wrap="wrap" gap={token.marginLG}>
             <div style={{ maxWidth: 420 }}>
-              <Typography.Title level={1} style={{ margin: 0, fontWeight: 800, letterSpacing: '-0.02em' }}>
+              <Typography.Title
+                level={1}
+                style={{ margin: 0, fontWeight: 800, letterSpacing: '-0.02em' }}
+              >
                 Job Management
               </Typography.Title>
-              <Typography.Paragraph style={{ margin: `${token.marginXS}px 0 0`, color: token.colorTextSecondary }}>
-                Oversee your active requisitions and talent pipeline across the enterprise infrastructure.
+              <Typography.Paragraph
+                style={{ margin: `${token.marginXS}px 0 0`, color: token.colorTextSecondary }}
+              >
+                Oversee your active requisitions and talent pipeline across the enterprise
+                infrastructure.
               </Typography.Paragraph>
             </div>
             <Flex
@@ -393,7 +443,12 @@ export function HrMyJobPage() {
                   marginInline: token.marginXXS,
                 }}
               />
-              <Button type="text" icon={<FilterOutlined />} aria-label="Filter" style={{ color: token.colorTextSecondary }} />
+              <Button
+                type="text"
+                icon={<FilterOutlined />}
+                aria-label="Filter"
+                style={{ color: token.colorTextSecondary }}
+              />
             </Flex>
           </Flex>
         </header>
@@ -428,13 +483,27 @@ export function HrMyJobPage() {
           <Col xs={24} md={16}>
             <div style={promoStyle}>
               <div style={{ position: 'relative', zIndex: 1, maxWidth: 360 }}>
-                <Typography.Title level={4} style={{ margin: `0 0 ${token.marginXS}px`, color: token.colorText }}>
+                <Typography.Title
+                  level={4}
+                  style={{ margin: `0 0 ${token.marginXS}px`, color: token.colorText }}
+                >
                   Ready to expand?
                 </Typography.Title>
-                <Typography.Paragraph style={{ color: token.colorTextSecondary, marginBottom: token.marginLG, fontSize: token.fontSize }}>
-                  Your current fulfillment rate is 12% higher than last quarter. Scale your team with Enterprise AI tools.
+                <Typography.Paragraph
+                  style={{
+                    color: token.colorTextSecondary,
+                    marginBottom: token.marginLG,
+                    fontSize: token.fontSize,
+                  }}
+                >
+                  Your current fulfillment rate is 12% higher than last quarter. Scale your team
+                  with Enterprise AI tools.
                 </Typography.Paragraph>
-                <Button type="primary" size="large" style={{ fontWeight: 700, borderRadius: token.borderRadiusLG }}>
+                <Button
+                  type="primary"
+                  size="large"
+                  style={{ fontWeight: 700, borderRadius: token.borderRadiusLG }}
+                >
                   Explore Talent Pool
                 </Button>
               </div>
@@ -453,13 +522,33 @@ export function HrMyJobPage() {
           </Col>
           <Col xs={24} md={8}>
             <div style={statCardStyle}>
-              <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM, fontWeight: 700, letterSpacing: '0.08em' }}>
+              <Typography.Text
+                type="secondary"
+                style={{ fontSize: token.fontSizeSM, fontWeight: 700, letterSpacing: '0.08em' }}
+              >
                 TOTAL CANDIDATES
               </Typography.Text>
-              <Typography.Title level={1} style={{ margin: `${token.marginSM}px 0 0`, fontWeight: 900, fontSize: 48, lineHeight: 1.1 }}>
+              <Typography.Title
+                level={1}
+                style={{
+                  margin: `${token.marginSM}px 0 0`,
+                  fontWeight: 900,
+                  fontSize: 48,
+                  lineHeight: 1.1,
+                }}
+              >
                 1,284
               </Typography.Title>
-              <Flex align="center" gap={token.marginXXS} style={{ marginTop: token.margin, color: token.colorSuccess, fontWeight: 700, fontSize: token.fontSize }}>
+              <Flex
+                align="center"
+                gap={token.marginXXS}
+                style={{
+                  marginTop: token.margin,
+                  color: token.colorSuccess,
+                  fontWeight: 700,
+                  fontSize: token.fontSize,
+                }}
+              >
                 <ArrowUpOutlined />
                 +8.2% this month
               </Flex>

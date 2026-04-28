@@ -180,7 +180,11 @@
 .candidate-jobPreviewMediaShade {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, color-mix(in srgb, var(--candidate-text) 38%, transparent), transparent 52%);
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--candidate-text) 38%, transparent),
+    transparent 52%
+  );
   pointer-events: none;
 }
 
@@ -265,7 +269,9 @@
 .candidate-jobLogo {
   filter: grayscale(1);
   opacity: 0.82;
-  transition: filter 160ms ease, opacity 160ms ease;
+  transition:
+    filter 160ms ease,
+    opacity 160ms ease;
 }
 
 .candidate-jobCard:hover .candidate-jobLogo {
@@ -519,7 +525,10 @@
   );
   box-shadow: 0 4px 14px 0 color-mix(in srgb, var(--candidate-primary) 40%, transparent);
   transform: scale(0.98);
-  transition: transform 120ms ease, filter 120ms ease, opacity 120ms ease;
+  transition:
+    transform 120ms ease,
+    filter 120ms ease,
+    opacity 120ms ease;
 }
 
 .candidate-applyNowBtn.ant-btn:hover {
@@ -619,7 +628,9 @@
   color: color-mix(in srgb, var(--candidate-text) 55%, transparent);
   font-size: 12px;
   text-decoration: none;
-  transition: color 160ms ease, opacity 160ms ease;
+  transition:
+    color 160ms ease,
+    opacity 160ms ease;
   opacity: 0.92;
 }
 
@@ -696,4 +707,3 @@
 .candidate-applyModalWrap.ant-modal-wrap {
   z-index: 1100;
 }
-

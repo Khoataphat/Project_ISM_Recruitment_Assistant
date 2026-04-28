@@ -1,5 +1,5 @@
 import { BrowserRouter, Route, Routes } from 'react-router'
-import { AuthProvider } from '@/context/AuthContext'
+import { AuthProvider } from '@/context/AuthProvider'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 
 import { AuthLayout } from '@/layouts/AuthLayout'
@@ -27,19 +27,19 @@ const App = () => (
   <AuthProvider>
     <BrowserRouter>
       <Routes>
-      <Route element={<AuthLayout />}>
-        <Route path="login" element={<LoginPage />} />
-        <Route path="register" element={<RegisterPage />} />
-      </Route>
-      <Route path="/" element={<MainLayout />}>
-        <Route index element={<LandingPage />} />
-      </Route>
-      <Route path="main" element={<MainLayout />}>
-        <Route index element={<LandingPage />} />
-        <Route path="jobs" element={<ListJobsPage />} />
-        <Route path="job/:id" element={<JobDetailsPage />} />
-        <Route path="job/:id/status" element={<JobStatusPage />} />
-      </Route>
+        <Route element={<AuthLayout />}>
+          <Route path="login" element={<LoginPage />} />
+          <Route path="register" element={<RegisterPage />} />
+        </Route>
+        <Route path="/" element={<MainLayout />}>
+          <Route index element={<LandingPage />} />
+        </Route>
+        <Route path="main" element={<MainLayout />}>
+          <Route index element={<LandingPage />} />
+          <Route path="jobs" element={<ListJobsPage />} />
+          <Route path="job/:id" element={<JobDetailsPage />} />
+          <Route path="job/:id/status" element={<JobStatusPage />} />
+        </Route>
         <Route element={<ProtectedRoute allowedRoles={['HR']} />}>
           <Route path="hr" element={<HrLayout />}>
             <Route path="dashboard" element={<HrDashboardPage />} />
@@ -62,6 +62,6 @@ const App = () => (
       </Routes>
     </BrowserRouter>
   </AuthProvider>
-);
+)
 
-export default App;
+export default App

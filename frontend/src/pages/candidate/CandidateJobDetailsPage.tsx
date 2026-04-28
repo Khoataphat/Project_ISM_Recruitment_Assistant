@@ -1,5 +1,17 @@
 import { BankOutlined, EnvironmentOutlined, LeftOutlined } from '@ant-design/icons'
-import { Breadcrumb, Button, Col, Flex, Image, Result, Row, Typography, theme, Spin, message } from 'antd'
+import {
+  Breadcrumb,
+  Button,
+  Col,
+  Flex,
+  Image,
+  Result,
+  Row,
+  Typography,
+  theme,
+  Spin,
+  message,
+} from 'antd'
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
@@ -23,6 +35,15 @@ type JobDetail = {
   }
 }
 
+function getApiErrorMessage(err: unknown, fallback: string) {
+  if (err && typeof err === 'object') {
+    const maybe = err as { response?: { data?: { message?: unknown } } }
+    const msg = maybe.response?.data?.message
+    if (typeof msg === 'string' && msg.trim()) return msg
+  }
+  return fallback
+}
+
 export function CandidateJobDetailsPage() {
   const { token } = theme.useToken()
   const { id } = useParams()
@@ -38,8 +59,8 @@ export function CandidateJobDetailsPage() {
         setLoading(true)
         const res = await apiClient.get(`/jobs/${id}`)
         setJob(res.data.data)
-      } catch (err: any) {
-        setError(err.response?.data?.message ?? 'Failed to fetch job details')
+      } catch (err: unknown) {
+        setError(getApiErrorMessage(err, 'Failed to fetch job details'))
       } finally {
         setLoading(false)
       }
@@ -59,8 +80,8 @@ export function CandidateJobDetailsPage() {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
       message.success('Your application has been submitted successfully!')
-    } catch (err: any) {
-      throw new Error(err.response?.data?.message ?? 'Failed to submit application')
+    } catch (err: unknown) {
+      throw new Error(getApiErrorMessage(err, 'Failed to submit application'))
     }
   }
 
@@ -77,7 +98,7 @@ export function CandidateJobDetailsPage() {
       <Result
         status="404"
         title="Job not found"
-        subTitle={error ?? "This listing is unavailable or the link is incorrect."}
+        subTitle={error ?? 'This listing is unavailable or the link is incorrect.'}
         extra={
           <Link to="/candidate/jobs">
             <Button type="primary">Back to jobs</Button>
@@ -104,7 +125,11 @@ export function CandidateJobDetailsPage() {
               />
 
               <Flex align="center" wrap gap={12} style={{ marginTop: 8, marginBottom: 10 }}>
-                <Title className="candidate-jobH1" level={1} style={{ margin: 0, flex: '1 1 280px', minWidth: 0 }}>
+                <Title
+                  className="candidate-jobH1"
+                  level={1}
+                  style={{ margin: 0, flex: '1 1 280px', minWidth: 0 }}
+                >
                   {job.title}
                 </Title>
               </Flex>
@@ -112,7 +137,9 @@ export function CandidateJobDetailsPage() {
               <Flex wrap gap={18} align="center">
                 <Flex gap={8} align="center">
                   <BankOutlined style={{ fontSize: 16, color: token.colorTextSecondary }} />
-                  <Text style={{ fontWeight: 700, color: token.colorText }}>{job.companies.name}</Text>
+                  <Text style={{ fontWeight: 700, color: token.colorText }}>
+                    {job.companies.name}
+                  </Text>
                 </Flex>
                 <Flex gap={8} align="center">
                   <EnvironmentOutlined style={{ fontSize: 16, color: token.colorTextSecondary }} />
@@ -124,14 +151,20 @@ export function CandidateJobDetailsPage() {
                 </Flex>
               </Flex>
 
-              <Text style={{ display: 'block', marginTop: 10, color: token.colorTextTertiary }}>Job ID: {id}</Text>
+              <Text style={{ display: 'block', marginTop: 10, color: token.colorTextTertiary }}>
+                Job ID: {id}
+              </Text>
             </div>
 
             <Flex gap={10} wrap>
               <Link to="/candidate/jobs">
                 <Button icon={<LeftOutlined />}>Back</Button>
               </Link>
-              <Button type="primary" className="candidate-applyNowBtn" onClick={() => setApplyOpen(true)}>
+              <Button
+                type="primary"
+                className="candidate-applyNowBtn"
+                onClick={() => setApplyOpen(true)}
+              >
                 Apply Now
               </Button>
             </Flex>
@@ -166,21 +199,31 @@ export function CandidateJobDetailsPage() {
               About the Role
             </Title>
             <div className="candidate-prose">
-              <Paragraph style={{ marginTop: 0, color: token.colorTextSecondary, whiteSpace: 'pre-wrap' }}>
+              <Paragraph
+                style={{ marginTop: 0, color: token.colorTextSecondary, whiteSpace: 'pre-wrap' }}
+              >
                 {job.description}
               </Paragraph>
-              
+
               {job.requirements && (
                 <>
-                  <Title level={4} style={{ marginTop: 24 }}>Requirements</Title>
-                  <Paragraph style={{ color: token.colorTextSecondary, whiteSpace: 'pre-wrap' }}>{job.requirements}</Paragraph>
+                  <Title level={4} style={{ marginTop: 24 }}>
+                    Requirements
+                  </Title>
+                  <Paragraph style={{ color: token.colorTextSecondary, whiteSpace: 'pre-wrap' }}>
+                    {job.requirements}
+                  </Paragraph>
                 </>
               )}
 
               {job.benefits && (
                 <>
-                  <Title level={4} style={{ marginTop: 24 }}>Benefits</Title>
-                  <Paragraph style={{ color: token.colorTextSecondary, whiteSpace: 'pre-wrap' }}>{job.benefits}</Paragraph>
+                  <Title level={4} style={{ marginTop: 24 }}>
+                    Benefits
+                  </Title>
+                  <Paragraph style={{ color: token.colorTextSecondary, whiteSpace: 'pre-wrap' }}>
+                    {job.benefits}
+                  </Paragraph>
                 </>
               )}
             </div>
@@ -205,7 +248,9 @@ export function CandidateJobDetailsPage() {
           <div>
             <Text className="candidate-detailFooterBrand">Editorial Enterprise Recruitment</Text>
             <div style={{ height: 6 }} />
-            <Text className="candidate-detailFooterCopy">© 2026 Editorial Enterprise Recruitment. All rights reserved.</Text>
+            <Text className="candidate-detailFooterCopy">
+              © 2026 Editorial Enterprise Recruitment. All rights reserved.
+            </Text>
           </div>
 
           <Flex wrap gap={18} justify="center" className="candidate-detailFooterLinks">

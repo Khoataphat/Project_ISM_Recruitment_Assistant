@@ -13,4 +13,3 @@ export const appEnv = {
   isProd: import.meta.env.PROD,
   isDev: import.meta.env.DEV,
 } as const
-

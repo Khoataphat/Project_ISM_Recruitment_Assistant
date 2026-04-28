@@ -3,7 +3,12 @@ import { Button, Flex, Input, Tag, Typography, theme } from 'antd'
 import type { CSSProperties } from 'react'
 import heroBackground from '../../../assets/images/background-interview.jpg'
 
-const popularSearches = ['Product Designer', 'Frontend Engineer', 'Data Scientist', 'DevOps'] as const
+const popularSearches = [
+  'Product Designer',
+  'Frontend Engineer',
+  'Data Scientist',
+  'DevOps',
+] as const
 
 export function NewHeroSection() {
   const { token } = theme.useToken()
@@ -29,7 +34,7 @@ export function NewHeroSection() {
         paddingBottom: 128,
         overflow: 'hidden',
         background: token.colorBgLayout,
-        minHeight: "78vh",
+        minHeight: '78vh',
       }}
     >
       <div
@@ -58,9 +63,23 @@ export function NewHeroSection() {
 
       <div
         className="main-container"
-        style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+        style={{
+          position: 'relative',
+          zIndex: 1,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
       >
-        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+        <div
+          style={{
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
           <Tag
             className="landing-heroBadge"
             style={{
@@ -91,17 +110,34 @@ export function NewHeroSection() {
               textAlign: 'center',
             }}
           >
-            Find your dream <span className="landing-heroAccent">tech <br/>career</span> with AI Recruit
+            Find your dream{' '}
+            <span className="landing-heroAccent">
+              tech <br />
+              career
+            </span>{' '}
+            with AI Recruit
           </Typography.Title>
 
-            <Typography.Text style={{ color: token.colorTextSecondary, marginBottom: 16, marginTop: 16, fontSize: 16, textAlign: 'center' }} type='secondary'>
-              We connect exceptional professionals with high-performing organizations through a platform engineered for strategic placement.
-              <br/>Join the digital architect of careers today.
-            </Typography.Text>
+          <Typography.Text
+            style={{
+              color: token.colorTextSecondary,
+              marginBottom: 16,
+              marginTop: 16,
+              fontSize: 16,
+              textAlign: 'center',
+            }}
+            type="secondary"
+          >
+            We connect exceptional professionals with high-performing organizations through a
+            platform engineered for strategic placement.
+            <br />
+            Join the digital architect of careers today.
+          </Typography.Text>
 
           <div
             className="landing-searchCard shadow-soft-blue"
-            style={{  marginTop: 16,
+            style={{
+              marginTop: 16,
               background: token.colorBgContainer,
               borderRadius: token.borderRadius,
               border: `1px solid ${token.colorBorderSecondary}`,
@@ -110,7 +146,7 @@ export function NewHeroSection() {
           >
             <Flex gap={8} wrap="wrap" align="stretch">
               <Input
-                variant='borderless'
+                variant="borderless"
                 size="large"
                 className="landing-searchInput"
                 prefix={<SearchOutlined style={{ color: token.colorTextSecondary }} />}
@@ -125,7 +161,7 @@ export function NewHeroSection() {
               <div className="landing-searchDivider" aria-hidden />
 
               <Input
-                variant='borderless'
+                variant="borderless"
                 size="large"
                 className="landing-searchInput"
                 prefix={<EnvironmentOutlined style={{ color: token.colorTextSecondary }} />}

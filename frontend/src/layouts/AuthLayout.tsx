@@ -8,10 +8,7 @@ export function AuthLayout() {
     <main className="auth-shell">
       {/* Left Column: Branding */}
       <section className="auth-left" aria-hidden>
-        <div
-          className="auth-leftBg"
-          style={{ backgroundImage: `url(${BackgroundImage})` }}
-        />
+        <div className="auth-leftBg" style={{ backgroundImage: `url(${BackgroundImage})` }} />
         <div className="auth-leftOverlay" />
 
         <Link className="auth-logoAnchor" to="/">
@@ -35,7 +32,8 @@ export function AuthLayout() {
               fontSize: 56,
             }}
           >
-            Architecting <br/>the future of talent.
+            Architecting <br />
+            the future of talent.
           </Typography.Title>
 
           <Typography.Paragraph
@@ -46,8 +44,11 @@ export function AuthLayout() {
               maxWidth: 520,
             }}
           >
-            Join a world-class hiring ecosystem built for scale, precision, and impact.<br/> 
-            We connect exceptional professionals with high-performing organizations through a platform engineered for strategic placement.<br/> 
+            Join a world-class hiring ecosystem built for scale, precision, and impact.
+            <br />
+            We connect exceptional professionals with high-performing organizations through a
+            platform engineered for strategic placement.
+            <br />
             Join the digital architect of careers today.
           </Typography.Paragraph>
         </div>
@@ -61,9 +62,7 @@ export function AuthLayout() {
           </Link>
           <Outlet />
         </div>
-
       </section>
     </main>
   )
 }
-

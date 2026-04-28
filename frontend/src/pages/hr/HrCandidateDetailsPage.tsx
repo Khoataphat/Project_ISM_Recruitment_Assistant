@@ -65,9 +65,20 @@ const STATUS_COLOR: Record<string, string> = {
   Rejected: 'error',
 }
 
+function getApiErrorMessage(err: unknown, fallback: string) {
+  if (err && typeof err === 'object') {
+    const maybe = err as { response?: { data?: { message?: unknown } } }
+    const msg = maybe.response?.data?.message
+    if (typeof msg === 'string' && msg.trim()) return msg
+  }
+  return fallback
+}
+
 function formatDate(iso: string) {
   try {
-    return new Intl.DateTimeFormat(undefined, { dateStyle: 'full', timeStyle: 'short' }).format(new Date(iso))
+    return new Intl.DateTimeFormat(undefined, { dateStyle: 'full', timeStyle: 'short' }).format(
+      new Date(iso)
+    )
   } catch {
     return iso
   }
@@ -89,11 +100,12 @@ export function HrCandidateDetailsPage() {
         setError(null)
         const res = await apiClient.get(`/dashboard/applications/${id}`)
         setApp(res.data.data)
-      } catch (err: any) {
-        if (err.response?.status === 404) {
+      } catch (err: unknown) {
+        const maybe = err as { response?: { status?: unknown } }
+        if (maybe.response?.status === 404) {
           setApp(null)
         } else {
-          setError(err.response?.data?.message ?? 'Failed to load application')
+          setError(getApiErrorMessage(err, 'Failed to load application'))
         }
       } finally {
         setLoading(false)
@@ -109,8 +121,8 @@ export function HrCandidateDetailsPage() {
       await apiClient.patch(`/dashboard/applications/${app.id}/status`, { status: newStatus })
       setApp({ ...app, hr_status: newStatus })
       message.success(`Status updated to ${newStatus}`)
-    } catch (err: any) {
-      message.error(err.response?.data?.message ?? 'Failed to update status')
+    } catch (err: unknown) {
+      message.error(getApiErrorMessage(err, 'Failed to update status'))
     } finally {
       setUpdating(false)
     }
@@ -186,16 +198,26 @@ export function HrCandidateDetailsPage() {
             {/* Job Info + Status Control */}
             <Flex align="center" gap={16} wrap>
               {app.jobs.companies.logo_url && (
-                <Avatar size={56} src={app.jobs.companies.logo_url} shape="square"
-                  style={{ borderRadius: token.borderRadiusLG, border: `1px solid ${token.colorBorderSecondary}` }}
+                <Avatar
+                  size={56}
+                  src={app.jobs.companies.logo_url}
+                  shape="square"
+                  style={{
+                    borderRadius: token.borderRadiusLG,
+                    border: `1px solid ${token.colorBorderSecondary}`,
+                  }}
                 />
               )}
               <div style={{ flex: 1, minWidth: 200 }}>
-                <Title level={4} style={{ margin: 0 }}>{app.jobs.title}</Title>
+                <Title level={4} style={{ margin: 0 }}>
+                  {app.jobs.title}
+                </Title>
                 <Text type="secondary">{app.jobs.companies.name}</Text>
               </div>
               <Flex vertical gap={8} style={{ minWidth: 220 }}>
-                <Text type="secondary" style={{ fontSize: 12, fontWeight: 600 }}>Pipeline status</Text>
+                <Text type="secondary" style={{ fontSize: 12, fontWeight: 600 }}>
+                  Pipeline status
+                </Text>
                 <Select
                   value={app.hr_status}
                   onChange={handleStatusChange}
@@ -204,7 +226,11 @@ export function HrCandidateDetailsPage() {
                   style={{ width: '100%' }}
                   options={HR_STATUS_OPTIONS.map((o) => ({
                     value: o.value,
-                    label: <Tag color={STATUS_COLOR[o.value]} style={{ margin: 0 }}>{o.label}</Tag>,
+                    label: (
+                      <Tag color={STATUS_COLOR[o.value]} style={{ margin: 0 }}>
+                        {o.label}
+                      </Tag>
+                    ),
                   }))}
                 />
               </Flex>

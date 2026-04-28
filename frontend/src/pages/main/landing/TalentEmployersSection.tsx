@@ -87,7 +87,12 @@ export function TalentEmployersSection() {
                 </Row>
               </Card>
 
-              <Space className="main-checkList" orientation="vertical" size={10} style={{ width: '100%' }}>
+              <Space
+                className="main-checkList"
+                orientation="vertical"
+                size={10}
+                style={{ width: '100%' }}
+              >
                 {employerChecks.map((item) => (
                   <div key={item} className="main-checkRow">
                     <Space>
@@ -98,7 +103,13 @@ export function TalentEmployersSection() {
                 ))}
               </Space>
 
-              <Button type="primary" size="large" block style={{ marginTop: 18 }} onClick={() => navigate('/candidate/jobs')}>
+              <Button
+                type="primary"
+                size="large"
+                block
+                style={{ marginTop: 18 }}
+                onClick={() => navigate('/candidate/jobs')}
+              >
                 Access Employer Portal
               </Button>
             </Card>
@@ -108,4 +119,3 @@ export function TalentEmployersSection() {
     </section>
   )
 }
-

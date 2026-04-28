@@ -1,6 +1,19 @@
 import { BulbOutlined, FilePdfOutlined } from '@ant-design/icons'
-import { Button, Card, Col, Empty, Flex, Image, Row, Tag, Typography, theme, Spin, Alert } from 'antd'
-import { useEffect, useMemo, useState } from 'react'
+import {
+  Button,
+  Card,
+  Col,
+  Empty,
+  Flex,
+  Image,
+  Row,
+  Tag,
+  Typography,
+  theme,
+  Spin,
+  Alert,
+} from 'antd'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
 import { apiClient } from '@/lib/api'
@@ -33,12 +46,23 @@ const HR_STATUS_COLOR: Record<string, string> = {
 
 function formatAppliedDate(iso: string) {
   try {
-    return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' }).format(
-      new Date(iso),
-    )
+    return new Intl.DateTimeFormat(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    }).format(new Date(iso))
   } catch {
     return iso
   }
+}
+
+function getApiErrorMessage(err: unknown, fallback: string) {
+  if (err && typeof err === 'object') {
+    const maybe = err as { response?: { data?: { message?: unknown } } }
+    const msg = maybe.response?.data?.message
+    if (typeof msg === 'string' && msg.trim()) return msg
+  }
+  return fallback
 }
 
 export function CandidateApplicationsPage() {
@@ -54,8 +78,8 @@ export function CandidateApplicationsPage() {
         setLoading(true)
         const res = await apiClient.get('/applications')
         setApplications(res.data.data)
-      } catch (err: any) {
-        setError(err.response?.data?.message ?? 'Failed to fetch applications')
+      } catch (err: unknown) {
+        setError(getApiErrorMessage(err, 'Failed to fetch applications'))
       } finally {
         setLoading(false)
       }
@@ -195,7 +219,10 @@ export function CandidateApplicationsPage() {
       <Flex vertical gap={40}>
         <Flex justify="space-between" align="flex-end" wrap gap={16}>
           <div>
-            <Title level={2} style={{ margin: 0, marginBottom: 8, fontWeight: 900, letterSpacing: '-0.02em' }}>
+            <Title
+              level={2}
+              style={{ margin: 0, marginBottom: 8, fontWeight: 900, letterSpacing: '-0.02em' }}
+            >
               Your Applications
             </Title>
             <Text style={{ color: token.colorTextSecondary, fontWeight: 600 }}>
@@ -216,7 +243,9 @@ export function CandidateApplicationsPage() {
                 >
                   Total Sent
                 </Text>
-                <Text style={{ fontSize: 20, fontWeight: 800, color: token.colorPrimary }}>{totalSent}</Text>
+                <Text style={{ fontSize: 20, fontWeight: 800, color: token.colorPrimary }}>
+                  {totalSent}
+                </Text>
               </Flex>
             </div>
             <div style={statBoxStyle}>
@@ -232,7 +261,9 @@ export function CandidateApplicationsPage() {
                 >
                   Interviews
                 </Text>
-                <Text style={{ fontSize: 20, fontWeight: 800, color: token.colorSuccess }}>{interviewCount}</Text>
+                <Text style={{ fontSize: 20, fontWeight: 800, color: token.colorSuccess }}>
+                  {interviewCount}
+                </Text>
               </Flex>
             </div>
           </Flex>
@@ -409,12 +440,27 @@ export function CandidateApplicationsPage() {
                 }}
                 styles={{ body: { padding: 32 } }}
               >
-                <BulbOutlined style={{ fontSize: 28, color: token.colorPrimary, marginBottom: 16, display: 'block' }} />
+                <BulbOutlined
+                  style={{
+                    fontSize: 28,
+                    color: token.colorPrimary,
+                    marginBottom: 16,
+                    display: 'block',
+                  }}
+                />
                 <Title level={4} style={{ marginTop: 0, marginBottom: 8 }}>
                   Editorial insight
                 </Title>
-                <Text style={{ display: 'block', marginBottom: 24, color: token.colorTextSecondary, lineHeight: 1.6 }}>
-                  Candidates who update their portfolio once every 3 months see a 40% increase in recruiter engagement.
+                <Text
+                  style={{
+                    display: 'block',
+                    marginBottom: 24,
+                    color: token.colorTextSecondary,
+                    lineHeight: 1.6,
+                  }}
+                >
+                  Candidates who update their portfolio once every 3 months see a 40% increase in
+                  recruiter engagement.
                 </Text>
                 <Button block size="large" type="default" style={{ fontWeight: 700 }}>
                   Explore advice

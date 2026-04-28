@@ -53,6 +53,15 @@ const HR_STATUS_COLOR: Record<string, string> = {
   Rejected: 'error',
 }
 
+function getApiErrorMessage(err: unknown, fallback: string) {
+  if (err && typeof err === 'object') {
+    const maybe = err as { response?: { data?: { message?: unknown } } }
+    const msg = maybe.response?.data?.message
+    if (typeof msg === 'string' && msg.trim()) return msg
+  }
+  return fallback
+}
+
 function formatDate(iso: string) {
   try {
     return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(iso))
@@ -71,8 +80,12 @@ const columns: ColumnsType<RecentApplication> = [
           {a.candidates.users.full_name?.[0] ?? '?'}
         </Avatar>
         <div>
-          <Text strong style={{ display: 'block' }}>{a.candidates.users.full_name}</Text>
-          <Text type="secondary" style={{ fontSize: 12 }}>{a.candidates.users.email}</Text>
+          <Text strong style={{ display: 'block' }}>
+            {a.candidates.users.full_name}
+          </Text>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            {a.candidates.users.email}
+          </Text>
         </div>
       </Flex>
     ),
@@ -108,7 +121,9 @@ const columns: ColumnsType<RecentApplication> = [
     width: 80,
     render: (_, a) => (
       <Link to={`/hr/candidate/${a.id}`}>
-        <Button type="link" size="small" style={{ padding: 0 }}>View</Button>
+        <Button type="link" size="small" style={{ padding: 0 }}>
+          View
+        </Button>
       </Link>
     ),
   },
@@ -130,8 +145,8 @@ export function HrDashboardPage() {
         const { stats: s, recentApplications } = res.data.data
         setStats(s)
         setRecentApps(recentApplications ?? [])
-      } catch (err: any) {
-        setError(err.response?.data?.message ?? 'Failed to load dashboard data')
+      } catch (err: unknown) {
+        setError(getApiErrorMessage(err, 'Failed to load dashboard data'))
       } finally {
         setLoading(false)
       }
@@ -179,18 +194,27 @@ export function HrDashboardPage() {
           <Col xs={24} md={8}>
             <Card style={statCardStyle}>
               <Flex align="center" gap={12}>
-                <div style={{
-                  padding: 10, borderRadius: 12,
-                  background: `color-mix(in srgb, ${token.colorPrimary} 14%, transparent)`,
-                  color: token.colorPrimary, fontSize: 22,
-                }}>
+                <div
+                  style={{
+                    padding: 10,
+                    borderRadius: 12,
+                    background: `color-mix(in srgb, ${token.colorPrimary} 14%, transparent)`,
+                    color: token.colorPrimary,
+                    fontSize: 22,
+                  }}
+                >
                   <FileTextOutlined />
                 </div>
                 <div>
-                  <Text type="secondary" style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase' }}>
+                  <Text
+                    type="secondary"
+                    style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase' }}
+                  >
                     Open Jobs
                   </Text>
-                  <Title level={3} style={{ margin: 0 }}>{stats?.totalJobs ?? 0}</Title>
+                  <Title level={3} style={{ margin: 0 }}>
+                    {stats?.totalJobs ?? 0}
+                  </Title>
                 </div>
               </Flex>
             </Card>
@@ -198,18 +222,27 @@ export function HrDashboardPage() {
           <Col xs={24} md={8}>
             <Card style={statCardStyle}>
               <Flex align="center" gap={12}>
-                <div style={{
-                  padding: 10, borderRadius: 12,
-                  background: `color-mix(in srgb, ${token.colorInfo} 14%, transparent)`,
-                  color: token.colorInfo, fontSize: 22,
-                }}>
+                <div
+                  style={{
+                    padding: 10,
+                    borderRadius: 12,
+                    background: `color-mix(in srgb, ${token.colorInfo} 14%, transparent)`,
+                    color: token.colorInfo,
+                    fontSize: 22,
+                  }}
+                >
                   <CarryOutOutlined />
                 </div>
                 <div>
-                  <Text type="secondary" style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase' }}>
+                  <Text
+                    type="secondary"
+                    style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase' }}
+                  >
                     Total Applications
                   </Text>
-                  <Title level={3} style={{ margin: 0 }}>{stats?.totalApplications ?? 0}</Title>
+                  <Title level={3} style={{ margin: 0 }}>
+                    {stats?.totalApplications ?? 0}
+                  </Title>
                 </div>
               </Flex>
             </Card>
@@ -217,18 +250,27 @@ export function HrDashboardPage() {
           <Col xs={24} md={8}>
             <Card style={statCardStyle}>
               <Flex align="center" gap={12}>
-                <div style={{
-                  padding: 10, borderRadius: 12,
-                  background: `color-mix(in srgb, ${token.colorSuccess} 14%, transparent)`,
-                  color: token.colorSuccess, fontSize: 22,
-                }}>
+                <div
+                  style={{
+                    padding: 10,
+                    borderRadius: 12,
+                    background: `color-mix(in srgb, ${token.colorSuccess} 14%, transparent)`,
+                    color: token.colorSuccess,
+                    fontSize: 22,
+                  }}
+                >
                   <TeamOutlined />
                 </div>
                 <div>
-                  <Text type="secondary" style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase' }}>
+                  <Text
+                    type="secondary"
+                    style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase' }}
+                  >
                     Candidates
                   </Text>
-                  <Title level={3} style={{ margin: 0 }}>{stats?.totalCandidates ?? 0}</Title>
+                  <Title level={3} style={{ margin: 0 }}>
+                    {stats?.totalCandidates ?? 0}
+                  </Title>
                 </div>
               </Flex>
             </Card>
@@ -238,21 +280,31 @@ export function HrDashboardPage() {
         {/* Recent Applications Table */}
         <div style={sectionShell}>
           <Flex align="center" gap={8} style={{ marginBottom: token.marginLG }}>
-            <div style={{
-              padding: 8, borderRadius: 10, fontSize: 18,
-              background: `color-mix(in srgb, ${token.colorPrimary} 14%, transparent)`,
-              color: token.colorPrimary,
-            }}>
+            <div
+              style={{
+                padding: 8,
+                borderRadius: 10,
+                fontSize: 18,
+                background: `color-mix(in srgb, ${token.colorPrimary} 14%, transparent)`,
+                color: token.colorPrimary,
+              }}
+            >
               <BarChartOutlined />
             </div>
-            <Title level={4} style={{ margin: 0, fontWeight: 700 }}>Recent Applications</Title>
+            <Title level={4} style={{ margin: 0, fontWeight: 700 }}>
+              Recent Applications
+            </Title>
           </Flex>
 
           {recentApps.length === 0 ? (
             <Flex justify="center" align="center" style={{ padding: 40 }}>
               <div style={{ textAlign: 'center' }}>
-                <CheckCircleOutlined style={{ fontSize: 40, color: token.colorTextTertiary, marginBottom: 12 }} />
-                <Text type="secondary" style={{ display: 'block' }}>No applications yet</Text>
+                <CheckCircleOutlined
+                  style={{ fontSize: 40, color: token.colorTextTertiary, marginBottom: 12 }}
+                />
+                <Text type="secondary" style={{ display: 'block' }}>
+                  No applications yet
+                </Text>
               </div>
             </Flex>
           ) : (

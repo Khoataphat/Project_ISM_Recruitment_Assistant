@@ -17,7 +17,9 @@ export function CtaSection() {
               destination—it's a structure you build.
             </Typography.Paragraph>
             <Space size={12} wrap className="main-ctaActions">
-              <Button size="large" onClick={() => navigate('/candidate/jobs')}>Find Opportunities</Button>
+              <Button size="large" onClick={() => navigate('/candidate/jobs')}>
+                Find Opportunities
+              </Button>
             </Space>
           </div>
         </Card>
@@ -25,4 +27,3 @@ export function CtaSection() {
     </section>
   )
 }
-

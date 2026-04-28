@@ -21,10 +21,10 @@ export function FooterSection() {
           <Col xs={24} md={10}>
             <Space direction="vertical" size={6} style={{ width: '100%' }}>
               <Typography.Text style={{ fontWeight: 950, fontSize: 16, color: token.colorText }}>
-              { appEnv.appName }
+                {appEnv.appName}
               </Typography.Text>
               <Typography.Text style={{ color: token.colorTextSecondary }}>
-                © 2024 { appEnv.appName }. Built for the Digital Architect.
+                © 2024 {appEnv.appName}. Built for the Digital Architect.
               </Typography.Text>
             </Space>
           </Col>
