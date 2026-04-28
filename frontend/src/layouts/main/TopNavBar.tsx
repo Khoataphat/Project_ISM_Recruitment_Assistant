@@ -1,8 +1,9 @@
 import { Button, ConfigProvider, Drawer, Grid, Layout, Menu, Space, theme, Typography } from 'antd'
-import { MenuOutlined } from '@ant-design/icons'
+import { LogoutOutlined, MenuOutlined, UserOutlined } from '@ant-design/icons'
 import { useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { appEnv } from '@/config/env'
+import { useAuth } from '@/context/AuthContext'
 
 type NavItem = { key: string; label: string; to: string }
 
@@ -14,6 +15,7 @@ const navItems: NavItem[] = [
 
 export function TopNavBar() {
   const navigate = useNavigate()
+  const { user, logout, isAuthenticated, isHR } = useAuth()
   const { token } = theme.useToken()
   const screens = Grid.useBreakpoint()
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -44,6 +46,12 @@ export function TopNavBar() {
 
   const headerHeight = 80
   const isDesktop = !!screens.lg
+  const profilePath = isHR ? '/hr/dashboard' : '/candidate/profile'
+  const handleLogout = () => {
+    logout()
+    setMobileOpen(false)
+    navigate('/')
+  }
 
   return (
     <Layout.Header
@@ -129,20 +137,39 @@ export function TopNavBar() {
 
         {isDesktop ? (
           <Space size={12}>
-            <Link to="/login" style={{ textDecoration: 'none' }}>
-              <Button type="text">Sign In</Button>
-            </Link>
-            <Link to="/main/jobs" style={{ textDecoration: 'none' }}>
-              <Button type="primary">Post a Job</Button>
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <Link to={profilePath} style={{ textDecoration: 'none' }}>
+                  <Button type="text" icon={<UserOutlined />}>
+                    {user?.full_name ?? 'Account'}
+                  </Button>
+                </Link>
+                <Button type="primary" danger icon={<LogoutOutlined />} onClick={handleLogout}>
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link to="/login" style={{ textDecoration: 'none' }}>
+                  <Button type="text">Sign In</Button>
+                </Link>
+                <Link to="/register" style={{ textDecoration: 'none' }}>
+                  <Button type="primary">Sign Up</Button>
+                </Link>
+              </>
+            )}
           </Space>
         ) : (
           <Space size={8}>
-            <Link to="/main/jobs" style={{ textDecoration: 'none' }}>
-              <Button type="primary" onClick={() => navigate('/hr/jobs')}>
-                Post a Job
+            {isAuthenticated ? (
+              <Button type="primary" icon={<UserOutlined />} onClick={() => navigate(profilePath)}>
+                Account
               </Button>
-            </Link>
+            ) : (
+              <Link to="/login" style={{ textDecoration: 'none' }}>
+                <Button type="primary">Sign In</Button>
+              </Link>
+            )}
             <Button
               aria-label="Open menu"
               icon={<MenuOutlined />}
@@ -175,13 +202,33 @@ export function TopNavBar() {
         >
           <Menu mode="inline" selectedKeys={selectedKey ? [selectedKey] : []} items={menuItems} />
         </ConfigProvider>
-        <div style={{ marginTop: 16 }}>
-          <Link to="/login" style={{ textDecoration: 'none' }}>
-            <Button block type="default" onClick={() => setMobileOpen(false)}>
-              Sign In
-            </Button>
-          </Link>
-        </div>
+        <Space direction="vertical" size={10} style={{ marginTop: 16, width: '100%' }}>
+          {isAuthenticated ? (
+            <>
+              <Link to={profilePath} style={{ textDecoration: 'none' }}>
+                <Button block type="default" icon={<UserOutlined />} onClick={() => setMobileOpen(false)}>
+                  {user?.full_name ?? 'Account'}
+                </Button>
+              </Link>
+              <Button block danger icon={<LogoutOutlined />} onClick={handleLogout}>
+                Logout
+              </Button>
+            </>
+          ) : (
+            <>
+              <Link to="/login" style={{ textDecoration: 'none' }}>
+                <Button block type="default" onClick={() => setMobileOpen(false)}>
+                  Sign In
+                </Button>
+              </Link>
+              <Link to="/register" style={{ textDecoration: 'none' }}>
+                <Button block type="primary" onClick={() => setMobileOpen(false)}>
+                  Sign Up
+                </Button>
+              </Link>
+            </>
+          )}
+        </Space>
       </Drawer>
     </Layout.Header>
   )
