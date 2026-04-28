@@ -588,11 +588,7 @@ export function CandidateProfilePage() {
         <Form
           form={editForm}
           layout="vertical"
-<<<<<<< HEAD
-          onFinish={async () => {
-=======
           onFinish={async (v) => {
->>>>>>> cdf57bc (hotfix: đẩy mọi thứ lên docker)
             message.info('Profile update is coming soon in the production environment.')
             setEditOpen(false)
           }}

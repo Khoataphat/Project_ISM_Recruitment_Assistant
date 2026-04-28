@@ -7,9 +7,9 @@ services:
       - "6379:6379"
     restart: unless-stopped
 
-  # 2. Local Postgres (Optional, but included for standard environment)
+  # 2. Local Postgres with pgvector extension (required for vector(1536) columns in schema)
   postgres:
-    image: postgres:17-alpine
+    image: pgvector/pgvector:pg17
     container_name: recruitment-postgres
     ports:
       - "5432:5432"
@@ -47,6 +47,7 @@ services:
     volumes:
       - ./backend:/app
       - /app/node_modules
+      - ./database:/database:ro
     depends_on:
       redis:
         condition: service_started

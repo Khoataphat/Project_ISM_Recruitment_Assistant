@@ -15,9 +15,6 @@ export default defineConfig({
       '@': path.resolve(path.dirname(fileURLToPath(import.meta.url)), './src'),
     },
   },
-<<<<<<< HEAD
-  plugins: [react(), babel({ presets: [reactCompilerPreset()] })],
-=======
   plugins: [
     react(),
     babel({ presets: [reactCompilerPreset()] })
@@ -29,5 +26,4 @@ export default defineConfig({
       usePolling: true,
     },
   },
->>>>>>> cdf57bc (hotfix: đẩy mọi thứ lên docker)
 })
