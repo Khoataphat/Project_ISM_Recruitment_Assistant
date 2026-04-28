@@ -154,47 +154,97 @@ async function main() {
     }
   });
 
-  // 4. Create Jobs
-  console.log('Step 4: Creating Jobs from CSV...');
+  // 4. Upsert Jobs from CSV
+  console.log('Step 4: Upserting Jobs from CSV...');
   const filePath = path.join(__dirname, '../../database/topcv-vn-2026-04-25-5.xlsx');
   const workbook = xlsx.readFile(filePath);
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
   const data = xlsx.utils.sheet_to_json<any>(sheet);
 
-  let jobsCreated = 0;
+  // ── Phase A: Deduplicate rows from CSV ──────────────────────────────────────
+  // Keep only the first occurrence of each unique title from the spreadsheet
+  const seenTitles = new Set<string>();
+  const uniqueRows = data.filter((row: any) => {
+    const t = (row['jobs : title'] || row['title'] || '').trim();
+    if (!t || seenTitles.has(t)) return false;
+    seenTitles.add(t);
+    return true;
+  });
+  console.log(`📋 CSV: ${data.length} total rows → ${uniqueRows.length} unique titles.`);
 
-  // Optional: Clear existing jobs to ensure clean slate for this referential check
-  // await prisma.jobs.deleteMany({});
+  // ── Phase B: Clean existing DB duplicates ───────────────────────────────────
+  // For every (title, company_id) group that has more than 1 row in the DB,
+  // keep the OLDEST record and delete the rest (avoids migration requirement).
+  console.log('🧹 Cleaning duplicate jobs in database...');
+  const allJobs = await prisma.jobs.findMany({
+    where: { company_id: company.id },
+    select: { id: true, title: true, created_at: true },
+    orderBy: { created_at: 'asc' },
+  });
 
-  for (const row of data) {
-    const jobTitle = row['jobs : title'] || row['title'];
-    if (!jobTitle) continue;
+  const keepIds = new Map<string, string>(); // title → id of the one to keep
+  const deleteIds: string[] = [];
 
-    const level = mapExperienceToLevel(row['experience_level']);
-    const salary = parseSalary(row['currency']);
-    const deadline = parseDate(row['totalJobOpenings']);
-    const benefits = parseBenefits(row['jobBenefits']);
-    const fullDescription = `**Yêu cầu công việc:**\n${row['candidate_requirements'] || ''}\n\n**Tổng quan:**\n${row['employerOverview'] || ''}`;
-
-    await prisma.jobs.create({
-      data: {
-        title: jobTitle,
-        company_id: company.id, // Linked to step 1
-        hr_id: hrProfile.id,   // Linked to step 2
-        level: level,
-        description: fullDescription,
-        location: row['addressRegion'] || 'Remote',
-        salary_min: salary.min,
-        salary_max: salary.max,
-        application_deadline: deadline,
-        benefits: benefits,
-        status: job_status.Open,
-      }
-    });
-    jobsCreated++;
+  for (const job of allJobs) {
+    const key = job.title.trim();
+    if (!keepIds.has(key)) {
+      keepIds.set(key, job.id); // keep the oldest
+    } else {
+      deleteIds.push(job.id);   // mark the rest for deletion
+    }
   }
 
-  console.log(`✅ Seed sequence finished. Created/Updated 1 Company, 2 Users, and ${jobsCreated} Jobs.`);
+  if (deleteIds.length > 0) {
+    await prisma.jobs.deleteMany({ where: { id: { in: deleteIds } } });
+    console.log(`🗑️  Deleted ${deleteIds.length} duplicate job records.`);
+  } else {
+    console.log('✅ No duplicate jobs found in DB.');
+  }
+
+  // ── Phase C: Upsert 89 canonical jobs ───────────────────────────────────────
+  // findFirst → update if exists, create if not (manual upsert, no schema
+  // migration required, 100% idempotent on repeated runs).
+  let created = 0;
+  let updated = 0;
+
+  for (const row of uniqueRows) {
+    const jobTitle = (row['jobs : title'] || row['title']).trim();
+    const level    = mapExperienceToLevel(row['experience_level']);
+    const salary   = parseSalary(row['currency']);
+    const deadline = parseDate(row['totalJobOpenings']);
+    const benefits = parseBenefits(row['jobBenefits']);
+    const description = `**Yêu cầu công việc:**\n${row['candidate_requirements'] || ''}\n\n**Tổng quan:**\n${row['employerOverview'] || ''}`;
+
+    const jobData = {
+      hr_id:                hrProfile.id,
+      level,
+      description,
+      location:             row['addressRegion'] || 'Remote',
+      salary_min:           salary.min,
+      salary_max:           salary.max,
+      application_deadline: deadline,
+      benefits,
+      status:               job_status.Open,
+    };
+
+    const existing = await prisma.jobs.findFirst({
+      where: { title: jobTitle, company_id: company.id },
+      select: { id: true },
+    });
+
+    if (existing) {
+      await prisma.jobs.update({ where: { id: existing.id }, data: jobData });
+      updated++;
+    } else {
+      await prisma.jobs.create({
+        data: { title: jobTitle, company_id: company.id, ...jobData },
+      });
+      created++;
+    }
+  }
+
+  const totalAfter = await prisma.jobs.count({ where: { company_id: company.id } });
+  console.log(`✅ Seed done! Created: ${created} | Updated: ${updated} | Total jobs in DB: ${totalAfter}`);
 }
 
 main()
@@ -205,3 +255,4 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+
