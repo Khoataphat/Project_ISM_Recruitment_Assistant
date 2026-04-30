@@ -103,7 +103,7 @@ export function CandidateLayout() {
           background: token.colorBgLayout,
         }}
       >
-        <div style={{ padding: 24 }}>
+        <div style={{ paddingLeft: 24 }}>
           <Outlet />
         </div>
       </Layout.Content>

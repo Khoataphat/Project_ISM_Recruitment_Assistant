@@ -63,12 +63,12 @@
 
 .candidate-jobsMain {
   background: var(--candidate-bg-layout, #fcfcfc);
-  /* Full-bleed within CandidateLayout outlet (parent has padding: 24px) */
-  width: calc(100% + 48px);
+  width: 100%;
   max-width: none;
-  margin-left: -24px;
-  margin-right: -24px;
+  margin-left: 0;
+  margin-right: 0;
   box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .candidate-jobsHero {
@@ -118,7 +118,7 @@
   max-width: none;
   width: 100%;
   margin: 0;
-  padding: clamp(28px, 3vw, 40px) clamp(16px, 3vw, 36px) clamp(40px, 5vh, 64px);
+  padding: clamp(16px, 2vw, 24px) clamp(8px, 2vw, 16px) clamp(16px, 3vh, 32px);
   box-sizing: border-box;
 }
 
@@ -131,6 +131,14 @@
 
 .candidate-jobsListCol {
   min-width: 0;
+}
+
+.candidate-jobsListCol :where(.ant-table-row) {
+  cursor: pointer;
+}
+
+.candidate-jobsListCol :where(.ant-table) {
+  background: transparent;
 }
 
 .candidate-jobsListInner {
@@ -254,16 +262,14 @@
 }
 
 .candidate-jobLogoBox {
-  width: 104px;
-  height: 104px;
+  width: 8rem;
+  height: 8rem;
   border-radius: 20px;
   background: color-mix(in srgb, var(--candidate-border) 16%, transparent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   flex-shrink: 0;
   border: 1px solid color-mix(in srgb, var(--candidate-border) 35%, transparent);
   box-shadow: 0 6px 20px color-mix(in srgb, var(--candidate-text) 8%, transparent);
+  overflow: hidden;
 }
 
 .candidate-jobLogo {
@@ -272,6 +278,9 @@
   transition:
     filter 160ms ease,
     opacity 160ms ease;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .candidate-jobCard:hover .candidate-jobLogo {
