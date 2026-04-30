@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios, { type AxiosRequestHeaders } from 'axios'
 import { appEnv } from '@/config/env'
 
 export const apiClient = axios.create({
@@ -13,7 +13,7 @@ export const apiClient = axios.create({
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('accessToken')
   if (token && token.trim()) {
-    config.headers = config.headers ?? {}
+    config.headers = config.headers ?? ({} as AxiosRequestHeaders)
     ;(config.headers as Record<string, string>).Authorization = `Bearer ${token}`
   }
   return config

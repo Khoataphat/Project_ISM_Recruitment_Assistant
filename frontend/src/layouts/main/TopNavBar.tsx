@@ -1,8 +1,21 @@
-import { Button, ConfigProvider, Drawer, Grid, Layout, Menu, Space, theme, Typography } from 'antd'
-import { MenuOutlined } from '@ant-design/icons'
+import {
+  Avatar,
+  Button,
+  ConfigProvider,
+  Drawer,
+  Dropdown,
+  Grid,
+  Layout,
+  Menu,
+  Space,
+  theme,
+  Typography,
+} from 'antd'
+import { LogoutOutlined, MenuOutlined } from '@ant-design/icons'
 import { useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { appEnv } from '@/config/env'
+import { useAuth } from '@/context/AuthContext'
 
 type NavItem = { key: string; label: string; to: string }
 
@@ -15,6 +28,7 @@ const navItems: NavItem[] = [
 export function TopNavBar() {
   const navigate = useNavigate()
   const { token } = theme.useToken()
+  const { isAuthenticated, user, logout } = useAuth()
   const screens = Grid.useBreakpoint()
   const [mobileOpen, setMobileOpen] = useState(false)
   const location = useLocation()
@@ -44,6 +58,14 @@ export function TopNavBar() {
 
   const headerHeight = 80
   const isDesktop = !!screens.lg
+  const displayName = user?.full_name?.trim() || user?.email || 'User'
+  const avatarText = displayName.trim().charAt(0).toUpperCase()
+
+  const onLogout = () => {
+    logout()
+    setMobileOpen(false)
+    navigate('/login')
+  }
 
   return (
     <Layout.Header
@@ -128,21 +150,70 @@ export function TopNavBar() {
         )}
 
         {isDesktop ? (
-          <Space size={12}>
-            <Link to="/login" style={{ textDecoration: 'none' }}>
-              <Button type="text">Sign In</Button>
-            </Link>
-            <Link to="/main/jobs" style={{ textDecoration: 'none' }}>
-              <Button type="primary">Post a Job</Button>
-            </Link>
-          </Space>
+          isAuthenticated && user ? (
+            <Dropdown
+              menu={{
+                items: [
+                  {
+                    key: 'logout',
+                    label: 'Logout',
+                    icon: <LogoutOutlined />,
+                    onClick: onLogout,
+                  },
+                ],
+              }}
+              trigger={['click']}
+              placement="bottomRight"
+            >
+              <Button type="text" style={{ paddingInline: 8, height: 40 }}>
+                <Space size={10}>
+                  <Avatar size="small" style={{ background: token.colorPrimary }}>
+                    {avatarText}
+                  </Avatar>
+                  <Typography.Text style={{ fontWeight: 650 }}>{displayName}</Typography.Text>
+                </Space>
+              </Button>
+            </Dropdown>
+          ) : (
+            <Space size={12}>
+              <Link to="/login" style={{ textDecoration: 'none' }}>
+                <Button type="text">Sign In</Button>
+              </Link>
+              <Link to="/main/jobs" style={{ textDecoration: 'none' }}>
+                <Button type="primary">Post a Job</Button>
+              </Link>
+            </Space>
+          )
         ) : (
           <Space size={8}>
-            <Link to="/main/jobs" style={{ textDecoration: 'none' }}>
-              <Button type="primary" onClick={() => navigate('/hr/jobs')}>
-                Post a Job
-              </Button>
-            </Link>
+            {isAuthenticated && user ? (
+              <Dropdown
+                menu={{
+                  items: [
+                    {
+                      key: 'logout',
+                      label: 'Logout',
+                      icon: <LogoutOutlined />,
+                      onClick: onLogout,
+                    },
+                  ],
+                }}
+                trigger={['click']}
+                placement="bottomRight"
+              >
+                <Button type="text" aria-label="Open user menu">
+                  <Avatar size="small" style={{ background: token.colorPrimary }}>
+                    {avatarText}
+                  </Avatar>
+                </Button>
+              </Dropdown>
+            ) : (
+              <Link to="/main/jobs" style={{ textDecoration: 'none' }}>
+                <Button type="primary" onClick={() => navigate('/hr/jobs')}>
+                  Post a Job
+                </Button>
+              </Link>
+            )}
             <Button
               aria-label="Open menu"
               icon={<MenuOutlined />}
@@ -176,11 +247,30 @@ export function TopNavBar() {
           <Menu mode="inline" selectedKeys={selectedKey ? [selectedKey] : []} items={menuItems} />
         </ConfigProvider>
         <div style={{ marginTop: 16 }}>
-          <Link to="/login" style={{ textDecoration: 'none' }}>
-            <Button block type="default" onClick={() => setMobileOpen(false)}>
-              Sign In
-            </Button>
-          </Link>
+          {isAuthenticated && user ? (
+            <div>
+              <div style={{ marginBottom: 12 }}>
+                <Space size={12}>
+                  <Avatar style={{ background: token.colorPrimary }}>{avatarText}</Avatar>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <Typography.Text style={{ fontWeight: 650 }}>{displayName}</Typography.Text>
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                      {user.email}
+                    </Typography.Text>
+                  </div>
+                </Space>
+              </div>
+              <Button block type="default" icon={<LogoutOutlined />} onClick={onLogout}>
+                Logout
+              </Button>
+            </div>
+          ) : (
+            <Link to="/login" style={{ textDecoration: 'none' }}>
+              <Button block type="default" onClick={() => setMobileOpen(false)}>
+                Sign In
+              </Button>
+            </Link>
+          )}
         </div>
       </Drawer>
     </Layout.Header>
