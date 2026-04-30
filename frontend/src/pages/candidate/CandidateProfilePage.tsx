@@ -588,7 +588,7 @@ export function CandidateProfilePage() {
         <Form
           form={editForm}
           layout="vertical"
-          onFinish={async (v) => {
+          onFinish={async () => {
             message.info('Profile update is coming soon in the production environment.')
             setEditOpen(false)
           }}
