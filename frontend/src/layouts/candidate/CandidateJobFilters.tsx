@@ -1,4 +1,15 @@
-import { Button, Checkbox, Divider, Flex, Input, InputNumber, Select, Space, Typography, theme } from 'antd'
+import {
+  Button,
+  Checkbox,
+  Divider,
+  Flex,
+  Input,
+  InputNumber,
+  Select,
+  Space,
+  Typography,
+  theme,
+} from 'antd'
 import { useCandidateJobsFilters } from '@/layouts/candidate/CandidateJobsFiltersContext.ts'
 
 const { Text, Title } = Typography
@@ -19,7 +30,7 @@ export function CandidateJobFilters() {
   return (
     <div
       className="candidate-filters"
-      style={{ display: 'flex', flexDirection: 'column', gap: 14}}
+      style={{ display: 'flex', flexDirection: 'column', gap: 14 }}
     >
       <div style={{ minHeight: 0, overflow: 'auto', paddingRight: 2 }}>
         <div>
@@ -131,7 +142,7 @@ export function CandidateJobFilters() {
         </div>
 
         <Divider style={{ margin: '14px 0', borderColor: token.colorBorderSecondary }} />
-{/* 
+        {/* 
         <div>
           <Title level={5} style={sectionTitleStyle}>
             Experience (years)

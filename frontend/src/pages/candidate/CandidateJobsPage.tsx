@@ -1,5 +1,17 @@
 import { BankOutlined, EnvironmentOutlined } from '@ant-design/icons'
-import { Button, Flex, Grid, Image, Input, Pagination, Select, Typography, theme, Spin, Alert } from 'antd'
+import {
+  Button,
+  Flex,
+  Grid,
+  Image,
+  Input,
+  Pagination,
+  Select,
+  Typography,
+  theme,
+  Spin,
+  Alert,
+} from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -59,17 +71,13 @@ export function CandidateJobsPage() {
   useEffect(() => {
     const levels = Array.from(
       new Set(
-        jobs
-          .map((j) => j.level)
-          .filter((v): v is string => typeof v === 'string' && !!v.trim())
+        jobs.map((j) => j.level).filter((v): v is string => typeof v === 'string' && !!v.trim())
       )
     ).sort((a, b) => a.localeCompare(b))
 
     const types = Array.from(
       new Set(
-        jobs
-          .map((j) => j.type)
-          .filter((v): v is string => typeof v === 'string' && !!v.trim())
+        jobs.map((j) => j.type).filter((v): v is string => typeof v === 'string' && !!v.trim())
       )
     ).sort((a, b) => a.localeCompare(b))
 
@@ -101,10 +109,7 @@ export function CandidateJobsPage() {
       if (appliedFilters.remoteOnly && !j.is_remote) return false
       if (appliedFilters.level && j.level !== appliedFilters.level) return false
       if (appliedFilters.type && j.type !== appliedFilters.type) return false
-      if (
-        appliedFilters.statuses.length &&
-        !appliedFilters.statuses.includes(j.status)
-      ) {
+      if (appliedFilters.statuses.length && !appliedFilters.statuses.includes(j.status)) {
         return false
       }
       if (
@@ -319,8 +324,12 @@ export function CandidateJobsPage() {
                               {job.level ? (
                                 <span className="candidate-jobTag">{job.level}</span>
                               ) : null}
-                              {job.type ? <span className="candidate-jobTag">{job.type}</span> : null}
-                              {job.is_remote ? <span className="candidate-jobTag">Remote</span> : null}
+                              {job.type ? (
+                                <span className="candidate-jobTag">{job.type}</span>
+                              ) : null}
+                              {job.is_remote ? (
+                                <span className="candidate-jobTag">Remote</span>
+                              ) : null}
                               <span className="candidate-jobTag">{job.status}</span>
                               {job.min_experience_years != null ? (
                                 <span className="candidate-jobTag">
@@ -410,14 +419,21 @@ export function CandidateJobsPage() {
                         </Flex>
                       </Flex>
 
-                      <Flex wrap gap={8} className="candidate-jobPills" style={{ marginBottom: 16 }}>
+                      <Flex
+                        wrap
+                        gap={8}
+                        className="candidate-jobPills"
+                        style={{ marginBottom: 16 }}
+                      >
                         {selectedJob.level ? (
                           <span className="candidate-pill">{selectedJob.level}</span>
                         ) : null}
                         {selectedJob.type ? (
                           <span className="candidate-pill">{selectedJob.type}</span>
                         ) : null}
-                        {selectedJob.is_remote ? <span className="candidate-pill">Remote</span> : null}
+                        {selectedJob.is_remote ? (
+                          <span className="candidate-pill">Remote</span>
+                        ) : null}
                         {selectedJob.application_deadline ? (
                           <span className="candidate-pill">
                             Deadline: {formatDate(selectedJob.application_deadline)}

@@ -26,4 +26,3 @@ export const DEFAULT_CANDIDATE_JOBS_FILTERS: CandidateJobsAppliedFilters = {
   minExperienceYears: undefined,
   statuses: [],
 }
-

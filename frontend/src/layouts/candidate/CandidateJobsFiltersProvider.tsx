@@ -15,8 +15,9 @@ export function CandidateJobsFiltersProvider({ children }: { children: React.Rea
   const [draftFilters, setDraftFilters] = useState<CandidateJobsDraftFilters>(
     DEFAULT_CANDIDATE_JOBS_FILTERS
   )
-  const [appliedFilters, setAppliedFilters] =
-    useState<CandidateJobsAppliedFilters>(DEFAULT_CANDIDATE_JOBS_FILTERS)
+  const [appliedFilters, setAppliedFilters] = useState<CandidateJobsAppliedFilters>(
+    DEFAULT_CANDIDATE_JOBS_FILTERS
+  )
   const [options, setOptions] = useState<CandidateJobsFiltersOptions>({ levels: [], types: [] })
 
   const value = useMemo<CandidateJobsFiltersContextValue>(
@@ -41,4 +42,3 @@ export function CandidateJobsFiltersProvider({ children }: { children: React.Rea
     </CandidateJobsFiltersContext.Provider>
   )
 }
-
