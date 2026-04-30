@@ -315,8 +315,6 @@ export function CandidateJobsPage() {
                         style={{
                           height: '100%',
                           objectFit: 'cover',
-                          filter: 'blur(40px)',
-                          opacity: 0.3,
                         }}
                       />
                       <div className="candidate-jobPreviewMediaShade" aria-hidden />
@@ -373,40 +371,13 @@ export function CandidateJobsPage() {
                         style={{
                           marginBottom: 20,
                           color: token.colorTextSecondary,
-                          maxHeight: 200,
-                          overflow: 'hidden',
                         }}
                         className="candidate-jobPreviewSummary"
                       >
                         {selectedJob.description ?? '—'}
                       </Paragraph>
 
-                      {selectedJob.benefits?.length ? (
-                        <div
-                          style={{
-                            marginBottom: 18,
-                            padding: 12,
-                            borderRadius: token.borderRadiusLG,
-                            border: `1px solid ${token.colorBorderSecondary}`,
-                            background: token.colorBgContainer,
-                            maxHeight: 160,
-                            overflow: 'auto',
-                          }}
-                        >
-                          <Text strong>Benefits</Text>
-                          <div style={{ marginTop: 8 }}>
-                            <ul style={{ margin: 0, paddingLeft: 18 }}>
-                              {selectedJob.benefits.map((b, idx) => (
-                                <li key={`${idx}-${b}`}>
-                                  <Text type="secondary">{b}</Text>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        </div>
-                      ) : null}
-
-                      <Flex gap={10} wrap>
+                      <Flex gap={10} wrap style={{ marginTop: 'auto' }}>
                         <Link to={`/candidate/job/${selectedJob.id}`} style={{ flex: '1 1 auto' }}>
                           <Button block className="candidate-jobPreviewSecondaryBtn">
                             View full role
