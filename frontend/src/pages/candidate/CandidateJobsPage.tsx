@@ -1,5 +1,5 @@
 import { BankOutlined, EnvironmentOutlined } from '@ant-design/icons'
-import { Button, Flex, Image, Input, Pagination, Select, Typography, theme, Spin, Alert } from 'antd'
+import { Button, Flex, Grid, Image, Input, Pagination, Select, Typography, theme, Spin, Alert } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -18,6 +18,8 @@ function getApiErrorMessage(err: unknown, fallback: string) {
 
 export function CandidateJobsPage() {
   const { token } = theme.useToken()
+  const screens = Grid.useBreakpoint()
+  const isDesktop = !!screens.lg
   const [jobs, setJobs] = useState<ApiJob[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -180,7 +182,7 @@ export function CandidateJobsPage() {
 
         <div className="candidate-jobsSplit">
           <div className="candidate-jobsListCol">
-            <Flex vertical gap={12}>
+            <Flex vertical gap={12} className="candidate-jobsListPane">
               <Flex gap={10} wrap align="center">
                 <div style={{ flex: '1 1 280px', minWidth: 240 }}>
                   <Input.Search
@@ -207,71 +209,75 @@ export function CandidateJobsPage() {
                 />
               </Flex>
 
-              <div className="candidate-jobsListInner">
-                {visibleJobs.map((job) => (
-                  <article
-                    key={job.id}
-                    className={`candidate-jobCard${job.id === selectedJob?.id ? ' candidate-jobCard--selected' : ''}`}
-                    role="button"
-                    tabIndex={0}
-                    aria-current={job.id === selectedJob?.id ? 'true' : undefined}
-                    onClick={() => setSelectedId(job.id)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault()
-                        setSelectedId(job.id)
-                      }
-                    }}
-                  >
-                    <Flex align="flex-start" justify="space-between" wrap gap={12}>
-                      <Flex gap={28} align="center" style={{ minWidth: 0 }}>
-                        <div className="candidate-jobLogoBox">
-                          <Image
-                            className="candidate-jobLogo"
-                            src={job.companies?.logo_url ?? undefined}
-                            alt={`${job.companies?.name ?? 'Company'} logo`}
-                            preview={false}
-                            width={"100%"}
-                            height={"100%"}
-                            style={{ objectFit: 'contain' }}
-                          />
-                        </div>
-
-                        <div style={{ minWidth: 0, flex: 1 }}>
-                          <div className="candidate-jobTitleRow">
-                            <Text className="candidate-jobTitle">{job.title}</Text>
+              <div className="candidate-jobsListScroll">
+                <div className="candidate-jobsListInner">
+                  {visibleJobs.map((job) => (
+                    <article
+                      key={job.id}
+                      className={`candidate-jobCard${job.id === selectedJob?.id ? ' candidate-jobCard--selected' : ''}`}
+                      role="button"
+                      tabIndex={0}
+                      aria-current={job.id === selectedJob?.id ? 'true' : undefined}
+                      onClick={() => setSelectedId(job.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          setSelectedId(job.id)
+                        }
+                      }}
+                    >
+                      <Flex align="flex-start" justify="space-between" wrap gap={12}>
+                        <Flex gap={28} align="center" style={{ minWidth: 0 }}>
+                          <div className="candidate-jobLogoBox">
+                            <Image
+                              className="candidate-jobLogo"
+                              src={job.companies?.logo_url ?? undefined}
+                              alt={`${job.companies?.name ?? 'Company'} logo`}
+                              preview={false}
+                              width={'100%'}
+                              height={'100%'}
+                              style={{ objectFit: 'contain' }}
+                            />
                           </div>
 
-                          <Flex className="candidate-jobMeta" align="center" wrap gap={10}>
-                            <Text style={{ color: token.colorTextSecondary, fontWeight: 600 }}>
-                              {job.companies?.name ?? '—'}
-                            </Text>
-                            <span className="candidate-dot" />
-                            <Text style={{ color: token.colorTextSecondary, fontWeight: 600 }}>
-                              {job.location ?? '—'}
-                            </Text>
-                            <span className="candidate-dot" />
-                            <Text className="candidate-jobSalary">{formatSalary(job)}</Text>
-                          </Flex>
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <div className="candidate-jobTitleRow">
+                              <Text className="candidate-jobTitle">{job.title}</Text>
+                            </div>
 
-                          <Flex className="candidate-jobTagList" wrap gap={10}>
-                            {job.level ? <span className="candidate-jobTag">{job.level}</span> : null}
-                            {job.type ? <span className="candidate-jobTag">{job.type}</span> : null}
-                            {job.is_remote ? <span className="candidate-jobTag">Remote</span> : null}
-                            <span className="candidate-jobTag">{job.status}</span>
-                            {job.min_experience_years != null ? (
-                              <span className="candidate-jobTag">
-                                Min exp: {job.min_experience_years}y
-                              </span>
-                            ) : null}
-                          </Flex>
-                        </div>
+                            <Flex className="candidate-jobMeta" align="center" wrap gap={10}>
+                              <Text style={{ color: token.colorTextSecondary, fontWeight: 600 }}>
+                                {job.companies?.name ?? '—'}
+                              </Text>
+                              <span className="candidate-dot" />
+                              <Text style={{ color: token.colorTextSecondary, fontWeight: 600 }}>
+                                {job.location ?? '—'}
+                              </Text>
+                              <span className="candidate-dot" />
+                              <Text className="candidate-jobSalary">{formatSalary(job)}</Text>
+                            </Flex>
+
+                            <Flex className="candidate-jobTagList" wrap gap={10}>
+                              {job.level ? (
+                                <span className="candidate-jobTag">{job.level}</span>
+                              ) : null}
+                              {job.type ? <span className="candidate-jobTag">{job.type}</span> : null}
+                              {job.is_remote ? <span className="candidate-jobTag">Remote</span> : null}
+                              <span className="candidate-jobTag">{job.status}</span>
+                              {job.min_experience_years != null ? (
+                                <span className="candidate-jobTag">
+                                  Min exp: {job.min_experience_years}y
+                                </span>
+                              ) : null}
+                            </Flex>
+                          </div>
+                        </Flex>
+
+                        <div onClick={(e) => e.stopPropagation()} />
                       </Flex>
-
-                      <div onClick={(e) => e.stopPropagation()} />
-                    </Flex>
-                  </article>
-                ))}
+                    </article>
+                  ))}
+                </div>
               </div>
 
               <div className="candidate-paginationBar">
@@ -295,127 +301,129 @@ export function CandidateJobsPage() {
             </Flex>
           </div>
 
-          <aside className="candidate-jobsPreviewCol" aria-label="Job preview">
-            {selectedJob ? (
-              <div className="candidate-jobPreviewSticky">
-                <div className="candidate-jobPreview">
-                  <div className="candidate-jobPreviewMedia">
-                    <Image
-                      src={selectedJob.companies?.logo_url ?? undefined} // Placeholder for cover if missing
-                      alt=""
-                      preview={false}
-                      width="100%"
-                      style={{
-                        height: '100%',
-                        objectFit: 'cover',
-                        filter: 'blur(40px)',
-                        opacity: 0.3,
-                      }}
-                    />
-                    <div className="candidate-jobPreviewMediaShade" aria-hidden />
-                  </div>
-
-                  <div className="candidate-jobPreviewBody">
-                    <Flex align="center" wrap gap={10} style={{ marginBottom: 10 }}>
-                      <Title
-                        level={3}
-                        className="candidate-jobPreviewTitle"
-                        style={{ margin: 0, flex: '1 1 200px' }}
-                      >
-                        {selectedJob.title}
-                      </Title>
-                    </Flex>
-
-                    <Flex wrap gap={16} align="center" style={{ marginBottom: 16 }}>
-                      <Flex gap={8} align="center">
-                        <BankOutlined style={{ fontSize: 16, color: token.colorTextSecondary }} />
-                        <Text style={{ fontWeight: 700, color: token.colorText }}>
-                          {selectedJob.companies?.name ?? '—'}
-                        </Text>
-                      </Flex>
-                      <Flex gap={8} align="center">
-                        <EnvironmentOutlined
-                          style={{ fontSize: 16, color: token.colorTextSecondary }}
-                        />
-                        <Text style={{ color: token.colorTextSecondary }}>
-                          {selectedJob.location ?? '—'}
-                        </Text>
-                      </Flex>
-                      <Flex gap={8} align="center">
-                        <span className="candidate-moneyIcon" />
-                        <Text className="candidate-jobPay">{formatSalary(selectedJob)}</Text>
-                      </Flex>
-                    </Flex>
-
-                    <Flex wrap gap={8} className="candidate-jobPills" style={{ marginBottom: 16 }}>
-                      {selectedJob.level ? (
-                        <span className="candidate-pill">{selectedJob.level}</span>
-                      ) : null}
-                      {selectedJob.type ? (
-                        <span className="candidate-pill">{selectedJob.type}</span>
-                      ) : null}
-                      {selectedJob.is_remote ? <span className="candidate-pill">Remote</span> : null}
-                      {selectedJob.application_deadline ? (
-                        <span className="candidate-pill">
-                          Deadline: {formatDate(selectedJob.application_deadline)}
-                        </span>
-                      ) : null}
-                    </Flex>
-
-                    <Paragraph
-                      style={{
-                        marginBottom: 20,
-                        color: token.colorTextSecondary,
-                        maxHeight: 200,
-                        overflow: 'hidden',
-                      }}
-                      className="candidate-jobPreviewSummary"
-                    >
-                      {selectedJob.description ?? '—'}
-                    </Paragraph>
-
-                    {selectedJob.benefits?.length ? (
-                      <div
+          {isDesktop ? (
+            <aside className="candidate-jobsPreviewCol" aria-label="Job preview">
+              {selectedJob ? (
+                <div className="candidate-jobPreviewSticky">
+                  <div className="candidate-jobPreview">
+                    <div className="candidate-jobPreviewMedia">
+                      <Image
+                        src={selectedJob.companies?.logo_url ?? undefined} // Placeholder for cover if missing
+                        alt=""
+                        preview={false}
+                        width="100%"
                         style={{
-                          marginBottom: 18,
-                          padding: 12,
-                          borderRadius: token.borderRadiusLG,
-                          border: `1px solid ${token.colorBorderSecondary}`,
-                          background: token.colorBgContainer,
-                          maxHeight: 160,
-                          overflow: 'auto',
+                          height: '100%',
+                          objectFit: 'cover',
+                          filter: 'blur(40px)',
+                          opacity: 0.3,
                         }}
-                      >
-                        <Text strong>Benefits</Text>
-                        <div style={{ marginTop: 8 }}>
-                          <ul style={{ margin: 0, paddingLeft: 18 }}>
-                            {selectedJob.benefits.map((b, idx) => (
-                              <li key={`${idx}-${b}`}>
-                                <Text type="secondary">{b}</Text>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
-                    ) : null}
+                      />
+                      <div className="candidate-jobPreviewMediaShade" aria-hidden />
+                    </div>
 
-                    <Flex gap={10} wrap>
-                      <Link to={`/candidate/job/${selectedJob.id}`} style={{ flex: '1 1 auto' }}>
-                        <Button block className="candidate-jobPreviewSecondaryBtn">
-                          View full role
-                        </Button>
-                      </Link>
-                      <Link to={`/candidate/job/${selectedJob.id}`} style={{ flex: '1 1 auto' }}>
-                        <Button type="primary" block className="candidate-applyNowBtn">
-                          Apply now
-                        </Button>
-                      </Link>
-                    </Flex>
+                    <div className="candidate-jobPreviewBody">
+                      <Flex align="center" wrap gap={10} style={{ marginBottom: 10 }}>
+                        <Title
+                          level={3}
+                          className="candidate-jobPreviewTitle"
+                          style={{ margin: 0, flex: '1 1 200px' }}
+                        >
+                          {selectedJob.title}
+                        </Title>
+                      </Flex>
+
+                      <Flex wrap gap={16} align="center" style={{ marginBottom: 16 }}>
+                        <Flex gap={8} align="center">
+                          <BankOutlined style={{ fontSize: 16, color: token.colorTextSecondary }} />
+                          <Text style={{ fontWeight: 700, color: token.colorText }}>
+                            {selectedJob.companies?.name ?? '—'}
+                          </Text>
+                        </Flex>
+                        <Flex gap={8} align="center">
+                          <EnvironmentOutlined
+                            style={{ fontSize: 16, color: token.colorTextSecondary }}
+                          />
+                          <Text style={{ color: token.colorTextSecondary }}>
+                            {selectedJob.location ?? '—'}
+                          </Text>
+                        </Flex>
+                        <Flex gap={8} align="center">
+                          <span className="candidate-moneyIcon" />
+                          <Text className="candidate-jobPay">{formatSalary(selectedJob)}</Text>
+                        </Flex>
+                      </Flex>
+
+                      <Flex wrap gap={8} className="candidate-jobPills" style={{ marginBottom: 16 }}>
+                        {selectedJob.level ? (
+                          <span className="candidate-pill">{selectedJob.level}</span>
+                        ) : null}
+                        {selectedJob.type ? (
+                          <span className="candidate-pill">{selectedJob.type}</span>
+                        ) : null}
+                        {selectedJob.is_remote ? <span className="candidate-pill">Remote</span> : null}
+                        {selectedJob.application_deadline ? (
+                          <span className="candidate-pill">
+                            Deadline: {formatDate(selectedJob.application_deadline)}
+                          </span>
+                        ) : null}
+                      </Flex>
+
+                      <Paragraph
+                        style={{
+                          marginBottom: 20,
+                          color: token.colorTextSecondary,
+                          maxHeight: 200,
+                          overflow: 'hidden',
+                        }}
+                        className="candidate-jobPreviewSummary"
+                      >
+                        {selectedJob.description ?? '—'}
+                      </Paragraph>
+
+                      {selectedJob.benefits?.length ? (
+                        <div
+                          style={{
+                            marginBottom: 18,
+                            padding: 12,
+                            borderRadius: token.borderRadiusLG,
+                            border: `1px solid ${token.colorBorderSecondary}`,
+                            background: token.colorBgContainer,
+                            maxHeight: 160,
+                            overflow: 'auto',
+                          }}
+                        >
+                          <Text strong>Benefits</Text>
+                          <div style={{ marginTop: 8 }}>
+                            <ul style={{ margin: 0, paddingLeft: 18 }}>
+                              {selectedJob.benefits.map((b, idx) => (
+                                <li key={`${idx}-${b}`}>
+                                  <Text type="secondary">{b}</Text>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      ) : null}
+
+                      <Flex gap={10} wrap>
+                        <Link to={`/candidate/job/${selectedJob.id}`} style={{ flex: '1 1 auto' }}>
+                          <Button block className="candidate-jobPreviewSecondaryBtn">
+                            View full role
+                          </Button>
+                        </Link>
+                        <Link to={`/candidate/job/${selectedJob.id}`} style={{ flex: '1 1 auto' }}>
+                          <Button type="primary" block className="candidate-applyNowBtn">
+                            Apply now
+                          </Button>
+                        </Link>
+                      </Flex>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ) : null}
-          </aside>
+              ) : null}
+            </aside>
+          ) : null}
         </div>
       </div>
     </main>

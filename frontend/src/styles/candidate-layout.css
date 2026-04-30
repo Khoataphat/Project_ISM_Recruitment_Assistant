@@ -63,12 +63,15 @@
 
 .candidate-jobsMain {
   background: var(--candidate-bg-layout, #fcfcfc);
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 80px);
   width: 100%;
   max-width: none;
   margin-left: 0;
   margin-right: 0;
   box-sizing: border-box;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 .candidate-jobsHero {
@@ -78,6 +81,8 @@
   justify-content: center;
   overflow: hidden;
   background: url('../assets/images/jobs-hero-bg.jpg') center/cover no-repeat;
+  flex: 0 0 auto;
+  height: 140px;
 }
 
 .candidate-jobsHeroOverlay {
@@ -115,11 +120,14 @@
 }
 
 .candidate-jobsContainer {
+  flex: 1 1 auto;
+  min-height: 0;
   max-width: none;
   width: 100%;
   margin: 0;
   padding: clamp(16px, 2vw, 24px) clamp(8px, 2vw, 16px) clamp(16px, 3vh, 32px);
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .candidate-jobsSplit {
@@ -127,10 +135,31 @@
   grid-template-columns: minmax(0, 1fr) minmax(300px, min(520px, 42vw));
   gap: clamp(20px, 2.5vw, 36px);
   align-items: start;
+  height: 100%;
+  min-height: 0;
 }
 
 .candidate-jobsListCol {
   min-width: 0;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.candidate-jobsListPane {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+
+.candidate-jobsListScroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding-right: 2px; /* prevent last column shadow clipping */
 }
 
 .candidate-jobsListCol :where(.ant-table-row) {
@@ -149,13 +178,16 @@
 
 .candidate-jobsPreviewCol {
   min-width: 0;
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .candidate-jobPreviewSticky {
-  position: sticky;
-  top: 96px;
-  max-height: calc(100vh - 104px);
-  overflow-y: auto;
+  position: static;
+  max-height: none;
+  overflow: visible;
 }
 
 .candidate-jobPreview {
@@ -408,8 +440,7 @@
 }
 
 .candidate-paginationBar {
-  margin-top: 48px;
-  padding-top: 32px;
+  margin-top: 32px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -650,6 +681,15 @@
 
 /* Candidate jobs list — responsive */
 @media (max-width: 991px) {
+  .candidate-jobsMain {
+    height: auto;
+    overflow: visible;
+  }
+
+  .candidate-jobsContainer {
+    overflow: visible;
+  }
+
   .candidate-jobsSplit {
     grid-template-columns: 1fr;
   }
