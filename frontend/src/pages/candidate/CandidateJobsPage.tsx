@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { getOpenJobs, type ApiJob } from '@/services/jobsService'
+import { useCandidateJobsFilters } from '@/layouts/candidate/CandidateJobsFiltersContext.ts'
 
 const { Title, Text, Paragraph } = Typography
 
@@ -20,6 +21,7 @@ export function CandidateJobsPage() {
   const { token } = theme.useToken()
   const screens = Grid.useBreakpoint()
   const isDesktop = !!screens.lg
+  const { appliedFilters, setOptions } = useCandidateJobsFilters()
   const [jobs, setJobs] = useState<ApiJob[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -54,6 +56,26 @@ export function CandidateJobsPage() {
     fetchJobs()
   }, [])
 
+  useEffect(() => {
+    const levels = Array.from(
+      new Set(
+        jobs
+          .map((j) => j.level)
+          .filter((v): v is string => typeof v === 'string' && !!v.trim())
+      )
+    ).sort((a, b) => a.localeCompare(b))
+
+    const types = Array.from(
+      new Set(
+        jobs
+          .map((j) => j.type)
+          .filter((v): v is string => typeof v === 'string' && !!v.trim())
+      )
+    ).sort((a, b) => a.localeCompare(b))
+
+    setOptions({ levels, types })
+  }, [jobs, setOptions])
+
   const formatSalary = (job: ApiJob) => {
     if (!job.is_salary_visible) return 'Hidden'
     const min = job.salary_min
@@ -75,13 +97,49 @@ export function CandidateJobsPage() {
 
   const filteredJobs = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return jobs
     return jobs.filter((j) => {
+      if (appliedFilters.remoteOnly && !j.is_remote) return false
+      if (appliedFilters.level && j.level !== appliedFilters.level) return false
+      if (appliedFilters.type && j.type !== appliedFilters.type) return false
+      if (
+        appliedFilters.statuses.length &&
+        !appliedFilters.statuses.includes(j.status)
+      ) {
+        return false
+      }
+      if (
+        appliedFilters.minExperienceYears != null &&
+        (j.min_experience_years == null ||
+          j.min_experience_years < appliedFilters.minExperienceYears)
+      ) {
+        return false
+      }
+      if (
+        appliedFilters.salaryMin != null &&
+        j.salary_max != null &&
+        j.salary_max < appliedFilters.salaryMin
+      ) {
+        return false
+      }
+      if (
+        appliedFilters.salaryMax != null &&
+        j.salary_min != null &&
+        j.salary_min > appliedFilters.salaryMax
+      ) {
+        return false
+      }
+
+      if (appliedFilters.locationQuery.trim()) {
+        const locQ = appliedFilters.locationQuery.trim().toLowerCase()
+        if (!(j.location ?? '').toLowerCase().includes(locQ)) return false
+      }
+
       const company = j.companies?.name ?? ''
       const location = j.location ?? ''
       const level = j.level ?? ''
       const type = j.type ?? ''
       const title = j.title ?? ''
+      if (!q) return true
       return (
         title.toLowerCase().includes(q) ||
         company.toLowerCase().includes(q) ||
@@ -90,7 +148,7 @@ export function CandidateJobsPage() {
         type.toLowerCase().includes(q)
       )
     })
-  }, [jobs, query])
+  }, [appliedFilters, jobs, query])
 
   const sortedJobs = useMemo(() => {
     const list = [...filteredJobs]
@@ -158,7 +216,7 @@ export function CandidateJobsPage() {
   if (loading) {
     return (
       <Flex justify="center" align="center" style={{ minHeight: 500 }}>
-        <Spin size="large" tip="Finding matches..." />
+        <Spin size="large" description="Finding matches..." />
       </Flex>
     )
   }
