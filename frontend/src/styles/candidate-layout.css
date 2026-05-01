@@ -1339,3 +1339,254 @@
 .candidate-appsEmpty .ant-empty-image {
   opacity: 0.88;
 }
+
+/* --- Candidate profile (read-only; aligned with public API) --- */
+.candidate-profileAlert {
+  margin-bottom: 20px;
+  border-radius: 12px;
+}
+
+.candidate-profileToolbar {
+  margin-bottom: clamp(20px, 2.5vw, 28px);
+  padding: clamp(18px, 2vw, 24px);
+  border-radius: 16px;
+  background: var(--candidate-bg);
+  border: 1px solid color-mix(in srgb, var(--candidate-border) 45%, transparent);
+  box-shadow: 0 6px 24px color-mix(in srgb, var(--candidate-text) 6%, transparent);
+  box-sizing: border-box;
+}
+
+.candidate-profileToolbarAvatar.ant-avatar {
+  flex-shrink: 0;
+}
+
+.candidate-profileToolbarName.ant-typography {
+  margin: 0 !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em;
+  color: var(--candidate-text);
+}
+
+.candidate-profileRoleTag {
+  margin: 0;
+  font-weight: 700;
+  border-radius: 999px;
+  border: none;
+  background: color-mix(in srgb, var(--candidate-primary) 14%, var(--candidate-bg));
+  color: var(--candidate-primary);
+}
+
+.candidate-profileCta.ant-btn {
+  font-weight: 650;
+  border-radius: 10px;
+  min-width: 140px;
+}
+
+.candidate-profileAppListWrap {
+  max-height: min(60vh, 720px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 6px;
+  margin-right: -4px;
+}
+
+.candidate-profileGrid {
+  display: grid;
+  gap: 20px;
+}
+
+@media (min-width: 900px) {
+  .candidate-profileGrid {
+    grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .candidate-profileCard--wide {
+    grid-column: 2;
+  }
+
+  .candidate-profileCard--account {
+    grid-row: 1 / span 3;
+  }
+
+  .candidate-profileCard--resumes {
+    grid-column: 2;
+  }
+}
+
+.candidate-profileCard {
+  padding: 22px 20px;
+  border-radius: 16px;
+  background: var(--candidate-bg);
+  border: 1px solid color-mix(in srgb, var(--candidate-border) 45%, transparent);
+  box-sizing: border-box;
+}
+
+.candidate-profileCardTitle {
+  margin: 0 0 8px !important;
+  font-weight: 750 !important;
+  color: var(--candidate-text);
+}
+
+.candidate-profileCardLead {
+  margin-bottom: 16px !important;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--candidate-text-secondary);
+}
+
+.candidate-profileSectionHead {
+  margin-bottom: 16px;
+}
+
+.candidate-profileDl {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.candidate-profileDl dt {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--candidate-text-secondary);
+}
+
+.candidate-profileDl dd {
+  margin: 4px 0 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--candidate-text);
+  word-break: break-word;
+}
+
+.candidate-profileTextLink {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--candidate-primary);
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 0.18s ease;
+}
+
+.candidate-profileTextLink:hover {
+  opacity: 0.85;
+}
+
+.candidate-profileEmpty {
+  padding: 12px 0 8px;
+}
+
+.candidate-profileAppList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.candidate-profileAppRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 14px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--candidate-border) 40%, transparent);
+  background: color-mix(in srgb, var(--candidate-bg-layout, #fcfcfc) 100%, transparent);
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition:
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.candidate-profileAppRow:hover {
+  border-color: color-mix(in srgb, var(--candidate-primary) 35%, transparent);
+  background: color-mix(in srgb, var(--candidate-primary) 8%, var(--candidate-bg));
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--candidate-text) 6%, transparent);
+}
+
+.candidate-profileAppLogo {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--candidate-border) 22%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.candidate-profileAppBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.candidate-profileAppTitle {
+  display: block;
+  font-size: 15px;
+  margin-bottom: 2px;
+}
+
+.candidate-profileAppMeta {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.candidate-profileAppTags {
+  margin-top: 4px;
+}
+
+.candidate-profileAppChevron {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--candidate-text-secondary);
+}
+
+.candidate-profileResumeList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.candidate-profileResumeRow {
+  padding: 14px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--candidate-border) 35%, transparent);
+}
+
+.candidate-profileResumeList li:last-child .candidate-profileResumeRow {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.candidate-profilePdfIcon {
+  font-size: 22px;
+  color: #dc2626;
+}
+
+.candidate-profileResumeOpen.ant-btn {
+  font-weight: 650;
+  padding-inline: 8px;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .candidate-profileTextLink,
+  .candidate-profileAppRow,
+  .candidate-profileResumeOpen.ant-btn {
+    transition: none;
+  }
+}
