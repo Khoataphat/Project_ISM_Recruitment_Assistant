@@ -1224,7 +1224,89 @@
   }
 }
 
-/* Apply job modal (portaled; structural z-index only — colors come from antd tokens in component) */
+/* Apply job modal (portaled) */
 .candidate-applyModalWrap.ant-modal-wrap {
   z-index: 1100;
+}
+
+.candidate-applyModalClose.ant-btn {
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  cursor: pointer;
+  transition:
+    background 180ms ease,
+    color 180ms ease;
+}
+
+.candidate-applyModalClose.ant-btn:not(:disabled):hover {
+  background: color-mix(in srgb, var(--ant-color-text-base, #000) 6%, transparent);
+  color: var(--ant-color-text, inherit);
+}
+
+.candidate-applyDropzone .candidate-applyUpload.ant-upload.ant-upload-drag {
+  border-width: 2px !important;
+  border-style: dashed !important;
+  border-color: var(--apply-ux-border, #d9d9d9) !important;
+  border-radius: var(--ant-border-radius-lg, 12px) !important;
+  background: var(--apply-ux-fill, #fafafa) !important;
+  padding: 28px 20px 32px !important;
+  transition:
+    border-color 200ms ease,
+    background 200ms ease,
+    box-shadow 200ms ease;
+}
+
+@media (hover: hover) {
+  .candidate-applyDropzone:hover
+    .candidate-applyUpload.ant-upload.ant-upload-drag:not(.ant-upload-disabled) {
+    border-color: var(--apply-ux-primary, #1677ff) !important;
+    background: var(--apply-ux-fill-hover, #f0f5ff) !important;
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--apply-ux-primary, #1677ff) 25%, transparent);
+  }
+}
+
+.candidate-applyDropzone
+  .candidate-applyUpload.ant-upload.ant-upload-drag.ant-upload-drag-hover:not(
+    .ant-upload-disabled
+  ) {
+  border-color: var(--apply-ux-primary, #1677ff) !important;
+  background: var(--apply-ux-fill-hover, #f0f5ff) !important;
+}
+
+.candidate-applyDropzone .candidate-applyUpload .ant-upload-list-item {
+  margin-top: 12px;
+  border-radius: 10px;
+}
+
+.candidate-applyModalFooterActions {
+  width: 100%;
+}
+
+@media (max-width: 480px) {
+  .candidate-applyModalFooterActions.ant-flex {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .candidate-applyModalFooterActions .candidate-applyModalBtnSecondary.ant-btn,
+  .candidate-applyModalFooterActions .candidate-applyModalBtnPrimary.ant-btn {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .candidate-applyDropzone .candidate-applyUpload.ant-upload.ant-upload-drag {
+    transition: none;
+  }
+
+  .candidate-applyModalClose.ant-btn {
+    transition: none;
+  }
 }

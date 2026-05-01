@@ -18,6 +18,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom'
 import { JobApplyModal } from '@/components/candidate/JobApplyModal.tsx'
 import { apiClient } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
+import { submitApplication } from '@/services/applicationsService'
 
 const { Title, Text, Paragraph } = Typography
 
@@ -82,14 +83,11 @@ export function JobDetailsPage() {
 
   const handleApplySubmit = async (file: File) => {
     if (!id) return
-    const formData = new FormData()
-    formData.append('jobId', id)
-    formData.append('resume', file)
-    formData.append('coverLetter', 'Applied via public job details page.')
-
     try {
-      await apiClient.post('/applications', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      await submitApplication({
+        jobId: id,
+        resume: file,
+        coverLetter: 'Applied via public job details page.',
       })
       message.success('Your application has been submitted successfully!')
     } catch (err: unknown) {

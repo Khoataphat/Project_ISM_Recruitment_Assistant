@@ -16,6 +16,15 @@ apiClient.interceptors.request.use((config) => {
     config.headers = config.headers ?? ({} as AxiosRequestHeaders)
     ;(config.headers as Record<string, string>).Authorization = `Bearer ${token}`
   }
+  if (config.data instanceof FormData) {
+    const h = config.headers
+    if (h && typeof (h as { delete?: (k: string) => void }).delete === 'function') {
+      ;(h as { delete: (k: string) => void }).delete('Content-Type')
+    } else if (h && typeof h === 'object') {
+      delete (h as Record<string, unknown>)['Content-Type']
+      delete (h as Record<string, unknown>)['content-type']
+    }
+  }
   return config
 })
 

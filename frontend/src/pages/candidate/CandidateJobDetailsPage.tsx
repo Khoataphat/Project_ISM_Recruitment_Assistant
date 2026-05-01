@@ -27,7 +27,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
 import { JobApplyModal } from '@/components/candidate/JobApplyModal.tsx'
-import { apiClient } from '@/lib/api'
+import { submitApplication } from '@/services/applicationsService'
 import { getJobById, type ApiJob } from '@/services/jobsService'
 
 const { Title, Text } = Typography
@@ -113,14 +113,11 @@ export function CandidateJobDetailsPage() {
 
   const handleApplySubmit = async (file: File) => {
     if (!id) return
-    const formData = new FormData()
-    formData.append('jobId', id)
-    formData.append('resume', file)
-    formData.append('coverLetter', 'Applied via candidate job details page.')
-
     try {
-      await apiClient.post('/applications', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      await submitApplication({
+        jobId: id,
+        resume: file,
+        coverLetter: 'Applied via candidate job details page.',
       })
       message.success('Your application has been submitted successfully!')
     } catch (err: unknown) {

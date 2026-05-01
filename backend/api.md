@@ -334,18 +334,18 @@ Integration flow:
 **Request: `multipart/form-data`**
 
 
-| Field       | Type   | Required | Notes             |
-| ----------- | ------ | -------- | ----------------- |
-| resume      | file   | Yes      | PDF only, max 5MB |
-| jobId       | number | Yes      | Positive integer  |
-| coverLetter | string | No       | Max 2000 chars    |
+| Field       | Type   | Required | Notes                          |
+| ----------- | ------ | -------- | ------------------------------ |
+| resume      | file   | Yes      | PDF only, max 5MB              |
+| jobId       | string | Yes      | Job UUID (same as `jobs.id`)   |
+| coverLetter | string | No       | Max 2000 chars                 |
 
 **Body (`form-data` as JSON representation):**
 
 ```json
 {
   "resume": "(binary file - PDF only, max 5MB)",
-  "jobId": 1,
+  "jobId": "4d6eac91-e4de-4edd-9378-afe17174cf16",
   "coverLetter": "I am very interested in this position."
 }
 ```
@@ -356,7 +356,7 @@ Integration flow:
 curl -X POST http://localhost:3000/applications \
   -H "Authorization: Bearer <token>" \
   -F "resume=@./my_resume.pdf" \
-  -F "jobId=1" \
+  -F "jobId=4d6eac91-e4de-4edd-9378-afe17174cf16" \
   -F "coverLetter=I am very interested in this position."
 ```
 
@@ -366,15 +366,14 @@ curl -X POST http://localhost:3000/applications \
 {
   "status": "success",
   "data": {
-    "applicationId": 1,
-    "userId": 1,
-    "jobId": 1,
-    "resumeUrl": "uploads/resume_1_1_1713350000000.pdf",
-    "coverLetter": "I am very interested in this position.",
-    "status": "pending",
-    "submittedAt": "2026-04-17T10:00:00.000Z",
-    "reviewedAt": null,
-    "reviewedBy": null
+    "id": "uuid-of-application",
+    "job_id": "4d6eac91-e4de-4edd-9378-afe17174cf16",
+    "candidate_id": "uuid-of-candidate",
+    "cv_url": "/uploads/<stored-filename>.pdf",
+    "cover_letter": "I am very interested in this position.",
+    "processing_status": "Pending",
+    "hr_status": "Pending",
+    "applied_at": "2026-04-17T10:00:00.000Z"
   }
 }
 ```
