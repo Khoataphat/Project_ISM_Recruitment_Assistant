@@ -1,4 +1,4 @@
-import { BankOutlined, FilePdfOutlined } from '@ant-design/icons'
+import { FilePdfOutlined } from '@ant-design/icons'
 import {
   Button,
   Empty,
@@ -17,11 +17,10 @@ import {
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
-import { SkillsRadarChart } from '@/components/candidate/SkillsRadarChart'
-import { parseSkillsRadar } from '@/components/candidate/skillsRadar'
+import { ApplicationPreviewPanel } from '@/components/candidate/ApplicationPreviewPanel'
 import { getMyApplications, type CandidateApplication } from '@/services/applicationsService'
 
-const { Title, Text, Paragraph } = Typography
+const { Title, Text } = Typography
 
 /** Ant Design `Tag` color="default" is easy to mis-read; use explicit presets for every state. */
 const HR_STATUS_COLOR: Record<string, string> = {
@@ -76,13 +75,6 @@ function formatAppliedDate(iso: string) {
   } catch {
     return iso
   }
-}
-
-function formatAiScore(v: string | number | null | undefined): string | null {
-  if (v === '' || v == null) return null
-  const n = typeof v === 'string' ? Number.parseFloat(v) : v
-  if (!Number.isFinite(n)) return null
-  return `${Math.round(n * 10) / 10}%`
 }
 
 export function CandidateApplicationsPage() {
@@ -191,11 +183,6 @@ export function CandidateApplicationsPage() {
       </Flex>
     )
   }
-
-  const job = selectedApplication?.jobs
-  const aiLine = formatAiScore(selectedApplication?.ai_matching_score)
-  const hasRadar =
-    selectedApplication && parseSkillsRadar(selectedApplication.skills_radar).length >= 3
 
   return (
     <main className="candidate-jobsMain">
@@ -380,136 +367,10 @@ export function CandidateApplicationsPage() {
             </Flex>
           </div>
 
-          {isDesktop && selectedApplication && job ? (
+          {isDesktop && selectedApplication ? (
             <aside className="candidate-jobsPreviewCol" aria-label="Application preview">
               <div className="candidate-jobPreviewSticky">
-                <div className="candidate-jobPreview candidate-appPreview">
-                  <div className="candidate-jobPreviewMedia">
-                    <Image
-                      src={job.companies?.logo_url ?? undefined}
-                      alt=""
-                      preview={false}
-                      width="100%"
-                      style={{
-                        height: '100%',
-                        objectFit: 'cover',
-                      }}
-                    />
-                    <div className="candidate-jobPreviewMediaShade" aria-hidden />
-                  </div>
-
-                  <div className="candidate-jobPreviewBody">
-                    <Flex align="center" wrap gap={10} style={{ marginBottom: 10 }}>
-                      <Title
-                        level={3}
-                        className="candidate-jobPreviewTitle"
-                        style={{ margin: 0, flex: '1 1 200px' }}
-                      >
-                        {job.title}
-                      </Title>
-                    </Flex>
-
-                    <Flex vertical gap={6} style={{ marginBottom: 12 }}>
-                      <Flex gap={8} align="center" wrap>
-                        <BankOutlined style={{ fontSize: 16, color: token.colorTextSecondary }} />
-                        <Text style={{ fontWeight: 700, color: token.colorText }}>
-                          {job.companies?.name ?? '—'}
-                        </Text>
-                      </Flex>
-                      <Text type="secondary" style={{ fontWeight: 600, fontSize: 13 }}>
-                        {job.status ?? '—'}
-                        <span style={{ margin: '0 8px', opacity: 0.45 }} aria-hidden>
-                          ·
-                        </span>
-                        Applied {formatAppliedDate(selectedApplication.applied_at)}
-                      </Text>
-                    </Flex>
-
-                    <Flex wrap gap={8} className="candidate-jobPills" style={{ marginBottom: 16 }}>
-                      <Tag
-                        bordered={false}
-                        color={tagColor(HR_STATUS_COLOR, selectedApplication.hr_status)}
-                        style={{
-                          margin: 0,
-                          fontWeight: 700,
-                          fontSize: 12,
-                          padding: '4px 12px',
-                          borderRadius: 999,
-                        }}
-                      >
-                        HR: {selectedApplication.hr_status}
-                      </Tag>
-                      <Tag
-                        bordered={false}
-                        color={tagColor(
-                          PROCESSING_STATUS_COLOR,
-                          selectedApplication.processing_status
-                        )}
-                        style={{
-                          margin: 0,
-                          fontWeight: 700,
-                          fontSize: 12,
-                          padding: '4px 12px',
-                          borderRadius: 999,
-                        }}
-                      >
-                        Processing: {selectedApplication.processing_status}
-                      </Tag>
-                    </Flex>
-
-                    {aiLine ? (
-                      <div className="candidate-appPreviewScore">
-                        <Text strong style={{ color: token.colorPrimary }}>
-                          AI match score: {aiLine}
-                        </Text>
-                      </div>
-                    ) : null}
-
-                    <div className="candidate-appPreviewRadarSection">
-                      {hasRadar ? (
-                        <SkillsRadarChart skillsRadar={selectedApplication.skills_radar} />
-                      ) : (
-                        <Empty
-                          image={Empty.PRESENTED_IMAGE_SIMPLE}
-                          description={
-                            <span style={{ color: token.colorTextSecondary }}>
-                              Skills radar will appear after your application is analyzed.
-                            </span>
-                          }
-                        />
-                      )}
-                    </div>
-
-                    {selectedApplication.cover_letter?.trim() ? (
-                      <Paragraph
-                        type="secondary"
-                        ellipsis={{ rows: 3, expandable: true, symbol: 'more' }}
-                        style={{ marginBottom: 16 }}
-                        className="candidate-appPreviewCover"
-                      >
-                        {selectedApplication.cover_letter.trim()}
-                      </Paragraph>
-                    ) : null}
-
-                    <Flex gap={10} wrap style={{ marginTop: 'auto' }}>
-                      <Button
-                        className="candidate-jobPreviewSecondaryBtn"
-                        icon={<FilePdfOutlined />}
-                        href={selectedApplication.cv_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={{ flex: '1 1 auto' }}
-                      >
-                        Open CV
-                      </Button>
-                      <Link to={`/candidate/job/${job.id}`} style={{ flex: '1 1 auto' }}>
-                        <Button type="primary" block className="candidate-applyNowBtn">
-                          View job details
-                        </Button>
-                      </Link>
-                    </Flex>
-                  </div>
-                </div>
+                <ApplicationPreviewPanel application={selectedApplication} />
               </div>
             </aside>
           ) : null}
