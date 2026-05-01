@@ -11,10 +11,12 @@ import {
   theme,
 } from 'antd'
 import { useCandidateJobsFilters } from '@/layouts/candidate/CandidateJobsFiltersContext.ts'
+import { useNavigate } from 'react-router-dom'
 
 const { Text, Title } = Typography
 
 export function CandidateJobFilters() {
+  const navigate = useNavigate()
   const { token } = theme.useToken()
   const { draftFilters, setDraftFilters, apply, clear, options } = useCandidateJobsFilters()
 
@@ -168,7 +170,7 @@ export function CandidateJobFilters() {
             Status
           </Title>
           <div style={{ height: 8 }} />
-          <Space direction="vertical" size={8} style={{ width: '100%' }}>
+          <Space orientation="vertical" size={8} style={{ width: '100%' }}>
             {(['Open', 'Closed'] as const).map((s) => (
               <label key={s} className="candidate-filterRow">
                 <Checkbox
@@ -195,7 +197,17 @@ export function CandidateJobFilters() {
         <Button block onClick={clear}>
           Clear
         </Button>
-        <Button block type="primary" onClick={apply}>
+        <Button
+          block
+          type="primary"
+          onClick={() => {
+            if (location.pathname === '/candidate/jobs') {
+              apply()
+            } else {
+              navigate('/candidate/jobs')
+            }
+          }}
+        >
           Apply
         </Button>
       </Flex>

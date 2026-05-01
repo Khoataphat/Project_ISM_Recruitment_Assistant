@@ -6,12 +6,14 @@ export type ApiCompany = {
   id: string
   name: string
   logo_url: string | null
+  description?: string | null
   headquarters_location: string | null
 }
 
 export type ApiHrProfile = {
   id: string
   position: string | null
+  department_name?: string | null
 }
 
 export type ApiJob = {

@@ -1,12 +1,21 @@
-import { BankOutlined, EnvironmentOutlined, LeftOutlined } from '@ant-design/icons'
+import {
+  BankOutlined,
+  CalendarOutlined,
+  EnvironmentOutlined,
+  LeftOutlined,
+  TeamOutlined,
+  UserOutlined,
+} from '@ant-design/icons'
 import {
   Breadcrumb,
   Button,
+  Card,
   Col,
   Flex,
   Image,
   Result,
   Row,
+  Tag,
   Typography,
   theme,
   Spin,
@@ -14,26 +23,14 @@ import {
 } from 'antd'
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 import { JobApplyModal } from '@/components/candidate/JobApplyModal.tsx'
 import { apiClient } from '@/lib/api'
+import { getJobById, type ApiJob } from '@/services/jobsService'
 
-const { Title, Text, Paragraph } = Typography
-
-type JobDetail = {
-  id: string
-  title: string
-  description: string
-  requirements: string
-  benefits: string
-  location: string
-  salary: string
-  tags: string[]
-  companies: {
-    name: string
-    logo_url: string
-  }
-}
+const { Title, Text } = Typography
 
 function getApiErrorMessage(err: unknown, fallback: string) {
   if (err && typeof err === 'object') {
@@ -44,11 +41,28 @@ function getApiErrorMessage(err: unknown, fallback: string) {
   return fallback
 }
 
+/** After each ". ", insert a blank line so Markdown splits into paragraphs (taller, easier to scan). */
+function breakMarkdownAfterSentenceEnd(text: string) {
+  return text.replace(/\. /g, '.\n\n')
+}
+
+const LEVEL_TAG_COLORS = ['blue', 'geekblue', 'purple', 'cyan'] as const
+const TYPE_TAG_COLORS = ['magenta', 'volcano', 'orange', 'gold', 'lime'] as const
+
+function pickTagColor(values: readonly string[], key: string) {
+  let h = 2166136261
+  for (let i = 0; i < key.length; i++) {
+    h ^= key.charCodeAt(i)
+    h = Math.imul(h, 16777619)
+  }
+  return values[(h >>> 0) % values.length]!
+}
+
 export function CandidateJobDetailsPage() {
   const { token } = theme.useToken()
   const { id } = useParams()
   const [applyOpen, setApplyOpen] = useState(false)
-  const [job, setJob] = useState<JobDetail | null>(null)
+  const [job, setJob] = useState<ApiJob | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -57,8 +71,8 @@ export function CandidateJobDetailsPage() {
       if (!id) return
       try {
         setLoading(true)
-        const res = await apiClient.get(`/jobs/${id}`)
-        setJob(res.data.data)
+        const data = await getJobById(id)
+        setJob(data)
       } catch (err: unknown) {
         setError(getApiErrorMessage(err, 'Failed to fetch job details'))
       } finally {
@@ -67,6 +81,35 @@ export function CandidateJobDetailsPage() {
     }
     fetchJob()
   }, [id])
+
+  const formatDate = (iso: string | null | undefined) => {
+    if (!iso) return '—'
+    const d = new Date(iso)
+    if (Number.isNaN(d.getTime())) return '—'
+    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' })
+  }
+
+  const formatSalary = (j: ApiJob) => {
+    if (!j.is_salary_visible) return 'Salary hidden'
+    const cur = j.salary_currency ?? ''
+    const min = j.salary_min
+    const max = j.salary_max
+
+    const fmt = (n: number) =>
+      new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(n)
+
+    if (typeof min === 'number' && typeof max === 'number')
+      return `${fmt(min)} – ${fmt(max)} ${cur}`
+    if (typeof min === 'number') return `From ${fmt(min)} ${cur}`
+    if (typeof max === 'number') return `Up to ${fmt(max)} ${cur}`
+    return '—'
+  }
+
+  const statusColor = (s: ApiJob['status']) => {
+    if (s === 'Open') return 'green'
+    if (s === 'Closed') return 'red'
+    return 'gold'
+  }
 
   const handleApplySubmit = async (file: File) => {
     if (!id) return
@@ -108,130 +151,198 @@ export function CandidateJobDetailsPage() {
     )
   }
 
+  const companyName = job.companies?.name ?? 'Company'
+
   return (
     <div className="candidate-jobDetails">
       <header className="candidate-jobHeader">
-        <Flex vertical gap={16}>
-          <Flex justify="space-between" align="flex-end" wrap gap={16}>
-            <div>
-              <Breadcrumb
-                className="candidate-breadcrumb"
-                separator={<span className="candidate-breadcrumbSep">›</span>}
-                items={[
-                  { title: <Link to="/candidate/jobs">Jobs</Link> },
-                  { title: <span className="candidate-breadcrumbLink">{job.companies.name}</span> },
-                  { title: <span className="candidate-breadcrumbActive">{job.title}</span> },
-                ]}
-              />
+        <Breadcrumb
+          className="candidate-breadcrumb candidate-jobDetailsBreadcrumb"
+          separator={<span className="candidate-breadcrumbSep">›</span>}
+          items={[
+            { title: <Link to="/candidate/jobs">Jobs</Link> },
+            {
+              title: <span className="candidate-breadcrumbLink">{job.companies?.name ?? '—'}</span>,
+            },
+            { title: <span className="candidate-breadcrumbActive">{job.title}</span> },
+          ]}
+        />
 
-              <Flex align="center" wrap gap={12} style={{ marginTop: 8, marginBottom: 10 }}>
-                <Title
-                  className="candidate-jobH1"
-                  level={1}
-                  style={{ margin: 0, flex: '1 1 280px', minWidth: 0 }}
+        <div className="candidate-jobHeaderGlassPanel">
+          <div className="candidate-jobHeaderGrid">
+            <div className="candidate-jobHeaderTop">
+              <div className="candidate-jobHeaderBrand">
+                <Image
+                  className="candidate-jobHeaderLogo"
+                  src={job.companies?.logo_url ?? undefined}
+                  alt={companyName}
+                  preview={false}
+                  width={176}
+                  height={176}
+                />
+                <div className="candidate-jobHeaderMeta">
+                  <Title className="candidate-jobH1" level={2} style={{ margin: 0 }}>
+                    {job.title}
+                  </Title>
+                  <div className="candidate-jobHeaderLine">
+                    <BankOutlined
+                      className="candidate-jobHeaderLineIcon"
+                      style={{ color: token.colorTextSecondary }}
+                    />
+                    <Text style={{ fontWeight: 750, color: token.colorText }}>
+                      {job.companies?.name ?? '—'}
+                    </Text>
+                  </div>
+                  <div className="candidate-jobHeaderLocDeadline">
+                    <div className="candidate-jobHeaderLocDeadlinePart">
+                      <EnvironmentOutlined
+                        className="candidate-jobHeaderLineIcon"
+                        style={{ color: token.colorTextSecondary }}
+                      />
+                      <Text style={{ color: token.colorTextSecondary }}>{job.location ?? '—'}</Text>
+                    </div>
+                    <div className="candidate-jobHeaderLocDeadlinePart">
+                      <CalendarOutlined
+                        className="candidate-jobHeaderLineIcon"
+                        style={{ color: token.colorTextSecondary }}
+                      />
+                      <Text style={{ color: token.colorTextSecondary }}>
+                        Deadline {formatDate(job.application_deadline)}
+                      </Text>
+                    </div>
+                  </div>
+                  <div className="candidate-jobHeaderLine">
+                    <span className="candidate-moneyIcon candidate-jobHeaderMoneyIcon" />
+                    <Text className="candidate-jobPay">{formatSalary(job)}</Text>
+                  </div>
+                  <Flex wrap gap={8} className="candidate-jobPills candidate-jobHeaderMetaTags">
+                    <Tag color={statusColor(job.status)} className="candidate-jobMetaTag">
+                      {job.status}
+                    </Tag>
+                    {job.level ? (
+                      <Tag
+                        color={pickTagColor(LEVEL_TAG_COLORS, job.level)}
+                        className="candidate-jobMetaTag"
+                      >
+                        {job.level}
+                      </Tag>
+                    ) : null}
+                    {job.type ? (
+                      <Tag
+                        color={pickTagColor(TYPE_TAG_COLORS, job.type)}
+                        className="candidate-jobMetaTag"
+                      >
+                        {job.type}
+                      </Tag>
+                    ) : null}
+                    <Tag
+                      color={job.is_remote ? 'geekblue' : 'orange'}
+                      className="candidate-jobMetaTag"
+                    >
+                      {job.is_remote ? 'Remote' : 'On-site'}
+                    </Tag>
+                  </Flex>
+                </div>
+              </div>
+
+              <Flex gap={10} wrap justify="end" className="candidate-jobHeaderActions">
+                <Link to="/candidate/jobs">
+                  <Button icon={<LeftOutlined />} className="candidate-jobBackBtn">
+                    Back
+                  </Button>
+                </Link>
+                <Button
+                  type="primary"
+                  className="candidate-applyNowBtn"
+                  onClick={() => setApplyOpen(true)}
                 >
-                  {job.title}
-                </Title>
+                  Apply now
+                </Button>
               </Flex>
-
-              <Flex wrap gap={18} align="center">
-                <Flex gap={8} align="center">
-                  <BankOutlined style={{ fontSize: 16, color: token.colorTextSecondary }} />
-                  <Text style={{ fontWeight: 700, color: token.colorText }}>
-                    {job.companies.name}
-                  </Text>
-                </Flex>
-                <Flex gap={8} align="center">
-                  <EnvironmentOutlined style={{ fontSize: 16, color: token.colorTextSecondary }} />
-                  <Text style={{ color: token.colorTextSecondary }}>{job.location}</Text>
-                </Flex>
-                <Flex gap={8} align="center">
-                  <span className="candidate-moneyIcon" />
-                  <Text className="candidate-jobPay">{job.salary}</Text>
-                </Flex>
-              </Flex>
-
-              <Text style={{ display: 'block', marginTop: 10, color: token.colorTextTertiary }}>
-                Job ID: {id}
-              </Text>
             </div>
-
-            <Flex gap={10} wrap>
-              <Link to="/candidate/jobs">
-                <Button icon={<LeftOutlined />}>Back</Button>
-              </Link>
-              <Button
-                type="primary"
-                className="candidate-applyNowBtn"
-                onClick={() => setApplyOpen(true)}
-              >
-                Apply Now
-              </Button>
-            </Flex>
-          </Flex>
-
-          <Flex wrap gap={8} className="candidate-jobPills">
-            {(job.tags || []).map((t) => (
-              <span key={t} className="candidate-pill">
-                {t}
-              </span>
-            ))}
-          </Flex>
-        </Flex>
+          </div>
+        </div>
       </header>
 
-      <Row gutter={[48, 48]}>
-        <Col xs={24} lg={16}>
-          <div className="candidate-heroCard">
-            <Image
-              src={job.companies.logo_url}
-              alt=""
-              preview={false}
-              width="100%"
-              height="100%"
-              style={{ objectFit: 'cover', filter: 'blur(40px)', opacity: 0.3 }}
-            />
-            <div className="candidate-heroOverlay" />
-          </div>
-
-          <section style={{ marginTop: 40 }}>
-            <Title level={3} style={{ marginTop: 0, marginBottom: 16 }}>
-              About the Role
-            </Title>
-            <div className="candidate-prose">
-              <Paragraph
-                style={{ marginTop: 0, color: token.colorTextSecondary, whiteSpace: 'pre-wrap' }}
-              >
-                {job.description}
-              </Paragraph>
-
-              {job.requirements && (
-                <>
-                  <Title level={4} style={{ marginTop: 24 }}>
-                    Requirements
-                  </Title>
-                  <Paragraph style={{ color: token.colorTextSecondary, whiteSpace: 'pre-wrap' }}>
-                    {job.requirements}
-                  </Paragraph>
-                </>
-              )}
-
-              {job.benefits && (
-                <>
-                  <Title level={4} style={{ marginTop: 24 }}>
-                    Benefits
-                  </Title>
-                  <Paragraph style={{ color: token.colorTextSecondary, whiteSpace: 'pre-wrap' }}>
-                    {job.benefits}
-                  </Paragraph>
-                </>
-              )}
+      <Row gutter={[18, 18]} className="candidate-jobDetailGrid" align="stretch" wrap>
+        <Col xs={24} lg={16} className="candidate-jobDetailMainCol">
+          <Card
+            className="candidate-jobDetailCard candidate-jobGlassCard"
+            styles={{ body: { padding: 18 } }}
+          >
+            <div className="candidate-markdown">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {job.description?.trim()
+                  ? breakMarkdownAfterSentenceEnd(job.description.trim())
+                  : '—'}
+              </ReactMarkdown>
             </div>
-          </section>
+          </Card>
         </Col>
 
-        <Col xs={24} lg={8}>
-          <aside style={{ minHeight: 1 }} />
+        <Col xs={24} lg={8} className="candidate-jobDetailSideCol">
+          <Card
+            className="candidate-jobInfoCard candidate-jobGlassCard candidate-jobGlassCardSubtle"
+            styles={{ body: { padding: 16 } }}
+          >
+            <Flex vertical gap={12}>
+              <div className="candidate-infoRow">
+                <Text type="secondary">Salary</Text>
+                <Text strong className="candidate-infoValue">
+                  {formatSalary(job)}
+                </Text>
+              </div>
+
+              <div className="candidate-infoRow">
+                <Text type="secondary">Deadline</Text>
+                <Text strong className="candidate-infoValue">
+                  {formatDate(job.application_deadline)}
+                </Text>
+              </div>
+
+              <div className="candidate-infoRow">
+                <Text type="secondary">Headcount</Text>
+                <Text strong className="candidate-infoValue">
+                  {job.headcount ?? '—'}
+                </Text>
+              </div>
+
+              <div className="candidate-infoRow">
+                <Text type="secondary">Min experience</Text>
+                <Text strong className="candidate-infoValue">
+                  {typeof job.min_experience_years === 'number'
+                    ? `${job.min_experience_years} year(s)`
+                    : '—'}
+                </Text>
+              </div>
+
+              <div className="candidate-infoRow">
+                <Text type="secondary">Company</Text>
+                <Text strong className="candidate-infoValue">
+                  {job.companies?.name ?? '—'}
+                </Text>
+              </div>
+
+              {job.companies?.description ? (
+                <div className="candidate-infoBlock">
+                  <Text type="secondary">About company</Text>
+                  <Text className="candidate-infoMuted">{job.companies.description}</Text>
+                </div>
+              ) : null}
+
+              {job.hr_profiles ? (
+                <div className="candidate-infoBlock">
+                  <Text type="secondary">HR contact</Text>
+                  <Flex wrap gap={8} align="center" style={{ marginTop: 6 }}>
+                    <Tag icon={<UserOutlined />}>{job.hr_profiles.position ?? 'HR'}</Tag>
+                    {job.hr_profiles.department_name ? (
+                      <Tag icon={<TeamOutlined />}>{job.hr_profiles.department_name}</Tag>
+                    ) : null}
+                  </Flex>
+                </div>
+              ) : null}
+            </Flex>
+          </Card>
         </Col>
       </Row>
 
@@ -242,26 +353,6 @@ export function CandidateJobDetailsPage() {
         subtitle="Submit your application for this role."
         onSubmit={handleApplySubmit}
       />
-
-      <footer className="candidate-detailFooter">
-        <div className="candidate-detailFooterInner">
-          <div>
-            <Text className="candidate-detailFooterBrand">Editorial Enterprise Recruitment</Text>
-            <div style={{ height: 6 }} />
-            <Text className="candidate-detailFooterCopy">
-              © 2026 Editorial Enterprise Recruitment. All rights reserved.
-            </Text>
-          </div>
-
-          <Flex wrap gap={18} justify="center" className="candidate-detailFooterLinks">
-            {['Terms of Service', 'Privacy Policy', 'Help Center', 'API Documentation'].map((t) => (
-              <a key={t} href="#" className="candidate-detailFooterLink">
-                {t}
-              </a>
-            ))}
-          </Flex>
-        </div>
-      </footer>
     </div>
   )
 }
