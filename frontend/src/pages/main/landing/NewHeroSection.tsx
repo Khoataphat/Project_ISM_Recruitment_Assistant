@@ -1,4 +1,4 @@
-import { EnvironmentOutlined, SearchOutlined } from '@ant-design/icons'
+import { SearchOutlined } from '@ant-design/icons'
 import { Button, Flex, Input, Tag, Typography, theme } from 'antd'
 import type { CSSProperties, FormEvent } from 'react'
 import { useState } from 'react'
@@ -16,15 +16,12 @@ export function NewHeroSection() {
   const { token } = theme.useToken()
   const navigate = useNavigate()
   const [keywordInput, setKeywordInput] = useState('')
-  const [locationInput, setLocationInput] = useState('')
 
   const submitSearch = (e?: FormEvent) => {
     e?.preventDefault()
     const params = new URLSearchParams()
     const kw = keywordInput.trim()
-    const loc = locationInput.trim()
     if (kw) params.set('q', kw)
-    if (loc) params.set('location', loc)
     const qs = params.toString()
     navigate(qs ? `/candidate/jobs?${qs}` : '/candidate/jobs')
   }
@@ -164,23 +161,6 @@ export function NewHeroSection() {
                 }}
               />
 
-              <div className="landing-searchDivider" aria-hidden />
-
-              <Input
-                variant="borderless"
-                size="large"
-                className="landing-searchInput"
-                prefix={<EnvironmentOutlined style={{ color: token.colorTextSecondary }} />}
-                placeholder="Location or Remote"
-                value={locationInput}
-                onChange={(e) => setLocationInput(e.target.value)}
-                style={{
-                  flex: '1 1 200px',
-                  minWidth: 0,
-                  borderRadius: token.borderRadiusLG,
-                }}
-              />
-
               <Button
                 type="primary"
                 htmlType="submit"
@@ -214,9 +194,7 @@ export function NewHeroSection() {
                 className="landing-pillBtn"
                 type="default"
                 size="middle"
-                onClick={() =>
-                  navigate(`/candidate/jobs?q=${encodeURIComponent(label)}`)
-                }
+                onClick={() => navigate(`/candidate/jobs?q=${encodeURIComponent(label)}`)}
                 style={{
                   borderRadius: 999,
                   paddingInline: 14,

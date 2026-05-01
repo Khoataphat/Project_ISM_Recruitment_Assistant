@@ -2,6 +2,7 @@ import {
   Avatar,
   Button,
   ConfigProvider,
+  Divider,
   Drawer,
   Dropdown,
   Grid,
@@ -11,7 +12,8 @@ import {
   theme,
   Typography,
 } from 'antd'
-import { LogoutOutlined, MenuOutlined } from '@ant-design/icons'
+import type { MenuProps } from 'antd'
+import { DashboardOutlined, LogoutOutlined, MenuOutlined } from '@ant-design/icons'
 import { useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { appEnv } from '@/config/env'
@@ -19,21 +21,59 @@ import { useAuth } from '@/context/AuthContext'
 
 type NavItem = { key: string; label: string; to: string }
 
-const navItems: NavItem[] = [
-  { key: 'home', label: 'Home', to: '/' },
-  { key: 'jobs', label: 'Find Jobs', to: '/candidate/jobs' },
-  { key: 'your-applications', label: 'Your Applications', to: '/candidate/your-applications' },
-]
+function navPathMatch(pathname: string, to: string): boolean {
+  if (to === '/') return false
+  return pathname === to || pathname.startsWith(`${to}/`)
+}
+
+function selectedNavKey(pathname: string, items: NavItem[]): string | undefined {
+  if (pathname === '/' || pathname === '/main' || pathname === '/main/') {
+    return 'home'
+  }
+  const match = [...items]
+    .filter((i) => i.to !== '/' && navPathMatch(pathname, i.to))
+    .sort((a, b) => b.to.length - a.to.length)[0]
+  return match?.key
+}
 
 export function TopNavBar() {
   const navigate = useNavigate()
   const { token } = theme.useToken()
-  const { isAuthenticated, user, logout } = useAuth()
+  const { isAuthenticated, user, logout, isCandidate, isHR } = useAuth()
   const screens = Grid.useBreakpoint()
   const [mobileOpen, setMobileOpen] = useState(false)
   const location = useLocation()
-  const selectedKey =
-    navItems.find((i) => location.pathname.startsWith(i.to) && i.to !== '/')?.key ?? undefined
+
+  const navItems = useMemo((): NavItem[] => {
+    const home: NavItem = { key: 'home', label: 'Home', to: '/' }
+    if (!isAuthenticated) {
+      return [home, { key: 'browse', label: 'Browse jobs', to: '/main/jobs' }]
+    }
+    if (isCandidate) {
+      return [
+        home,
+        { key: 'jobs', label: 'Find Jobs', to: '/candidate/jobs' },
+        {
+          key: 'your-applications',
+          label: 'Your Applications',
+          to: '/candidate/your-applications',
+        },
+      ]
+    }
+    if (isHR) {
+      return [
+        home,
+        { key: 'dashboard', label: 'Dashboard', to: '/hr/dashboard' },
+        { key: 'hr-jobs', label: 'Jobs', to: '/hr/jobs' },
+      ]
+    }
+    return [home, { key: 'browse', label: 'Browse jobs', to: '/main/jobs' }]
+  }, [isAuthenticated, isCandidate, isHR])
+
+  const selectedKey = useMemo(
+    () => selectedNavKey(location.pathname, navItems),
+    [location.pathname, navItems]
+  )
 
   const menuItems = useMemo(
     () =>
@@ -43,6 +83,7 @@ export function TopNavBar() {
           <Link
             to={i.to}
             onClick={() => setMobileOpen(false)}
+            className="top-nav-link"
             style={{
               color: token.colorTextSecondary,
               fontWeight: 650,
@@ -53,7 +94,7 @@ export function TopNavBar() {
           </Link>
         ),
       })),
-    [token.colorTextSecondary]
+    [navItems, token.colorTextSecondary]
   )
 
   const headerHeight = 80
@@ -67,8 +108,28 @@ export function TopNavBar() {
     navigate('/login')
   }
 
+  const userAvatarMenuItems: MenuProps['items'] = [
+    ...(isHR
+      ? [
+          {
+            key: 'hr-dashboard',
+            label: 'HR Dashboard',
+            icon: <DashboardOutlined />,
+            onClick: () => navigate('/hr/dashboard'),
+          },
+        ]
+      : []),
+    {
+      key: 'logout',
+      label: 'Logout',
+      icon: <LogoutOutlined />,
+      onClick: onLogout,
+    },
+  ]
+
   return (
     <Layout.Header
+      className="top-nav-shell"
       style={{
         position: 'fixed',
         top: 0,
@@ -83,18 +144,16 @@ export function TopNavBar() {
       }}
     >
       <div
+        className="top-nav-inner"
         style={{
           height: headerHeight,
-          width: '100%',
-          margin: '0 auto',
-          padding: '0 12rem',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: 16,
         }}
       >
-        <Link to="/" style={{ textDecoration: 'none' }}>
+        <Link to="/" className="top-nav-brand" style={{ textDecoration: 'none' }}>
           <Typography.Text
             style={{
               fontSize: 18,
@@ -108,13 +167,7 @@ export function TopNavBar() {
         </Link>
 
         {isDesktop ? (
-          <div
-            style={{
-              flex: 1,
-              display: 'flex',
-              justifyContent: 'center',
-            }}
-          >
+          <div className="top-nav-center">
             <ConfigProvider
               theme={{
                 components: {
@@ -134,6 +187,7 @@ export function TopNavBar() {
               <Menu
                 mode="horizontal"
                 disabledOverflow
+                className="top-nav-menu-root"
                 selectedKeys={selectedKey ? [selectedKey] : []}
                 items={menuItems}
                 style={{
@@ -152,20 +206,15 @@ export function TopNavBar() {
         {isDesktop ? (
           isAuthenticated && user ? (
             <Dropdown
-              menu={{
-                items: [
-                  {
-                    key: 'logout',
-                    label: 'Logout',
-                    icon: <LogoutOutlined />,
-                    onClick: onLogout,
-                  },
-                ],
-              }}
+              menu={{ items: userAvatarMenuItems }}
               trigger={['click']}
               placement="bottomRight"
             >
-              <Button type="text" style={{ paddingInline: 8, height: 40 }}>
+              <Button
+                type="text"
+                className="top-nav-user-trigger"
+                style={{ paddingInline: 8, height: 40 }}
+              >
                 <Space size={10}>
                   <Avatar size="small" style={{ background: token.colorPrimary }}>
                     {avatarText}
@@ -175,41 +224,36 @@ export function TopNavBar() {
               </Button>
             </Dropdown>
           ) : (
-            <Space size={12}>
+            <Space size={12} className="top-nav-actions-desktop">
               <Link to="/login" style={{ textDecoration: 'none' }}>
-                <Button type="text">Sign In</Button>
+                <Button type="text" className="top-nav-cta-secondary">
+                  Sign In
+                </Button>
               </Link>
-              <Link to="/main/jobs" style={{ textDecoration: 'none' }}>
-                <Button type="primary">Post a Job</Button>
+              <Link to="/login" style={{ textDecoration: 'none' }}>
+                <Button type="primary" className="top-nav-cta-primary">
+                  Post a Job
+                </Button>
               </Link>
             </Space>
           )
         ) : (
-          <Space size={8}>
+          <Space size={8} className="top-nav-actions-mobile">
             {isAuthenticated && user ? (
               <Dropdown
-                menu={{
-                  items: [
-                    {
-                      key: 'logout',
-                      label: 'Logout',
-                      icon: <LogoutOutlined />,
-                      onClick: onLogout,
-                    },
-                  ],
-                }}
+                menu={{ items: userAvatarMenuItems }}
                 trigger={['click']}
                 placement="bottomRight"
               >
-                <Button type="text" aria-label="Open user menu">
+                <Button type="text" aria-label="Open user menu" className="top-nav-user-trigger">
                   <Avatar size="small" style={{ background: token.colorPrimary }}>
                     {avatarText}
                   </Avatar>
                 </Button>
               </Dropdown>
             ) : (
-              <Link to="/main/jobs" style={{ textDecoration: 'none' }}>
-                <Button type="primary" onClick={() => navigate('/hr/jobs')}>
+              <Link to="/login" style={{ textDecoration: 'none' }}>
+                <Button type="primary" className="top-nav-cta-primary">
                   Post a Job
                 </Button>
               </Link>
@@ -217,6 +261,7 @@ export function TopNavBar() {
             <Button
               aria-label="Open menu"
               icon={<MenuOutlined />}
+              className="top-nav-menu-toggle"
               onClick={() => setMobileOpen(true)}
             />
           </Space>
@@ -246,7 +291,8 @@ export function TopNavBar() {
         >
           <Menu mode="inline" selectedKeys={selectedKey ? [selectedKey] : []} items={menuItems} />
         </ConfigProvider>
-        <div style={{ marginTop: 16 }}>
+        <Divider style={{ margin: '16px 0' }} />
+        <div>
           {isAuthenticated && user ? (
             <div>
               <div style={{ marginBottom: 12 }}>
@@ -265,11 +311,18 @@ export function TopNavBar() {
               </Button>
             </div>
           ) : (
-            <Link to="/login" style={{ textDecoration: 'none' }}>
-              <Button block type="default" onClick={() => setMobileOpen(false)}>
-                Sign In
-              </Button>
-            </Link>
+            <Space direction="vertical" size={12} style={{ width: '100%' }}>
+              <Link to="/login" style={{ textDecoration: 'none', display: 'block' }}>
+                <Button block type="primary" onClick={() => setMobileOpen(false)}>
+                  Sign In
+                </Button>
+              </Link>
+              <Link to="/login" style={{ textDecoration: 'none', display: 'block' }}>
+                <Button block type="default" onClick={() => setMobileOpen(false)}>
+                  Post a Job (employers)
+                </Button>
+              </Link>
+            </Space>
           )}
         </div>
       </Drawer>

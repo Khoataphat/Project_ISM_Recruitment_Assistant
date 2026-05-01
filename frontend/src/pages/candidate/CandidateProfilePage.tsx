@@ -1,16 +1,5 @@
 import { BankOutlined, FilePdfOutlined, RightOutlined } from '@ant-design/icons'
-import {
-  Alert,
-  Avatar,
-  Button,
-  Empty,
-  Flex,
-  Image,
-  Tag,
-  Typography,
-  theme,
-  Spin,
-} from 'antd'
+import { Alert, Avatar, Button, Empty, Flex, Image, Tag, Typography, theme, Spin } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -118,7 +107,12 @@ export function CandidateProfilePage() {
 
   if (loading) {
     return (
-      <Flex justify="center" align="center" className="candidate-jobsMain" style={{ minHeight: 500 }}>
+      <Flex
+        justify="center"
+        align="center"
+        className="candidate-jobsMain"
+        style={{ minHeight: 500 }}
+      >
         <Spin size="large" tip="Loading profile…" />
       </Flex>
     )
@@ -218,7 +212,13 @@ export function CandidateProfilePage() {
           </section>
 
           <section className="candidate-profileCard candidate-profileCard--wide">
-            <Flex justify="space-between" align="center" wrap gap={12} className="candidate-profileSectionHead">
+            <Flex
+              justify="space-between"
+              align="center"
+              wrap
+              gap={12}
+              className="candidate-profileSectionHead"
+            >
               <Title level={4} className="candidate-profileCardTitle" style={{ margin: 0 }}>
                 Applications
               </Title>
@@ -244,10 +244,7 @@ export function CandidateProfilePage() {
                 <ul className="candidate-profileAppList">
                   {sorted.map((app) => (
                     <li key={app.id}>
-                      <Link
-                        to={`/candidate/job/${app.job_id}`}
-                        className="candidate-profileAppRow"
-                      >
+                      <Link to={`/candidate/job/${app.job_id}`} className="candidate-profileAppRow">
                         <div className="candidate-profileAppLogo">
                           {app.jobs?.companies?.logo_url ? (
                             <Image
@@ -259,7 +256,9 @@ export function CandidateProfilePage() {
                               style={{ objectFit: 'contain' }}
                             />
                           ) : (
-                            <BankOutlined style={{ fontSize: 20, color: token.colorTextSecondary }} />
+                            <BankOutlined
+                              style={{ fontSize: 20, color: token.colorTextSecondary }}
+                            />
                           )}
                         </div>
                         <div className="candidate-profileAppBody">
@@ -274,14 +273,24 @@ export function CandidateProfilePage() {
                             <Tag
                               bordered={false}
                               color={tagColor(HR_STATUS_COLOR, app.hr_status)}
-                              style={{ margin: 0, fontWeight: 600, fontSize: 11, borderRadius: 999 }}
+                              style={{
+                                margin: 0,
+                                fontWeight: 600,
+                                fontSize: 11,
+                                borderRadius: 999,
+                              }}
                             >
                               HR: {app.hr_status}
                             </Tag>
                             <Tag
                               bordered={false}
                               color={tagColor(PROCESSING_STATUS_COLOR, app.processing_status)}
-                              style={{ margin: 0, fontWeight: 600, fontSize: 11, borderRadius: 999 }}
+                              style={{
+                                margin: 0,
+                                fontWeight: 600,
+                                fontSize: 11,
+                                borderRadius: 999,
+                              }}
                             >
                               AI: {app.processing_status}
                             </Tag>
@@ -301,8 +310,8 @@ export function CandidateProfilePage() {
               Resumes submitted
             </Title>
             <Paragraph type="secondary" className="candidate-profileCardLead">
-              Each resume is stored when you submit an application. To use a new file, apply again and
-              attach the PDF there.
+              Each resume is stored when you submit an application. To use a new file, apply again
+              and attach the PDF there.
             </Paragraph>
 
             {sorted.length === 0 ? (
@@ -324,7 +333,8 @@ export function CandidateProfilePage() {
                           <Text strong>{resumeFileName(app.cv_url)}</Text>
                           <div>
                             <Text type="secondary" style={{ fontSize: 12 }}>
-                              {app.jobs?.title ?? 'Application'} · {formatAppliedDate(app.applied_at)}
+                              {app.jobs?.title ?? 'Application'} ·{' '}
+                              {formatAppliedDate(app.applied_at)}
                             </Text>
                           </div>
                         </div>

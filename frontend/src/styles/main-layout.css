@@ -27,6 +27,82 @@
   gap: 16px;
 }
 
+/* Top navigation — [TopNavBar.tsx] (MainLayout, CandidateLayout, HrLayout) */
+.top-nav-shell {
+  transition:
+    box-shadow 200ms ease,
+    border-color 200ms ease,
+    background-color 200ms ease;
+}
+
+.top-nav-inner {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-inline: clamp(16px, 4vw, 24px);
+}
+
+.top-nav-brand {
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 200ms ease;
+}
+
+.top-nav-brand:hover {
+  opacity: 0.88;
+}
+
+.top-nav-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+
+.top-nav-link {
+  cursor: pointer;
+  text-decoration: none;
+  border-radius: 6px;
+  transition:
+    color 200ms ease,
+    background-color 200ms ease;
+}
+
+.top-nav-link:focus-visible {
+  outline: 2px solid #1677ff;
+  outline-offset: 2px;
+}
+
+.top-nav-menu-root.ant-menu-horizontal .ant-menu-item::after {
+  border: none !important;
+}
+
+.top-nav-user-trigger,
+.top-nav-cta-primary,
+.top-nav-cta-secondary,
+.top-nav-menu-toggle {
+  cursor: pointer;
+}
+
+.top-nav-actions-desktop :where(.ant-btn),
+.top-nav-actions-mobile :where(.ant-btn) {
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease,
+    color 200ms ease,
+    box-shadow 200ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .top-nav-shell,
+  .top-nav-brand,
+  .top-nav-link,
+  .top-nav-actions-desktop :where(.ant-btn),
+  .top-nav-actions-mobile :where(.ant-btn) {
+    transition: none;
+  }
+}
+
 .main-brand {
   text-decoration: none;
 }
@@ -542,7 +618,11 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse 90% 140% at 18% 45%, rgba(255, 255, 255, 0.03), transparent 52%);
+  background: radial-gradient(
+    ellipse 90% 140% at 18% 45%,
+    rgba(255, 255, 255, 0.03),
+    transparent 52%
+  );
   pointer-events: none;
 }
 
