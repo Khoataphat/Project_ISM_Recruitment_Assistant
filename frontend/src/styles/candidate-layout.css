@@ -1310,3 +1310,32 @@
     transition: none;
   }
 }
+
+/* --- Candidate applications page: preview panel extras (scoped) --- */
+.candidate-appPreviewScore {
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--candidate-primary) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--candidate-primary) 18%, transparent);
+}
+
+.candidate-appPreviewRadarSection {
+  margin-bottom: 16px;
+  min-height: 168px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0;
+  border-top: 1px solid color-mix(in srgb, var(--candidate-border) 40%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--candidate-border) 40%, transparent);
+}
+
+.candidate-appPreviewCover.ant-typography {
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.candidate-appsEmpty .ant-empty-image {
+  opacity: 0.88;
+}

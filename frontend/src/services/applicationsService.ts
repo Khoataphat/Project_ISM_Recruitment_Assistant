@@ -6,6 +6,31 @@ import type { ApiSuccessEnvelope, ApplicationStatus } from '@/types'
 export const APPLICATION_MAX_RESUME_MB = 5
 export const APPLICATION_MAX_COVER_LETTER_LENGTH = 2000
 
+/** Shape returned by GET `/applications` (Prisma `applications` + nested `jobs`). */
+export type CandidateApplicationJob = {
+  id: string
+  title: string
+  status: string
+  companies: {
+    name: string
+    logo_url: string | null
+  }
+}
+
+export type CandidateApplication = {
+  id: string
+  job_id: string
+  cv_url: string
+  cover_letter: string | null
+  processing_status: string
+  hr_status: string
+  skills_radar: unknown
+  ai_matching_score: string | number | null | undefined
+  applied_at: string
+  updated_at: string
+  jobs: CandidateApplicationJob
+}
+
 export type ApplicationRecord = {
   applicationId?: string | number
   id?: string | number
@@ -55,6 +80,6 @@ export async function submitApplication(data: SubmitApplicationRequest) {
 }
 
 export async function getMyApplications() {
-  const response = await apiClient.get<ApiSuccessEnvelope<ApplicationRecord[]>>('/applications')
+  const response = await apiClient.get<ApiSuccessEnvelope<CandidateApplication[]>>('/applications')
   return unwrapData(response)
 }
