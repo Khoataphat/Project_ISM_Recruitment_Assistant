@@ -8,16 +8,17 @@ export function FooterSection() {
 
   return (
     <footer
+      className="landing-footer"
       style={{
         marginTop: 'auto',
         width: '100%',
         borderTop: `1px solid ${token.colorBorderSecondary}`,
         background: token.colorFillQuaternary,
-        paddingBlock: 56,
+        paddingBlock: 'clamp(2.5rem, 6vw, 3.5rem)',
       }}
     >
       <div className="main-container">
-        <Row gutter={[24, 24]} align="middle" justify="space-between">
+        <Row gutter={[24, 24]} align="middle" justify="space-between" style={{ rowGap: 20 }}>
           <Col xs={24} md={10}>
             <Space direction="vertical" size={6} style={{ width: '100%' }}>
               <Typography.Text style={{ fontWeight: 950, fontSize: 16, color: token.colorText }}>

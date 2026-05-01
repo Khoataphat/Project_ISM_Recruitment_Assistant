@@ -14,6 +14,7 @@ export type CandidateJobsFiltersContextValue = {
   setOptions: (next: CandidateJobsFiltersOptions) => void
   apply: () => void
   clear: () => void
+  patchFilters: (patch: Partial<CandidateJobsAppliedFilters>) => void
 }
 
 export const CandidateJobsFiltersContext = createContext<

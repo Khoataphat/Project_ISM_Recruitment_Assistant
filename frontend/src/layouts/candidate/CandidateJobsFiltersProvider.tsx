@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 import type {
   CandidateJobsAppliedFilters,
@@ -20,6 +20,11 @@ export function CandidateJobsFiltersProvider({ children }: { children: React.Rea
   )
   const [options, setOptions] = useState<CandidateJobsFiltersOptions>({ levels: [], types: [] })
 
+  const patchFilters = useCallback((patch: Partial<CandidateJobsAppliedFilters>) => {
+    setDraftFilters((prev) => ({ ...prev, ...patch }))
+    setAppliedFilters((prev) => ({ ...prev, ...patch }))
+  }, [])
+
   const value = useMemo<CandidateJobsFiltersContextValue>(
     () => ({
       draftFilters,
@@ -32,8 +37,9 @@ export function CandidateJobsFiltersProvider({ children }: { children: React.Rea
         setDraftFilters(DEFAULT_CANDIDATE_JOBS_FILTERS)
         setAppliedFilters(DEFAULT_CANDIDATE_JOBS_FILTERS)
       },
+      patchFilters,
     }),
-    [appliedFilters, draftFilters, options]
+    [appliedFilters, draftFilters, options, patchFilters]
   )
 
   return (

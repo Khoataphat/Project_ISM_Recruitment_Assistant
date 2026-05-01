@@ -1,5 +1,6 @@
 import { ArrowRightOutlined, BankOutlined, EnvironmentOutlined } from '@ant-design/icons'
 import { Button, Card, Col, Flex, Row, Space, Tag, Typography, theme } from 'antd'
+import { useNavigate } from 'react-router-dom'
 
 const jobs = [
   {
@@ -33,22 +34,23 @@ const jobs = [
 
 export function LatestJobsSection() {
   const { token } = theme.useToken()
+  const navigate = useNavigate()
 
   return (
     <section
       className="landing-latest"
       style={{
-        paddingBlock: 96,
+        paddingBlock: 'clamp(3.5rem, 8vw, 6rem)',
         background: token.colorBgLayout,
       }}
     >
       <div className="main-container">
         <Flex
-          gap={24}
+          className="landing-latestHeader"
           wrap="wrap"
           align="flex-end"
           justify="space-between"
-          style={{ marginBottom: 48 }}
+          style={{ marginBottom: 'clamp(2rem, 5vw, 3rem)' }}
         >
           <div style={{ maxWidth: 720 }}>
             <Typography.Title
@@ -71,8 +73,9 @@ export function LatestJobsSection() {
           <Button
             type="link"
             className="landing-browseLink"
-            style={{ fontWeight: 900, paddingInline: 0 }}
+            style={{ fontWeight: 900, paddingInline: 0, cursor: 'pointer' }}
             icon={null}
+            onClick={() => navigate('/candidate/jobs')}
           >
             Browse all positions <ArrowRightOutlined />
           </Button>

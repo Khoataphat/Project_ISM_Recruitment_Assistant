@@ -6,12 +6,12 @@ import { StatisticsBarSection } from './landing/StatisticsBarSection'
 
 export function LandingPage() {
   return (
-    <>
+    <div className="landing-page">
       <NewHeroSection />
       <StatisticsBarSection />
       <LatestJobsSection />
       <NewCtaSection />
       <FooterSection />
-    </>
+    </div>
   )
 }

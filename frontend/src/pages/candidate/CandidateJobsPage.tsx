@@ -12,8 +12,8 @@ import {
   Spin,
   Alert,
 } from 'antd'
-import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 
 import { getOpenJobs, type ApiJob } from '@/services/jobsService'
 import { useCandidateJobsFilters } from '@/layouts/candidate/CandidateJobsFiltersContext.ts'
@@ -33,12 +33,14 @@ export function CandidateJobsPage() {
   const { token } = theme.useToken()
   const screens = Grid.useBreakpoint()
   const isDesktop = !!screens.lg
-  const { appliedFilters, setOptions } = useCandidateJobsFilters()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const { appliedFilters, setOptions, patchFilters } = useCandidateJobsFilters()
   const [jobs, setJobs] = useState<ApiJob[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string>('')
-  const [query, setQuery] = useState('')
+  const qFromUrl = searchParams.get('q') ?? ''
+  const [query, setQuery] = useState(qFromUrl)
   const [sortMode, setSortMode] = useState<
     | 'newest'
     | 'deadline'
@@ -51,6 +53,32 @@ export function CandidateJobsPage() {
   >('newest')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+
+  useEffect(() => {
+    setQuery(qFromUrl)
+  }, [qFromUrl])
+
+  useEffect(() => {
+    if (!searchParams.has('location')) return
+    patchFilters({ locationQuery: searchParams.get('location') ?? '' })
+  }, [patchFilters, searchParams])
+
+  const setQueryAndUrl = useCallback(
+    (next: string) => {
+      setQuery(next)
+      setSearchParams(
+        (prev) => {
+          const p = new URLSearchParams(prev)
+          const t = next.trim()
+          if (t) p.set('q', t)
+          else p.delete('q')
+          return p
+        },
+        { replace: true }
+      )
+    },
+    [setSearchParams]
+  )
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -251,7 +279,7 @@ export function CandidateJobsPage() {
                   <Input.Search
                     allowClear
                     value={query}
-                    onChange={(e) => setQuery(e.target.value)}
+                    onChange={(e) => setQueryAndUrl(e.target.value)}
                     placeholder="Search by title, company, location, level, type…"
                   />
                 </div>

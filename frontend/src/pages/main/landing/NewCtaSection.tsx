@@ -9,7 +9,7 @@ export function NewCtaSection() {
   const { token } = theme.useToken()
 
   return (
-    <section style={{ paddingBlock: 96, background: token.colorBgLayout }}>
+    <section className="landing-ctaSection" style={{ background: token.colorBgLayout }}>
       <div className="main-container">
         <Card
           className="landing-ctaCard"
@@ -22,9 +22,9 @@ export function NewCtaSection() {
           }}
           styles={{ body: { padding: 0 } }}
         >
-          <Row gutter={0} style={{ minHeight: 420 }}>
+          <Row gutter={0}>
             <Col xs={24} lg={12}>
-              <div style={{ padding: 56, position: 'relative', zIndex: 1 }}>
+              <div className="landing-ctaCopy" style={{ position: 'relative', zIndex: 1 }}>
                 <Typography.Title
                   level={2}
                   style={{
@@ -34,6 +34,7 @@ export function NewCtaSection() {
                     fontWeight: 950,
                     letterSpacing: '-0.03em',
                     lineHeight: 1.1,
+                    fontSize: 'clamp(1.5rem, 2.5vw + 1rem, 2.25rem)',
                   }}
                 >
                   Get the first look at unlisted roles
@@ -81,7 +82,7 @@ export function NewCtaSection() {
                 className="landing-ctaMedia"
                 style={{
                   position: 'relative',
-                  minHeight: 360,
+                  minHeight: 'clamp(240px, 42vw, 360px)',
                   height: '100%',
                   width: '100%',
                 }}
