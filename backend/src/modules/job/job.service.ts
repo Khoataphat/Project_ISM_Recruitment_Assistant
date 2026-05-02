@@ -1,4 +1,4 @@
-import { job_status, job_level, job_type } from "@prisma/client";
+import { job_status, job_level, job_type, Prisma } from "@prisma/client";
 import { prisma } from "../../../prisma/prisma.service";
 
 type CreateJobInput = {
@@ -18,9 +18,34 @@ type CreateJobInput = {
 
 type UpdateJobInput = Partial<Omit<CreateJobInput, 'company_id' | 'hr_id'>>;
 
-export const listOpenJobs = async () => {
+export type ListOpenJobsFilters = {
+    search?: string;
+    level?: job_level;
+    location?: string;
+};
+
+export const listOpenJobs = async (filters: ListOpenJobsFilters = {}) => {
+    const where: Prisma.jobsWhereInput = { status: job_status.Open };
+
+    if (filters.search) {
+        where.OR = [
+            { title: { contains: filters.search, mode: "insensitive" } },
+            { description: { contains: filters.search, mode: "insensitive" } },
+            { location: { contains: filters.search, mode: "insensitive" } },
+            { companies: { name: { contains: filters.search, mode: "insensitive" } } },
+        ];
+    }
+
+    if (filters.level) {
+        where.level = filters.level;
+    }
+
+    if (filters.location) {
+        where.location = { contains: filters.location, mode: "insensitive" };
+    }
+
     return prisma.jobs.findMany({
-        where: { status: job_status.Open },
+        where,
         include: {
             companies: { select: { id: true, name: true, logo_url: true, headquarters_location: true } },
             hr_profiles: { select: { id: true, position: true } },

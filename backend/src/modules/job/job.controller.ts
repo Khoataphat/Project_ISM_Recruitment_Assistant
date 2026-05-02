@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { job_level } from "@prisma/client";
 import { AuthRequest } from "../auth/auth.middleware";
 import {
     createJob,
@@ -10,9 +11,53 @@ import {
 } from "./job.service";
 import { prisma } from "../../../prisma/prisma.service";
 
-export const listPublicJobs = async (_req: Request, res: Response) => {
+const readQueryString = (value: unknown) => {
+    if (Array.isArray(value)) {
+        value = value[0];
+    }
+
+    if (typeof value !== "string") {
+        return undefined;
+    }
+
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+};
+
+const parsePublicJobsQuery = (query: Request["query"]) => {
+    const search = readQueryString(query.search);
+    const level = readQueryString(query.level);
+    const location = readQueryString(query.location);
+
+    if (search && search.length > 100) {
+        return { error: "Search must be 100 characters or less" };
+    }
+
+    if (location && location.length > 100) {
+        return { error: "Location must be 100 characters or less" };
+    }
+
+    if (level && !Object.values(job_level).includes(level as job_level)) {
+        return { error: "Invalid job level" };
+    }
+
+    return {
+        filters: {
+            search,
+            level: level as job_level | undefined,
+            location,
+        },
+    };
+};
+
+export const listPublicJobs = async (req: Request, res: Response) => {
     try {
-        const jobs = await listOpenJobs();
+        const parsed = parsePublicJobsQuery(req.query);
+        if ("error" in parsed) {
+            return res.status(400).json({ status: "error", message: parsed.error });
+        }
+
+        const jobs = await listOpenJobs(parsed.filters);
         res.status(200).json({ status: "success", data: jobs });
     } catch (err) {
         console.error("List public jobs error:", err);
