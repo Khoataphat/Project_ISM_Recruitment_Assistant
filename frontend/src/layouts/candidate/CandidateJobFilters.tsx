@@ -1,168 +1,216 @@
-import { Button, Checkbox, Divider, Flex, InputNumber, Space, Typography, theme } from 'antd'
-import { useMemo, useState } from 'react'
+import {
+  Button,
+  Checkbox,
+  Divider,
+  Flex,
+  Input,
+  InputNumber,
+  Select,
+  Space,
+  Typography,
+  theme,
+} from 'antd'
+import { useCandidateJobsFilters } from '@/layouts/candidate/CandidateJobsFiltersContext.ts'
+import { useNavigate } from 'react-router-dom'
 
 const { Text, Title } = Typography
 
-type JobTypeKey = 'fullTime' | 'contract' | 'remote'
-type PopularTagKey = 'remoteFriendly' | 'highGrowth' | 'react' | 'typescript'
-
 export function CandidateJobFilters() {
+  const navigate = useNavigate()
   const { token } = theme.useToken()
+  const { draftFilters, setDraftFilters, apply, clear, options } = useCandidateJobsFilters()
 
-  const [jobTypes, setJobTypes] = useState<Record<JobTypeKey, boolean>>({
-    fullTime: true,
-    contract: false,
-    remote: false,
-  })
-  const [salaryMin, setSalaryMin] = useState<number | null>(null)
-  const [salaryMax, setSalaryMax] = useState<number | null>(null)
-  const [popularTags, setPopularTags] = useState<Record<PopularTagKey, boolean>>({
-    remoteFriendly: false,
-    highGrowth: false,
-    react: false,
-    typescript: false,
-  })
-
-  const items = useMemo(
-    () =>
-      [
-        { key: 'fullTime' as const, label: 'Full-time' },
-        { key: 'contract' as const, label: 'Contract' },
-        { key: 'remote' as const, label: 'Remote' },
-      ] satisfies Array<{ key: JobTypeKey; label: string }>,
-    []
-  )
+  const sectionTitleStyle = {
+    margin: 0,
+    fontSize: 10,
+    fontWeight: 800,
+    letterSpacing: '0.14em',
+    textTransform: 'uppercase' as const,
+    color: token.colorTextTertiary,
+  }
 
   return (
     <div
       className="candidate-filters"
-      style={{ display: 'flex', flexDirection: 'column', gap: 24 }}
+      style={{ display: 'flex', flexDirection: 'column', gap: 14 }}
     >
-      <div>
-        <Title
-          level={5}
-          style={{
-            margin: 0,
-            fontSize: 11,
-            fontWeight: 800,
-            letterSpacing: '0.14em',
-            textTransform: 'uppercase',
-            color: token.colorTextTertiary,
-          }}
-        >
-          Job Type
-        </Title>
-        <div style={{ height: 12 }} />
-
-        <Flex vertical gap={10}>
-          {items.map((it) => (
-            <label key={it.key} className="candidate-filterRow">
-              <Checkbox
-                checked={jobTypes[it.key]}
-                onChange={(e) => setJobTypes((p) => ({ ...p, [it.key]: e.target.checked }))}
-              />
-              <Text className="candidate-filterLabel" style={{ color: token.colorTextSecondary }}>
-                {it.label}
-              </Text>
-            </label>
-          ))}
-        </Flex>
-      </div>
-
-      <Divider style={{ margin: 0, borderColor: token.colorBorderSecondary }} />
-
-      <div>
-        <Flex align="center" justify="space-between">
-          <Title
-            level={5}
-            style={{
-              margin: 0,
-              fontSize: 11,
-              fontWeight: 800,
-              letterSpacing: '0.14em',
-              textTransform: 'uppercase',
-              color: token.colorTextTertiary,
-            }}
-          >
-            Salary Range
+      <div style={{ minHeight: 0, overflow: 'auto', paddingRight: 2 }}>
+        <div>
+          <Title level={5} style={sectionTitleStyle}>
+            Remote
           </Title>
-          <Text style={{ fontSize: 10, fontWeight: 800, color: token.colorPrimary }}>VND</Text>
-        </Flex>
-        <div style={{ height: 12 }} />
+          <div style={{ height: 8 }} />
 
-        <Flex gap={8}>
+          <label className="candidate-filterRow">
+            <Checkbox
+              checked={draftFilters.remoteOnly}
+              onChange={(e) =>
+                setDraftFilters({
+                  ...draftFilters,
+                  remoteOnly: e.target.checked,
+                })
+              }
+            />
+            <Text className="candidate-filterLabel" style={{ color: token.colorTextSecondary }}>
+              Remote only
+            </Text>
+          </label>
+        </div>
+
+        <Divider style={{ margin: '14px 0', borderColor: token.colorBorderSecondary }} />
+
+        <div>
+          <Title level={5} style={sectionTitleStyle}>
+            Location
+          </Title>
+          <div style={{ height: 8 }} />
+          <Input
+            placeholder="e.g. Hồ Chí Minh"
+            value={draftFilters.locationQuery}
+            onChange={(e) =>
+              setDraftFilters({
+                ...draftFilters,
+                locationQuery: e.target.value,
+              })
+            }
+          />
+        </div>
+
+        <Divider style={{ margin: '14px 0', borderColor: token.colorBorderSecondary }} />
+
+        <div>
+          <Title level={5} style={sectionTitleStyle}>
+            Level
+          </Title>
+          <div style={{ height: 8 }} />
+          <Select
+            allowClear
+            placeholder="Any"
+            value={draftFilters.level}
+            onChange={(v) => setDraftFilters({ ...draftFilters, level: v ?? undefined })}
+            style={{ width: '100%' }}
+            options={options.levels.map((v) => ({ value: v, label: v }))}
+          />
+        </div>
+
+        <Divider style={{ margin: '14px 0', borderColor: token.colorBorderSecondary }} />
+
+        <div>
+          <Title level={5} style={sectionTitleStyle}>
+            Type
+          </Title>
+          <div style={{ height: 8 }} />
+          <Select
+            allowClear
+            placeholder="Any"
+            value={draftFilters.type}
+            onChange={(v) => setDraftFilters({ ...draftFilters, type: v ?? undefined })}
+            style={{ width: '100%' }}
+            options={options.types.map((v) => ({ value: v, label: v }))}
+          />
+        </div>
+
+        <Divider style={{ margin: '14px 0', borderColor: token.colorBorderSecondary }} />
+
+        <div>
+          <Flex align="center" justify="space-between">
+            <Title level={5} style={sectionTitleStyle}>
+              Salary
+            </Title>
+            <Text style={{ fontSize: 10, fontWeight: 800, color: token.colorPrimary }}>
+              {draftFilters.salaryMin != null || draftFilters.salaryMax != null ? 'VND' : '—'}
+            </Text>
+          </Flex>
+          <div style={{ height: 8 }} />
+
+          <Flex gap={8}>
+            <InputNumber
+              placeholder="Min"
+              value={draftFilters.salaryMin}
+              onChange={(v) => setDraftFilters({ ...draftFilters, salaryMin: v ?? undefined })}
+              style={{ width: '100%' }}
+              min={0}
+              controls={false}
+            />
+            <InputNumber
+              placeholder="Max"
+              value={draftFilters.salaryMax}
+              onChange={(v) => setDraftFilters({ ...draftFilters, salaryMax: v ?? undefined })}
+              style={{ width: '100%' }}
+              min={0}
+              controls={false}
+            />
+          </Flex>
+        </div>
+
+        <Divider style={{ margin: '14px 0', borderColor: token.colorBorderSecondary }} />
+        {/* 
+        <div>
+          <Title level={5} style={sectionTitleStyle}>
+            Experience (years)
+          </Title>
+          <div style={{ height: 8 }} />
+
           <InputNumber
-            placeholder="Min"
-            value={salaryMin}
-            onChange={(v) => setSalaryMin(v ?? null)}
+            placeholder="e.g. 2"
+            value={draftFilters.minExperienceYears}
+            onChange={(v) =>
+              setDraftFilters({ ...draftFilters, minExperienceYears: v ?? undefined })
+            }
             style={{ width: '100%' }}
             min={0}
             controls={false}
           />
-          <InputNumber
-            placeholder="Max"
-            value={salaryMax}
-            onChange={(v) => setSalaryMax(v ?? null)}
-            style={{ width: '100%' }}
-            min={0}
-            controls={false}
-          />
-        </Flex>
+        </div>
+
+        <Divider style={{ margin: '14px 0', borderColor: token.colorBorderSecondary }} /> */}
+
+        <div>
+          <Title level={5} style={sectionTitleStyle}>
+            Status
+          </Title>
+          <div style={{ height: 8 }} />
+          <Space orientation="vertical" size={8} style={{ width: '100%' }}>
+            {(['Open', 'Closed'] as const).map((s) => (
+              <label key={s} className="candidate-filterRow">
+                <Checkbox
+                  checked={draftFilters.statuses.includes(s)}
+                  onChange={(e) => {
+                    const next = e.target.checked
+                      ? [...draftFilters.statuses, s]
+                      : draftFilters.statuses.filter((x) => x !== s)
+                    setDraftFilters({ ...draftFilters, statuses: next })
+                  }}
+                />
+                <Text className="candidate-filterLabel" style={{ color: token.colorTextSecondary }}>
+                  {s}
+                </Text>
+              </label>
+            ))}
+          </Space>
+        </div>
       </div>
 
       <Divider style={{ margin: 0, borderColor: token.colorBorderSecondary }} />
 
-      <div>
-        <Title
-          level={5}
-          style={{
-            margin: 0,
-            fontSize: 11,
-            fontWeight: 800,
-            letterSpacing: '0.14em',
-            textTransform: 'uppercase',
-            color: token.colorTextTertiary,
+      <Flex gap={10}>
+        <Button block onClick={clear}>
+          Clear
+        </Button>
+        <Button
+          block
+          type="primary"
+          onClick={() => {
+            if (location.pathname === '/candidate/jobs') {
+              apply()
+            } else {
+              navigate('/candidate/jobs')
+            }
           }}
         >
-          Popular Tags
-        </Title>
-        <div style={{ height: 12 }} />
-
-        <Space size={[8, 8]} wrap>
-          <Button
-            size="small"
-            className="candidate-tagBtn"
-            type={popularTags.remoteFriendly ? 'primary' : 'default'}
-            onClick={() => setPopularTags((p) => ({ ...p, remoteFriendly: !p.remoteFriendly }))}
-          >
-            Remote Friendly
-          </Button>
-          <Button
-            size="small"
-            className="candidate-tagBtn"
-            type={popularTags.highGrowth ? 'primary' : 'default'}
-            onClick={() => setPopularTags((p) => ({ ...p, highGrowth: !p.highGrowth }))}
-          >
-            High Growth
-          </Button>
-          <Button
-            size="small"
-            className="candidate-tagBtn"
-            type={popularTags.react ? 'primary' : 'default'}
-            onClick={() => setPopularTags((p) => ({ ...p, react: !p.react }))}
-          >
-            React
-          </Button>
-          <Button
-            size="small"
-            className="candidate-tagBtn"
-            type={popularTags.typescript ? 'primary' : 'default'}
-            onClick={() => setPopularTags((p) => ({ ...p, typescript: !p.typescript }))}
-          >
-            TypeScript
-          </Button>
-        </Space>
-      </div>
+          Apply
+        </Button>
+      </Flex>
     </div>
   )
 }

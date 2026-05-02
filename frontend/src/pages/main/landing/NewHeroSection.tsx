@@ -1,6 +1,8 @@
-import { EnvironmentOutlined, SearchOutlined } from '@ant-design/icons'
+import { SearchOutlined } from '@ant-design/icons'
 import { Button, Flex, Input, Tag, Typography, theme } from 'antd'
-import type { CSSProperties } from 'react'
+import type { CSSProperties, FormEvent } from 'react'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import heroBackground from '../../../assets/images/background-interview.jpg'
 
 const popularSearches = [
@@ -12,6 +14,17 @@ const popularSearches = [
 
 export function NewHeroSection() {
   const { token } = theme.useToken()
+  const navigate = useNavigate()
+  const [keywordInput, setKeywordInput] = useState('')
+
+  const submitSearch = (e?: FormEvent) => {
+    e?.preventDefault()
+    const params = new URLSearchParams()
+    const kw = keywordInput.trim()
+    if (kw) params.set('q', kw)
+    const qs = params.toString()
+    navigate(qs ? `/candidate/jobs?${qs}` : '/candidate/jobs')
+  }
 
   const cssVars = {
     ['--landing-primary' as keyof CSSProperties]: token.colorPrimary,
@@ -26,15 +39,12 @@ export function NewHeroSection() {
 
   return (
     <section
-      className="landing-hero"
+      className="landing-hero landing-hero--section"
       style={{
         ...cssVars,
         position: 'relative',
-        paddingTop: 96,
-        paddingBottom: 128,
         overflow: 'hidden',
         background: token.colorBgLayout,
-        minHeight: '78vh',
       }}
     >
       <div
@@ -71,15 +81,7 @@ export function NewHeroSection() {
           alignItems: 'center',
         }}
       >
-        <div
-          style={{
-            width: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
+        <div className="landing-heroStack">
           <Tag
             className="landing-heroBadge"
             style={{
@@ -99,13 +101,12 @@ export function NewHeroSection() {
 
           <Typography.Title
             level={1}
+            className="landing-heroDisplay"
             style={{
               marginTop: 0,
               marginBottom: 24,
               fontWeight: 950,
               letterSpacing: '-0.04em',
-              lineHeight: 1.08,
-              fontSize: 72,
               color: token.colorText,
               textAlign: 'center',
             }}
@@ -118,24 +119,24 @@ export function NewHeroSection() {
             with AI Recruit
           </Typography.Title>
 
-          <Typography.Text
+          <Typography.Paragraph
+            className="landing-heroSubtitle"
             style={{
               color: token.colorTextSecondary,
-              marginBottom: 16,
+              marginBottom: 0,
               marginTop: 16,
-              fontSize: 16,
               textAlign: 'center',
             }}
-            type="secondary"
           >
             We connect exceptional professionals with high-performing organizations through a
             platform engineered for strategic placement.
             <br />
             Join the digital architect of careers today.
-          </Typography.Text>
+          </Typography.Paragraph>
 
-          <div
+          <form
             className="landing-searchCard shadow-soft-blue"
+            onSubmit={submitSearch}
             style={{
               marginTop: 16,
               background: token.colorBgContainer,
@@ -144,37 +145,25 @@ export function NewHeroSection() {
               padding: 8,
             }}
           >
-            <Flex gap={8} wrap="wrap" align="stretch">
+            <Flex gap={8} wrap="wrap" align="stretch" className="landing-searchRow">
               <Input
                 variant="borderless"
                 size="large"
                 className="landing-searchInput"
                 prefix={<SearchOutlined style={{ color: token.colorTextSecondary }} />}
                 placeholder="Job title or keywords"
+                value={keywordInput}
+                onChange={(e) => setKeywordInput(e.target.value)}
                 style={{
-                  flex: 1,
-                  minWidth: 240,
-                  borderRadius: token.borderRadiusLG,
-                }}
-              />
-
-              <div className="landing-searchDivider" aria-hidden />
-
-              <Input
-                variant="borderless"
-                size="large"
-                className="landing-searchInput"
-                prefix={<EnvironmentOutlined style={{ color: token.colorTextSecondary }} />}
-                placeholder="Location or Remote"
-                style={{
-                  flex: 1,
-                  minWidth: 240,
+                  flex: '1 1 200px',
+                  minWidth: 0,
                   borderRadius: token.borderRadiusLG,
                 }}
               />
 
               <Button
                 type="primary"
+                htmlType="submit"
                 size="large"
                 className="landing-searchBtn"
                 style={{
@@ -186,12 +175,14 @@ export function NewHeroSection() {
                 Search Jobs
               </Button>
             </Flex>
-          </div>
+          </form>
 
           <Flex
             gap={12}
             wrap="wrap"
             align="center"
+            justify="center"
+            className="landing-popularRow"
             style={{ marginTop: 18, color: token.colorTextSecondary }}
           >
             <Typography.Text style={{ fontWeight: 700, color: token.colorTextSecondary }}>
@@ -203,6 +194,7 @@ export function NewHeroSection() {
                 className="landing-pillBtn"
                 type="default"
                 size="middle"
+                onClick={() => navigate(`/candidate/jobs?q=${encodeURIComponent(label)}`)}
                 style={{
                   borderRadius: 999,
                   paddingInline: 14,

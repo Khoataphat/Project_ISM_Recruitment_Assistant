@@ -55,24 +55,24 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  # 4. Frontend
-  frontend:
-    build:
-      context: ./frontend
-      target: development
-    container_name: recruitment-frontend
-    ports:
-      - "5173:5173"
-    env_file:
-      - ./frontend/.env
-    environment:
-      - VITE_API_URL=http://localhost:3000
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    depends_on:
-      - backend
-    restart: unless-stopped
+  # # 4. Frontend
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #     target: development
+  #   container_name: recruitment-frontend
+  #   ports:
+  #     - "5173:5173"
+  #   env_file:
+  #     - ./frontend/.env
+  #   environment:
+  #     - VITE_API_URL=http://localhost:3000
+  #   volumes:
+  #     - ./frontend:/app
+  #     - /app/node_modules
+  #   depends_on:
+  #     - backend
+  #   restart: unless-stopped
 
 volumes:
   pgdata:

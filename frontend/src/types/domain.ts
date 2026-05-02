@@ -1,5 +1,5 @@
 export type UserRole = 'HR' | 'CANDIDATE'
-export type JobStatus = 'open' | 'closed'
+export type JobStatus = 'Open' | 'Closed' | 'Draft'
 export type ApplicationStatus = 'pending' | 'accepted' | 'rejected'
 
 export type AuthUser = {

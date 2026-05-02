@@ -1,3 +1,19 @@
+import {
+  Avatar,
+  Button,
+  ConfigProvider,
+  Divider,
+  Drawer,
+  Dropdown,
+  Grid,
+  Layout,
+  Menu,
+  Space,
+  theme,
+  Typography,
+} from 'antd'
+import type { MenuProps } from 'antd'
+import { DashboardOutlined, LogoutOutlined, MenuOutlined } from '@ant-design/icons'
 import { Button, ConfigProvider, Drawer, Grid, Layout, Menu, Space, theme, Typography } from 'antd'
 import { LogoutOutlined, MenuOutlined, UserOutlined } from '@ant-design/icons'
 import { useMemo, useState } from 'react'
@@ -7,21 +23,60 @@ import { useAuth } from '@/context/AuthContext'
 
 type NavItem = { key: string; label: string; to: string }
 
-const navItems: NavItem[] = [
-  { key: 'home', label: 'Home', to: '/' },
-  { key: 'jobs', label: 'Find Jobs', to: '/candidate/jobs' },
-  { key: 'your-applications', label: 'Your Applications', to: '/candidate/your-applications' },
-]
+function navPathMatch(pathname: string, to: string): boolean {
+  if (to === '/') return false
+  return pathname === to || pathname.startsWith(`${to}/`)
+}
+
+function selectedNavKey(pathname: string, items: NavItem[]): string | undefined {
+  if (pathname === '/' || pathname === '/main' || pathname === '/main/') {
+    return 'home'
+  }
+  const match = [...items]
+    .filter((i) => i.to !== '/' && navPathMatch(pathname, i.to))
+    .sort((a, b) => b.to.length - a.to.length)[0]
+  return match?.key
+}
 
 export function TopNavBar() {
   const navigate = useNavigate()
   const { user, logout, isAuthenticated, isHR } = useAuth()
   const { token } = theme.useToken()
+  const { isAuthenticated, user, logout, isCandidate, isHR } = useAuth()
   const screens = Grid.useBreakpoint()
   const [mobileOpen, setMobileOpen] = useState(false)
   const location = useLocation()
-  const selectedKey =
-    navItems.find((i) => location.pathname.startsWith(i.to) && i.to !== '/')?.key ?? undefined
+
+  const navItems = useMemo((): NavItem[] => {
+    const home: NavItem = { key: 'home', label: 'Home', to: '/' }
+    if (!isAuthenticated) {
+      return [home, { key: 'browse', label: 'Browse jobs', to: '/main/jobs' }]
+    }
+    if (isCandidate) {
+      return [
+        home,
+        { key: 'jobs', label: 'Find Jobs', to: '/candidate/jobs' },
+        {
+          key: 'your-applications',
+          label: 'Your Applications',
+          to: '/candidate/your-applications',
+        },
+      ]
+    }
+    if (isHR) {
+      return [
+        home,
+        { key: 'dashboard', label: 'Dashboard', to: '/hr/dashboard' },
+        { key: 'hr-jobs', label: 'Jobs', to: '/hr/jobs' },
+      ]
+    }
+    return [home, { key: 'browse', label: 'Browse jobs', to: '/main/jobs' }]
+  }, [isAuthenticated, isCandidate, isHR])
+
+  const selectedKey = useMemo(
+    () => selectedNavKey(location.pathname, navItems),
+    [location.pathname, navItems]
+  )
 
   const menuItems = useMemo(
     () =>
@@ -31,6 +86,7 @@ export function TopNavBar() {
           <Link
             to={i.to}
             onClick={() => setMobileOpen(false)}
+            className="top-nav-link"
             style={{
               color: token.colorTextSecondary,
               fontWeight: 650,
@@ -41,11 +97,38 @@ export function TopNavBar() {
           </Link>
         ),
       })),
-    [token.colorTextSecondary]
+    [navItems, token.colorTextSecondary]
   )
 
   const headerHeight = 80
   const isDesktop = !!screens.lg
+  const displayName = user?.full_name?.trim() || user?.email || 'User'
+  const avatarText = displayName.trim().charAt(0).toUpperCase()
+
+  const onLogout = () => {
+    logout()
+    setMobileOpen(false)
+    navigate('/login')
+  }
+
+  const userAvatarMenuItems: MenuProps['items'] = [
+    ...(isHR
+      ? [
+          {
+            key: 'hr-dashboard',
+            label: 'HR Dashboard',
+            icon: <DashboardOutlined />,
+            onClick: () => navigate('/hr/dashboard'),
+          },
+        ]
+      : []),
+    {
+      key: 'logout',
+      label: 'Logout',
+      icon: <LogoutOutlined />,
+      onClick: onLogout,
+    },
+  ]
   const profilePath = isHR ? '/hr/dashboard' : '/candidate/profile'
   const handleLogout = () => {
     logout()
@@ -55,6 +138,7 @@ export function TopNavBar() {
 
   return (
     <Layout.Header
+      className="top-nav-shell"
       style={{
         position: 'fixed',
         top: 0,
@@ -69,18 +153,16 @@ export function TopNavBar() {
       }}
     >
       <div
+        className="top-nav-inner"
         style={{
           height: headerHeight,
-          width: '100%',
-          margin: '0 auto',
-          padding: '0 12rem',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: 16,
         }}
       >
-        <Link to="/" style={{ textDecoration: 'none' }}>
+        <Link to="/" className="top-nav-brand" style={{ textDecoration: 'none' }}>
           <Typography.Text
             style={{
               fontSize: 18,
@@ -94,13 +176,7 @@ export function TopNavBar() {
         </Link>
 
         {isDesktop ? (
-          <div
-            style={{
-              flex: 1,
-              display: 'flex',
-              justifyContent: 'center',
-            }}
-          >
+          <div className="top-nav-center">
             <ConfigProvider
               theme={{
                 components: {
@@ -120,6 +196,7 @@ export function TopNavBar() {
               <Menu
                 mode="horizontal"
                 disabledOverflow
+                className="top-nav-menu-root"
                 selectedKeys={selectedKey ? [selectedKey] : []}
                 items={menuItems}
                 style={{
@@ -173,6 +250,7 @@ export function TopNavBar() {
             <Button
               aria-label="Open menu"
               icon={<MenuOutlined />}
+              className="top-nav-menu-toggle"
               onClick={() => setMobileOpen(true)}
             />
           </Space>

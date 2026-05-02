@@ -352,7 +352,7 @@ export function ListJobsPage() {
                     </Badge.Ribbon>
                     <div style={{ minWidth: 0 }}>
                       <Link
-                        to={`/main/job/${job.id}`}
+                        to={`/candidate/job/${job.id}`}
                         style={{ textDecoration: 'none', color: 'inherit' }}
                       >
                         <Title level={4} style={{ margin: 0, fontWeight: 700 }}>
@@ -404,7 +404,7 @@ export function ListJobsPage() {
                   ))}
                 </Flex>
 
-                <Link to={`/main/job/${job.id}`}>
+                <Link to={`/candidate/job/${job.id}`}>
                   <Button type="primary" block icon={<ArrowRightOutlined />} iconPosition="end">
                     View job details
                   </Button>

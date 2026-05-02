@@ -1,24 +1,24 @@
 import { BankOutlined, EnvironmentOutlined } from '@ant-design/icons'
-import { Button, Flex, Image, Pagination, Typography, theme, Spin, Alert } from 'antd'
-import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import {
+  Button,
+  Flex,
+  Grid,
+  Image,
+  Input,
+  Pagination,
+  Select,
+  Typography,
+  theme,
+  Spin,
+  Alert,
+} from 'antd'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 
-import { apiClient } from '@/lib/api'
+import { getOpenJobs, type ApiJob } from '@/services/jobsService'
+import { useCandidateJobsFilters } from '@/layouts/candidate/CandidateJobsFiltersContext.ts'
 
 const { Title, Text, Paragraph } = Typography
-
-type Job = {
-  id: string
-  title: string
-  location: string
-  salary: string
-  tags: string[]
-  description: string
-  companies: {
-    name: string
-    logo_url: string
-  }
-}
 
 function getApiErrorMessage(err: unknown, fallback: string) {
   if (err && typeof err === 'object') {
@@ -31,21 +31,62 @@ function getApiErrorMessage(err: unknown, fallback: string) {
 
 export function CandidateJobsPage() {
   const { token } = theme.useToken()
-  const [jobs, setJobs] = useState<Job[]>([])
+  const screens = Grid.useBreakpoint()
+  const isDesktop = !!screens.lg
+  const [searchParams, setSearchParams] = useSearchParams()
+  const { appliedFilters, setOptions, patchFilters } = useCandidateJobsFilters()
+  const [jobs, setJobs] = useState<ApiJob[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string>('')
+  const qFromUrl = searchParams.get('q') ?? ''
+  const [query, setQuery] = useState(qFromUrl)
+  const [sortMode, setSortMode] = useState<
+    | 'newest'
+    | 'deadline'
+    | 'salary_min'
+    | 'application_count'
+    | 'title_asc'
+    | 'company_asc'
+    | 'location_asc'
+    | 'view_count'
+  >('newest')
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+
+  useEffect(() => {
+    setQuery(qFromUrl)
+  }, [qFromUrl])
+
+  useEffect(() => {
+    if (!searchParams.has('location')) return
+    patchFilters({ locationQuery: searchParams.get('location') ?? '' })
+  }, [patchFilters, searchParams])
+
+  const setQueryAndUrl = useCallback(
+    (next: string) => {
+      setQuery(next)
+      setSearchParams(
+        (prev) => {
+          const p = new URLSearchParams(prev)
+          const t = next.trim()
+          if (t) p.set('q', t)
+          else p.delete('q')
+          return p
+        },
+        { replace: true }
+      )
+    },
+    [setSearchParams]
+  )
 
   useEffect(() => {
     const fetchJobs = async () => {
       try {
         setLoading(true)
-        const res = await apiClient.get('/jobs')
-        const data = res.data.data
-        setJobs(data)
-        if (data.length > 0) {
-          setSelectedId(data[0].id)
-        }
+        const data = await getOpenJobs()
+        setJobs(data ?? [])
+        if (data?.length) setSelectedId(data[0].id)
       } catch (err: unknown) {
         setError(getApiErrorMessage(err, 'Failed to fetch jobs'))
       } finally {
@@ -55,15 +96,160 @@ export function CandidateJobsPage() {
     fetchJobs()
   }, [])
 
+  useEffect(() => {
+    const levels = Array.from(
+      new Set(
+        jobs.map((j) => j.level).filter((v): v is string => typeof v === 'string' && !!v.trim())
+      )
+    ).sort((a, b) => a.localeCompare(b))
+
+    const types = Array.from(
+      new Set(
+        jobs.map((j) => j.type).filter((v): v is string => typeof v === 'string' && !!v.trim())
+      )
+    ).sort((a, b) => a.localeCompare(b))
+
+    setOptions({ levels, types })
+  }, [jobs, setOptions])
+
+  const formatSalary = (job: ApiJob) => {
+    if (!job.is_salary_visible) return 'Hidden'
+    const min = job.salary_min
+    const max = job.salary_max
+    const currency = job.salary_currency ?? ''
+    if (min == null && max == null) return `Negotiable${currency ? ` (${currency})` : ''}`
+    if (min != null && max != null)
+      return `${min.toLocaleString()}–${max.toLocaleString()} ${currency}`.trim()
+    if (min != null) return `From ${min.toLocaleString()} ${currency}`.trim()
+    return `Up to ${max?.toLocaleString()} ${currency}`.trim()
+  }
+
+  const formatDate = (iso: string | null | undefined) => {
+    if (!iso) return '—'
+    const d = new Date(iso)
+    if (Number.isNaN(d.getTime())) return '—'
+    return d.toLocaleDateString()
+  }
+
+  const filteredJobs = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    return jobs.filter((j) => {
+      if (appliedFilters.remoteOnly && !j.is_remote) return false
+      if (appliedFilters.level && j.level !== appliedFilters.level) return false
+      if (appliedFilters.type && j.type !== appliedFilters.type) return false
+      if (appliedFilters.statuses.length && !appliedFilters.statuses.includes(j.status)) {
+        return false
+      }
+      if (
+        appliedFilters.minExperienceYears != null &&
+        (j.min_experience_years == null ||
+          j.min_experience_years < appliedFilters.minExperienceYears)
+      ) {
+        return false
+      }
+      if (
+        appliedFilters.salaryMin != null &&
+        j.salary_max != null &&
+        j.salary_max < appliedFilters.salaryMin
+      ) {
+        return false
+      }
+      if (
+        appliedFilters.salaryMax != null &&
+        j.salary_min != null &&
+        j.salary_min > appliedFilters.salaryMax
+      ) {
+        return false
+      }
+
+      if (appliedFilters.locationQuery.trim()) {
+        const locQ = appliedFilters.locationQuery.trim().toLowerCase()
+        if (!(j.location ?? '').toLowerCase().includes(locQ)) return false
+      }
+
+      const company = j.companies?.name ?? ''
+      const location = j.location ?? ''
+      const level = j.level ?? ''
+      const type = j.type ?? ''
+      const title = j.title ?? ''
+      if (!q) return true
+      return (
+        title.toLowerCase().includes(q) ||
+        company.toLowerCase().includes(q) ||
+        location.toLowerCase().includes(q) ||
+        level.toLowerCase().includes(q) ||
+        type.toLowerCase().includes(q)
+      )
+    })
+  }, [appliedFilters, jobs, query])
+
+  const sortedJobs = useMemo(() => {
+    const list = [...filteredJobs]
+
+    const byString = (a: string, b: string) => a.localeCompare(b)
+    const byNumberDescNullLast = (a: number | null | undefined, b: number | null | undefined) => {
+      const av = a ?? Number.NEGATIVE_INFINITY
+      const bv = b ?? Number.NEGATIVE_INFINITY
+      return bv - av
+    }
+
+    list.sort((a, b) => {
+      switch (sortMode) {
+        case 'newest':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        case 'deadline':
+          return (
+            new Date(a.application_deadline ?? 8640000000000000).getTime() -
+            new Date(b.application_deadline ?? 8640000000000000).getTime()
+          )
+        case 'salary_min':
+          return byNumberDescNullLast(a.salary_min, b.salary_min)
+        case 'application_count':
+          return byNumberDescNullLast(a.application_count, b.application_count)
+        case 'view_count':
+          return byNumberDescNullLast(a.view_count, b.view_count)
+        case 'title_asc':
+          return byString(a.title ?? '', b.title ?? '')
+        case 'company_asc':
+          return byString(a.companies?.name ?? '', b.companies?.name ?? '')
+        case 'location_asc':
+          return byString(a.location ?? '', b.location ?? '')
+        default:
+          return 0
+      }
+    })
+
+    return list
+  }, [filteredJobs, sortMode])
+
+  useEffect(() => {
+    setPage(1)
+  }, [query, sortMode, pageSize])
+
+  const visibleJobs = useMemo(() => {
+    const start = (page - 1) * pageSize
+    return sortedJobs.slice(start, start + pageSize)
+  }, [sortedJobs, page, pageSize])
+
+  useEffect(() => {
+    if (!sortedJobs.length) {
+      setSelectedId('')
+      return
+    }
+    if (!selectedId || !sortedJobs.some((j) => j.id === selectedId)) {
+      setSelectedId(sortedJobs[0].id)
+    }
+  }, [sortedJobs, selectedId])
+
   const selectedJob = useMemo(
-    () => jobs.find((j) => j.id === selectedId) || jobs[0],
-    [jobs, selectedId]
+    () => sortedJobs.find((j) => j.id === selectedId) || sortedJobs[0],
+    [sortedJobs, selectedId]
   )
 
   if (loading) {
     return (
       <Flex justify="center" align="center" style={{ minHeight: 500 }}>
-        <Spin size="large" tip="Finding matches..." />
+        <Spin size="large" description="Finding matches..." />
       </Flex>
     )
   }
@@ -87,177 +273,230 @@ export function CandidateJobsPage() {
 
         <div className="candidate-jobsSplit">
           <div className="candidate-jobsListCol">
-            <div className="candidate-jobsListInner">
-              {jobs.map((job) => (
-                <article
-                  key={job.id}
-                  className={`candidate-jobCard${job.id === selectedJob?.id ? ' candidate-jobCard--selected' : ''}`}
-                  role="button"
-                  tabIndex={0}
-                  aria-current={job.id === selectedJob?.id ? 'true' : undefined}
-                  onClick={() => setSelectedId(job.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault()
-                      setSelectedId(job.id)
-                    }
-                  }}
-                >
-                  <Flex align="flex-start" justify="space-between" wrap gap={12}>
-                    <Flex gap={28} align="flex-start">
-                      <div className="candidate-jobLogoBox">
-                        <Image
-                          className="candidate-jobLogo"
-                          src={job.companies.logo_url}
-                          alt={`${job.companies.name} logo`}
-                          preview={false}
-                          width={84}
-                          height={84}
-                          style={{ objectFit: 'contain' }}
-                        />
-                      </div>
+            <Flex vertical gap={12} className="candidate-jobsListPane">
+              <Flex gap={10} wrap align="center">
+                <div style={{ flex: '1 1 280px', minWidth: 240 }}>
+                  <Input.Search
+                    allowClear
+                    value={query}
+                    onChange={(e) => setQueryAndUrl(e.target.value)}
+                    placeholder="Search by title, company, location, level, type…"
+                  />
+                </div>
+                <Select
+                  value={sortMode}
+                  onChange={(v) => setSortMode(v)}
+                  style={{ minWidth: 220 }}
+                  options={[
+                    { value: 'newest', label: 'Newest' },
+                    { value: 'deadline', label: 'Deadline' },
+                    { value: 'salary_min', label: 'Salary (min)' },
+                    { value: 'application_count', label: 'Most applied' },
+                    { value: 'view_count', label: 'Most viewed' },
+                    { value: 'title_asc', label: 'Title A–Z' },
+                    { value: 'company_asc', label: 'Company A–Z' },
+                    { value: 'location_asc', label: 'Location A–Z' },
+                  ]}
+                />
+              </Flex>
 
-                      <div>
-                        <div className="candidate-jobTitleRow">
-                          <Text className="candidate-jobTitle">{job.title}</Text>
-                        </div>
-
-                        <Flex className="candidate-jobMeta" align="center" wrap gap={10}>
-                          <Text style={{ color: token.colorTextSecondary, fontWeight: 600 }}>
-                            {job.companies.name}
-                          </Text>
-                          <span className="candidate-dot" />
-                          <Text style={{ color: token.colorTextSecondary, fontWeight: 600 }}>
-                            {job.location}
-                          </Text>
-                          <span className="candidate-dot" />
-                          <Text className="candidate-jobSalary">{job.salary}</Text>
-                        </Flex>
-
-                        <Flex className="candidate-jobTagList" wrap gap={10}>
-                          {(job.tags || []).map((t) => (
-                            <span key={t} className="candidate-jobTag">
-                              {t}
-                            </span>
-                          ))}
-                        </Flex>
-                      </div>
-                    </Flex>
-
-                    <Flex align="center" gap={12} onClick={(e) => e.stopPropagation()}>
-                      <Link to={`/candidate/job/${job.id}`}>
-                        <Button type="primary" className="candidate-applyBtn">
-                          Apply
-                        </Button>
-                      </Link>
-                    </Flex>
-                  </Flex>
-                </article>
-              ))}
-            </div>
-
-            <div className="candidate-paginationBar">
-              <Text style={{ color: token.colorTextSecondary }}>Page 1 of 1</Text>
-              <Pagination
-                className="candidate-pagination"
-                current={1}
-                total={jobs.length}
-                pageSize={10}
-                showSizeChanger={false}
-                showQuickJumper={false}
-              />
-            </div>
-          </div>
-
-          <aside className="candidate-jobsPreviewCol" aria-label="Job preview">
-            {selectedJob ? (
-              <div className="candidate-jobPreviewSticky">
-                <div className="candidate-jobPreview">
-                  <div className="candidate-jobPreviewMedia">
-                    <Image
-                      src={selectedJob.companies.logo_url} // Placeholder for cover if missing
-                      alt=""
-                      preview={false}
-                      width="100%"
-                      style={{
-                        height: '100%',
-                        objectFit: 'cover',
-                        filter: 'blur(40px)',
-                        opacity: 0.3,
+              <div className="candidate-jobsListScroll">
+                <div className="candidate-jobsListInner">
+                  {visibleJobs.map((job) => (
+                    <article
+                      key={job.id}
+                      className={`candidate-jobCard${job.id === selectedJob?.id ? ' candidate-jobCard--selected' : ''}`}
+                      role="button"
+                      tabIndex={0}
+                      aria-current={job.id === selectedJob?.id ? 'true' : undefined}
+                      onClick={() => setSelectedId(job.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          setSelectedId(job.id)
+                        }
                       }}
-                    />
-                    <div className="candidate-jobPreviewMediaShade" aria-hidden />
-                  </div>
-
-                  <div className="candidate-jobPreviewBody">
-                    <Flex align="center" wrap gap={10} style={{ marginBottom: 10 }}>
-                      <Title
-                        level={3}
-                        className="candidate-jobPreviewTitle"
-                        style={{ margin: 0, flex: '1 1 200px' }}
-                      >
-                        {selectedJob.title}
-                      </Title>
-                    </Flex>
-
-                    <Flex wrap gap={16} align="center" style={{ marginBottom: 16 }}>
-                      <Flex gap={8} align="center">
-                        <BankOutlined style={{ fontSize: 16, color: token.colorTextSecondary }} />
-                        <Text style={{ fontWeight: 700, color: token.colorText }}>
-                          {selectedJob.companies.name}
-                        </Text>
-                      </Flex>
-                      <Flex gap={8} align="center">
-                        <EnvironmentOutlined
-                          style={{ fontSize: 16, color: token.colorTextSecondary }}
-                        />
-                        <Text style={{ color: token.colorTextSecondary }}>
-                          {selectedJob.location}
-                        </Text>
-                      </Flex>
-                      <Flex gap={8} align="center">
-                        <span className="candidate-moneyIcon" />
-                        <Text className="candidate-jobPay">{selectedJob.salary}</Text>
-                      </Flex>
-                    </Flex>
-
-                    <Flex wrap gap={8} className="candidate-jobPills" style={{ marginBottom: 16 }}>
-                      {(selectedJob.tags || []).map((t) => (
-                        <span key={t} className="candidate-pill">
-                          {t}
-                        </span>
-                      ))}
-                    </Flex>
-
-                    <Paragraph
-                      style={{
-                        marginBottom: 20,
-                        color: token.colorTextSecondary,
-                        maxHeight: 200,
-                        overflow: 'hidden',
-                      }}
-                      className="candidate-jobPreviewSummary"
                     >
-                      {selectedJob.description}
-                    </Paragraph>
+                      <Flex align="flex-start" justify="space-between" wrap gap={12}>
+                        <Flex gap={28} align="center" style={{ minWidth: 0 }}>
+                          <div className="candidate-jobLogoBox">
+                            <Image
+                              className="candidate-jobLogo"
+                              src={job.companies?.logo_url ?? undefined}
+                              alt={`${job.companies?.name ?? 'Company'} logo`}
+                              preview={false}
+                              width={'100%'}
+                              height={'100%'}
+                              style={{ objectFit: 'contain' }}
+                            />
+                          </div>
 
-                    <Flex gap={10} wrap>
-                      <Link to={`/candidate/job/${selectedJob.id}`} style={{ flex: '1 1 auto' }}>
-                        <Button block className="candidate-jobPreviewSecondaryBtn">
-                          View full role
-                        </Button>
-                      </Link>
-                      <Link to={`/candidate/job/${selectedJob.id}`} style={{ flex: '1 1 auto' }}>
-                        <Button type="primary" block className="candidate-applyNowBtn">
-                          Apply now
-                        </Button>
-                      </Link>
-                    </Flex>
-                  </div>
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <div className="candidate-jobTitleRow">
+                              <Text className="candidate-jobTitle">{job.title}</Text>
+                            </div>
+
+                            <Flex className="candidate-jobMeta" align="center" wrap gap={10}>
+                              <Text style={{ color: token.colorTextSecondary, fontWeight: 600 }}>
+                                {job.companies?.name ?? '—'}
+                              </Text>
+                              <span className="candidate-dot" />
+                              <Text style={{ color: token.colorTextSecondary, fontWeight: 600 }}>
+                                {job.location ?? '—'}
+                              </Text>
+                              <span className="candidate-dot" />
+                              <Text className="candidate-jobSalary">{formatSalary(job)}</Text>
+                            </Flex>
+
+                            <Flex className="candidate-jobTagList" wrap gap={10}>
+                              {job.level ? (
+                                <span className="candidate-jobTag">{job.level}</span>
+                              ) : null}
+                              {job.type ? (
+                                <span className="candidate-jobTag">{job.type}</span>
+                              ) : null}
+                              {job.is_remote ? (
+                                <span className="candidate-jobTag">Remote</span>
+                              ) : null}
+                              <span className="candidate-jobTag">{job.status}</span>
+                              {job.min_experience_years != null ? (
+                                <span className="candidate-jobTag">
+                                  Min exp: {job.min_experience_years}y
+                                </span>
+                              ) : null}
+                            </Flex>
+                          </div>
+                        </Flex>
+
+                        <div onClick={(e) => e.stopPropagation()} />
+                      </Flex>
+                    </article>
+                  ))}
                 </div>
               </div>
-            ) : null}
-          </aside>
+
+              <div className="candidate-paginationBar">
+                <Text style={{ color: token.colorTextSecondary }}>
+                  Page {page} of {Math.max(1, Math.ceil(sortedJobs.length / pageSize))}
+                </Text>
+                <Pagination
+                  className="candidate-pagination"
+                  current={page}
+                  total={sortedJobs.length}
+                  pageSize={pageSize}
+                  onChange={(p, ps) => {
+                    setPage(p)
+                    if (ps !== pageSize) setPageSize(ps)
+                  }}
+                  showSizeChanger
+                  pageSizeOptions={[10, 20, 50]}
+                  showQuickJumper={false}
+                />
+              </div>
+            </Flex>
+          </div>
+
+          {isDesktop ? (
+            <aside className="candidate-jobsPreviewCol" aria-label="Job preview">
+              {selectedJob ? (
+                <div className="candidate-jobPreviewSticky">
+                  <div className="candidate-jobPreview">
+                    <div className="candidate-jobPreviewMedia">
+                      <Image
+                        src={selectedJob.companies?.logo_url ?? undefined} // Placeholder for cover if missing
+                        alt=""
+                        preview={false}
+                        width="100%"
+                        style={{
+                          height: '100%',
+                          objectFit: 'cover',
+                        }}
+                      />
+                      <div className="candidate-jobPreviewMediaShade" aria-hidden />
+                    </div>
+
+                    <div className="candidate-jobPreviewBody">
+                      <Flex align="center" wrap gap={10} style={{ marginBottom: 10 }}>
+                        <Title
+                          level={3}
+                          className="candidate-jobPreviewTitle"
+                          style={{ margin: 0, flex: '1 1 200px' }}
+                        >
+                          {selectedJob.title}
+                        </Title>
+                      </Flex>
+
+                      <Flex wrap gap={16} align="center" style={{ marginBottom: 16 }}>
+                        <Flex gap={8} align="center">
+                          <BankOutlined style={{ fontSize: 16, color: token.colorTextSecondary }} />
+                          <Text style={{ fontWeight: 700, color: token.colorText }}>
+                            {selectedJob.companies?.name ?? '—'}
+                          </Text>
+                        </Flex>
+                        <Flex gap={8} align="center">
+                          <EnvironmentOutlined
+                            style={{ fontSize: 16, color: token.colorTextSecondary }}
+                          />
+                          <Text style={{ color: token.colorTextSecondary }}>
+                            {selectedJob.location ?? '—'}
+                          </Text>
+                        </Flex>
+                        <Flex gap={8} align="center">
+                          <span className="candidate-moneyIcon" />
+                          <Text className="candidate-jobPay">{formatSalary(selectedJob)}</Text>
+                        </Flex>
+                      </Flex>
+
+                      <Flex
+                        wrap
+                        gap={8}
+                        className="candidate-jobPills"
+                        style={{ marginBottom: 16 }}
+                      >
+                        {selectedJob.level ? (
+                          <span className="candidate-pill">{selectedJob.level}</span>
+                        ) : null}
+                        {selectedJob.type ? (
+                          <span className="candidate-pill">{selectedJob.type}</span>
+                        ) : null}
+                        {selectedJob.is_remote ? (
+                          <span className="candidate-pill">Remote</span>
+                        ) : null}
+                        {selectedJob.application_deadline ? (
+                          <span className="candidate-pill">
+                            Deadline: {formatDate(selectedJob.application_deadline)}
+                          </span>
+                        ) : null}
+                      </Flex>
+
+                      <Paragraph
+                        style={{
+                          marginBottom: 20,
+                          color: token.colorTextSecondary,
+                        }}
+                        className="candidate-jobPreviewSummary"
+                      >
+                        {selectedJob.description ?? '—'}
+                      </Paragraph>
+
+                      <Flex gap={10} wrap style={{ marginTop: 'auto' }}>
+                        <Link to={`/candidate/job/${selectedJob.id}`} style={{ flex: '1 1 auto' }}>
+                          <Button block className="candidate-jobPreviewSecondaryBtn">
+                            View full role
+                          </Button>
+                        </Link>
+                        <Link to={`/candidate/job/${selectedJob.id}`} style={{ flex: '1 1 auto' }}>
+                          <Button type="primary" block className="candidate-applyNowBtn">
+                            Apply now
+                          </Button>
+                        </Link>
+                      </Flex>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </aside>
+          ) : null}
         </div>
       </div>
     </main>

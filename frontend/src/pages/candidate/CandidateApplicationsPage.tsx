@@ -1,47 +1,68 @@
-import { BulbOutlined, FilePdfOutlined } from '@ant-design/icons'
+import { FilePdfOutlined } from '@ant-design/icons'
 import {
   Button,
-  Card,
-  Col,
   Empty,
   Flex,
+  Grid,
   Image,
-  Row,
+  Input,
+  Pagination,
+  Select,
   Tag,
   Typography,
   theme,
   Spin,
   Alert,
 } from 'antd'
-import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 
-import { apiClient } from '@/lib/api'
+import { ApplicationPreviewPanel } from '@/components/candidate/ApplicationPreviewPanel'
+import { getMyApplications, type CandidateApplication } from '@/services/applicationsService'
 
 const { Title, Text } = Typography
 
-type Application = {
-  id: string
-  cv_url: string
-  hr_status: string
-  applied_at: string
-  jobs: {
-    id: string
-    title: string
-    companies: {
-      name: string
-      logo_url: string
-    }
-  }
-}
-
+/** Ant Design `Tag` color="default" is easy to mis-read; use explicit presets for every state. */
 const HR_STATUS_COLOR: Record<string, string> = {
-  Pending: 'default',
+  Pending: 'gold',
   Shortlisted: 'blue',
   Interviewing: 'processing',
-  Offered: 'gold',
+  Offered: 'orange',
   Accepted: 'success',
   Rejected: 'error',
+}
+
+const PROCESSING_STATUS_COLOR: Record<string, string> = {
+  Pending: 'cyan',
+  Processing: 'processing',
+  Analyzed: 'success',
+  Failed: 'error',
+}
+
+function tagColor(map: Record<string, string>, status: string | undefined): string {
+  const raw = (status ?? '').trim()
+  if (!raw) return 'geekblue'
+  if (map[raw]) return map[raw]
+  const pascal = raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase()
+  return map[pascal] ?? 'geekblue'
+}
+
+const HR_STATUS_SORT_ORDER: Record<string, number> = {
+  Pending: 0,
+  Shortlisted: 1,
+  Interviewing: 2,
+  Offered: 3,
+  Accepted: 4,
+  Rejected: 5,
+}
+
+function getApiErrorMessage(err: unknown, fallback: string) {
+  if (err && typeof err === 'object') {
+    const maybe = err as { response?: { data?: { message?: unknown } } }
+    const msg = maybe.response?.data?.message
+    if (typeof msg === 'string' && msg.trim()) return msg
+  }
+  return fallback
 }
 
 function formatAppliedDate(iso: string) {
@@ -56,28 +77,31 @@ function formatAppliedDate(iso: string) {
   }
 }
 
-function getApiErrorMessage(err: unknown, fallback: string) {
-  if (err && typeof err === 'object') {
-    const maybe = err as { response?: { data?: { message?: unknown } } }
-    const msg = maybe.response?.data?.message
-    if (typeof msg === 'string' && msg.trim()) return msg
-  }
-  return fallback
-}
-
 export function CandidateApplicationsPage() {
   const { token } = theme.useToken()
-  const navigate = useNavigate()
-  const [applications, setApplications] = useState<Application[]>([])
+  const screens = Grid.useBreakpoint()
+  const isDesktop = !!screens.lg
+
+  const [applications, setApplications] = useState<CandidateApplication[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [selectedApplicationId, setSelectedApplicationId] = useState<string>('')
+  const [query, setQuery] = useState('')
+  const [sortMode, setSortMode] = useState<
+    'applied_desc' | 'applied_asc' | 'hr_status' | 'title_asc'
+  >('applied_desc')
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
   useEffect(() => {
     const fetchApplications = async () => {
       try {
         setLoading(true)
-        const res = await apiClient.get('/applications')
-        setApplications(res.data.data)
+        const data = await getMyApplications()
+        setApplications(Array.isArray(data) ? data : [])
+        if (Array.isArray(data) && data.length > 0) {
+          setSelectedApplicationId(data[0].id)
+        }
       } catch (err: unknown) {
         setError(getApiErrorMessage(err, 'Failed to fetch applications'))
       } finally {
@@ -87,124 +111,70 @@ export function CandidateApplicationsPage() {
     fetchApplications()
   }, [])
 
-  const totalSent = applications.length
-  const interviewCount = applications.filter((a) => a.hr_status === 'Interviewing').length
+  const filteredApplications = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    return applications.filter((a) => {
+      const title = a.jobs?.title ?? ''
+      const company = a.jobs?.companies?.name ?? ''
+      const hr = a.hr_status ?? ''
+      const proc = a.processing_status ?? ''
+      if (!q) return true
+      return (
+        title.toLowerCase().includes(q) ||
+        company.toLowerCase().includes(q) ||
+        hr.toLowerCase().includes(q) ||
+        proc.toLowerCase().includes(q)
+      )
+    })
+  }, [applications, query])
 
-  const statBoxStyle = {
-    background: token.colorBgContainer,
-    padding: '8px 16px',
-    borderRadius: token.borderRadiusLG,
-    boxShadow: token.boxShadowTertiary,
-  } as const
+  const sortedApplications = useMemo(() => {
+    const list = [...filteredApplications]
+    const hrRank = (s: string) => HR_STATUS_SORT_ORDER[s] ?? 99
 
-  const listHeaderStyle = {
-    display: 'grid',
-    gridTemplateColumns: '5fr 2fr 2fr 2fr',
-    gap: 12,
-    padding: '16px 24px',
-    borderBottom: `1px solid ${token.colorBorderSecondary}`,
-    minWidth: 520,
-  } as const
+    list.sort((a, b) => {
+      switch (sortMode) {
+        case 'applied_desc':
+          return new Date(b.applied_at).getTime() - new Date(a.applied_at).getTime()
+        case 'applied_asc':
+          return new Date(a.applied_at).getTime() - new Date(b.applied_at).getTime()
+        case 'hr_status': {
+          const d = hrRank(a.hr_status) - hrRank(b.hr_status)
+          if (d !== 0) return d
+          return new Date(b.applied_at).getTime() - new Date(a.applied_at).getTime()
+        }
+        case 'title_asc':
+          return (a.jobs?.title ?? '').localeCompare(b.jobs?.title ?? '')
+        default:
+          return 0
+      }
+    })
+    return list
+  }, [filteredApplications, sortMode])
 
-  const rowGridStyle = {
-    display: 'grid',
-    gridTemplateColumns: '5fr 2fr 2fr 2fr',
-    gap: 12,
-    alignItems: 'center',
-    padding: '20px 24px',
-    borderRadius: token.borderRadiusLG,
-    background: token.colorBgContainer,
-    cursor: 'pointer',
-    transition: 'background 0.2s ease',
-  } as const
+  useEffect(() => {
+    setPage(1)
+  }, [query, sortMode, pageSize])
 
-  const renderRow = (app: Application) => {
-    return (
-      <div
-        key={app.id}
-        role="button"
-        tabIndex={0}
-        onClick={() => navigate(`/candidate/job/${app.jobs.id}`)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault()
-            navigate(`/candidate/job/${app.jobs.id}`)
-          }
-        }}
-        style={{ ...rowGridStyle, minWidth: 520 }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = token.colorPrimaryBg
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = token.colorBgContainer
-        }}
-      >
-        <Flex align="center" gap={16}>
-          <div
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 12,
-              background: token.colorFillAlter,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: 8,
-              flexShrink: 0,
-            }}
-          >
-            <Image
-              src={app.jobs.companies.logo_url}
-              alt={`${app.jobs.companies.name} logo`}
-              preview={false}
-              style={{ width: '100%', objectFit: 'contain' }}
-            />
-          </div>
-          <div style={{ minWidth: 0 }}>
-            <Text strong style={{ display: 'block', color: token.colorText }}>
-              {app.jobs.title}
-            </Text>
-            <Text type="secondary" style={{ fontSize: 13 }}>
-              {app.jobs.companies.name}
-            </Text>
-          </div>
-        </Flex>
-        <div style={{ textAlign: 'center' }}>
-          <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>
-            {formatAppliedDate(app.applied_at)}
-          </Text>
-        </div>
-        <Flex justify="flex-end">
-          <Tag
-            bordered={false}
-            color={HR_STATUS_COLOR[app.hr_status] || 'default'}
-            style={{
-              margin: 0,
-              fontWeight: 700,
-              fontSize: 11,
-              padding: '4px 14px',
-              borderRadius: 999,
-            }}
-          >
-            {app.hr_status}
-          </Tag>
-        </Flex>
-        <Flex justify="flex-end" onClick={(e) => e.stopPropagation()}>
-          <Button
-            type="link"
-            size="small"
-            icon={<FilePdfOutlined />}
-            href={app.cv_url}
-            target="_blank"
-            rel="noreferrer"
-            style={{ fontWeight: 600, paddingInline: 4 }}
-          >
-            PDF
-          </Button>
-        </Flex>
-      </div>
-    )
-  }
+  const visibleApplications = useMemo(() => {
+    const start = (page - 1) * pageSize
+    return sortedApplications.slice(start, start + pageSize)
+  }, [sortedApplications, page, pageSize])
+
+  useEffect(() => {
+    if (!sortedApplications.length) {
+      setSelectedApplicationId('')
+      return
+    }
+    if (!selectedApplicationId || !sortedApplications.some((a) => a.id === selectedApplicationId)) {
+      setSelectedApplicationId(sortedApplications[0].id)
+    }
+  }, [sortedApplications, selectedApplicationId])
+
+  const selectedApplication = useMemo(
+    () => sortedApplications.find((a) => a.id === selectedApplicationId) ?? sortedApplications[0],
+    [sortedApplications, selectedApplicationId]
+  )
 
   if (loading) {
     return (
@@ -215,281 +185,197 @@ export function CandidateApplicationsPage() {
   }
 
   return (
-    <main style={{ maxWidth: 1152, margin: '0 auto' }}>
-      <Flex vertical gap={40}>
-        <Flex justify="space-between" align="flex-end" wrap gap={16}>
-          <div>
-            <Title
-              level={2}
-              style={{ margin: 0, marginBottom: 8, fontWeight: 900, letterSpacing: '-0.02em' }}
-            >
-              Your Applications
-            </Title>
-            <Text style={{ color: token.colorTextSecondary, fontWeight: 600 }}>
-              Track and manage your ongoing career journey.
-            </Text>
-          </div>
-          <Flex gap={12} wrap>
-            <div style={statBoxStyle}>
-              <Flex align="center" gap={12}>
-                <Text
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 800,
-                    letterSpacing: '0.12em',
-                    textTransform: 'uppercase',
-                    color: token.colorTextTertiary,
-                  }}
-                >
-                  Total Sent
-                </Text>
-                <Text style={{ fontSize: 20, fontWeight: 800, color: token.colorPrimary }}>
-                  {totalSent}
-                </Text>
-              </Flex>
-            </div>
-            <div style={statBoxStyle}>
-              <Flex align="center" gap={12}>
-                <Text
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 800,
-                    letterSpacing: '0.12em',
-                    textTransform: 'uppercase',
-                    color: token.colorTextTertiary,
-                  }}
-                >
-                  Interviews
-                </Text>
-                <Text style={{ fontSize: 20, fontWeight: 800, color: token.colorSuccess }}>
-                  {interviewCount}
-                </Text>
-              </Flex>
-            </div>
-          </Flex>
-        </Flex>
+    <main className="candidate-jobsMain">
+      <section className="candidate-jobsHero" aria-labelledby="candidate-apps-hero-title">
+        <div className="candidate-jobsHeroOverlay" aria-hidden />
+        <div className="candidate-jobsHeroContent">
+          <Title id="candidate-apps-hero-title" level={2} className="candidate-jobsHeroTitle">
+            Your applications
+          </Title>
+          <Text className="candidate-jobsHeroSubtitle">
+            {applications.length} submission{applications.length === 1 ? '' : 's'} on file
+          </Text>
+        </div>
+      </section>
 
+      <div className="candidate-jobsContainer">
         {error && <Alert type="error" message={error} style={{ marginBottom: 24 }} />}
 
-        <Row gutter={[32, 32]}>
-          <Col xs={24} lg={16}>
-            <Card
-              styles={{ body: { padding: 4 } }}
-              style={{
-                background: token.colorFillAlter,
-                borderColor: token.colorBorderSecondary,
-                borderRadius: token.borderRadiusLG * 1.25,
-              }}
-            >
-              <div style={listHeaderStyle}>
-                <Text
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 800,
-                    letterSpacing: '0.12em',
-                    textTransform: 'uppercase',
-                    color: token.colorTextTertiary,
-                  }}
-                >
-                  Role & Company
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 800,
-                    letterSpacing: '0.12em',
-                    textTransform: 'uppercase',
-                    color: token.colorTextTertiary,
-                    textAlign: 'center',
-                  }}
-                >
-                  Applied Date
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 800,
-                    letterSpacing: '0.12em',
-                    textTransform: 'uppercase',
-                    color: token.colorTextTertiary,
-                    textAlign: 'right',
-                  }}
-                >
-                  Status
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 800,
-                    letterSpacing: '0.12em',
-                    textTransform: 'uppercase',
-                    color: token.colorTextTertiary,
-                    textAlign: 'right',
-                  }}
-                >
-                  Resume
-                </Text>
-              </div>
-              <Flex vertical gap={4} style={{ padding: 4, overflowX: 'auto' }}>
-                {applications.length === 0 ? (
-                  <Empty
-                    style={{ padding: '48px 24px' }}
-                    description={
-                      <span style={{ color: token.colorTextSecondary }}>
-                        You have not applied to any roles yet.
-                      </span>
-                    }
-                  >
-                    <Link to="/candidate/jobs">
-                      <Button type="primary">Browse jobs</Button>
-                    </Link>
-                  </Empty>
-                ) : (
-                  applications.map(renderRow)
-                )}
+        <div className="candidate-jobsSplit">
+          <div className="candidate-jobsListCol">
+            <Flex vertical gap={12} className="candidate-jobsListPane">
+              <Flex gap={10} wrap align="center">
+                <div style={{ flex: '1 1 280px', minWidth: 240 }}>
+                  <Input.Search
+                    allowClear
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Search by job, company, or status…"
+                  />
+                </div>
+                <Select
+                  value={sortMode}
+                  onChange={(v) => setSortMode(v)}
+                  style={{ minWidth: 220 }}
+                  options={[
+                    { value: 'applied_desc', label: 'Applied (newest)' },
+                    { value: 'applied_asc', label: 'Applied (oldest)' },
+                    { value: 'hr_status', label: 'HR status' },
+                    { value: 'title_asc', label: 'Job title A–Z' },
+                  ]}
+                />
               </Flex>
-            </Card>
-          </Col>
 
-          <Col xs={24} lg={8}>
-            <Flex vertical gap={24}>
-              <Card
-                style={{
-                  position: 'relative',
-                  overflow: 'hidden',
-                  borderRadius: token.borderRadiusLG * 1.25,
-                  boxShadow: `0 12px 40px color-mix(in srgb, ${token.colorPrimary} 8%, transparent)`,
-                  borderColor: token.colorBorderSecondary,
-                }}
-              >
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    right: 0,
-                    width: 128,
-                    height: 128,
-                    borderRadius: '50%',
-                    background: `color-mix(in srgb, ${token.colorPrimary} 8%, transparent)`,
-                    transform: 'translate(32px, -32px)',
-                    pointerEvents: 'none',
-                  }}
-                />
-                <Title level={4} style={{ marginTop: 0, marginBottom: 24, position: 'relative' }}>
-                  Weekly Progress
-                </Title>
-                <Flex vertical gap={20} style={{ position: 'relative' }}>
-                  <Flex justify="space-between" align="center">
-                    <Text type="secondary" style={{ fontWeight: 500 }}>
-                      Profile views
-                    </Text>
-                    <Text strong style={{ color: token.colorPrimary }}>
-                      —
-                    </Text>
-                  </Flex>
-                  <div
-                    style={{
-                      height: 6,
-                      borderRadius: 999,
-                      background: token.colorFillSecondary,
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <div
-                      style={{
-                        height: '100%',
-                        width: '75%',
-                        borderRadius: 999,
-                        background: token.colorPrimary,
-                      }}
-                    />
-                  </div>
-                  <Flex justify="space-between" align="center">
-                    <Text type="secondary" style={{ fontWeight: 500 }}>
-                      Search appearances
-                    </Text>
-                    <Text strong style={{ color: token.colorPrimary }}>
-                      —
-                    </Text>
-                  </Flex>
-                  <div
-                    style={{
-                      height: 6,
-                      borderRadius: 999,
-                      background: token.colorFillSecondary,
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <div
-                      style={{
-                        height: '100%',
-                        width: '50%',
-                        borderRadius: 999,
-                        background: token.colorPrimary,
-                      }}
-                    />
-                  </div>
-                </Flex>
-              </Card>
+              <div className="candidate-jobsListScroll">
+                <div className="candidate-jobsListInner">
+                  {sortedApplications.length === 0 ? (
+                    <Empty
+                      className="candidate-appsEmpty"
+                      style={{ padding: '48px 24px' }}
+                      description={
+                        <span style={{ color: token.colorTextSecondary }}>
+                          {applications.length === 0
+                            ? 'You have not applied to any roles yet.'
+                            : 'No applications match your search.'}
+                        </span>
+                      }
+                    >
+                      <Link to="/candidate/jobs">
+                        <Button type="primary">Browse jobs</Button>
+                      </Link>
+                    </Empty>
+                  ) : (
+                    visibleApplications.map((app) => (
+                      <article
+                        key={app.id}
+                        className={`candidate-jobCard${app.id === selectedApplication?.id ? ' candidate-jobCard--selected' : ''}`}
+                        role="button"
+                        tabIndex={0}
+                        aria-current={app.id === selectedApplication?.id ? 'true' : undefined}
+                        onClick={() => setSelectedApplicationId(app.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            setSelectedApplicationId(app.id)
+                          }
+                        }}
+                      >
+                        <Flex align="flex-start" justify="space-between" wrap gap={12}>
+                          <Flex gap={28} align="center" style={{ minWidth: 0 }}>
+                            <div className="candidate-jobLogoBox">
+                              <Image
+                                className="candidate-jobLogo"
+                                src={app.jobs?.companies?.logo_url ?? undefined}
+                                alt={`${app.jobs?.companies?.name ?? 'Company'} logo`}
+                                preview={false}
+                                width="100%"
+                                height="100%"
+                                style={{ objectFit: 'contain' }}
+                              />
+                            </div>
 
-              <Card
-                style={{
-                  borderRadius: token.borderRadiusLG * 1.25,
-                  background: token.colorPrimaryBg,
-                  borderColor: 'transparent',
-                }}
-                styles={{ body: { padding: 32 } }}
-              >
-                <BulbOutlined
-                  style={{
-                    fontSize: 28,
-                    color: token.colorPrimary,
-                    marginBottom: 16,
-                    display: 'block',
-                  }}
-                />
-                <Title level={4} style={{ marginTop: 0, marginBottom: 8 }}>
-                  Editorial insight
-                </Title>
-                <Text
-                  style={{
-                    display: 'block',
-                    marginBottom: 24,
-                    color: token.colorTextSecondary,
-                    lineHeight: 1.6,
-                  }}
-                >
-                  Candidates who update their portfolio once every 3 months see a 40% increase in
-                  recruiter engagement.
-                </Text>
-                <Button block size="large" type="default" style={{ fontWeight: 700 }}>
-                  Explore advice
-                </Button>
-              </Card>
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                              <div className="candidate-jobTitleRow">
+                                <Text className="candidate-jobTitle">{app.jobs?.title ?? '—'}</Text>
+                              </div>
+
+                              <Flex className="candidate-jobMeta" align="center" wrap gap={10}>
+                                <Text style={{ color: token.colorTextSecondary, fontWeight: 600 }}>
+                                  {app.jobs?.companies?.name ?? '—'}
+                                </Text>
+                                <span className="candidate-dot" />
+                                <Text style={{ color: token.colorTextSecondary, fontWeight: 600 }}>
+                                  Applied {formatAppliedDate(app.applied_at)}
+                                </Text>
+                                <span className="candidate-dot" />
+                                <Text style={{ color: token.colorTextSecondary, fontWeight: 600 }}>
+                                  {app.jobs?.status ?? '—'}
+                                </Text>
+                              </Flex>
+
+                              <Flex className="candidate-jobTagList" wrap gap={10}>
+                                <Tag
+                                  bordered={false}
+                                  color={tagColor(HR_STATUS_COLOR, app.hr_status)}
+                                  style={{
+                                    margin: 0,
+                                    fontWeight: 700,
+                                    fontSize: 11,
+                                    padding: '2px 10px',
+                                    borderRadius: 999,
+                                  }}
+                                >
+                                  HR: {app.hr_status}
+                                </Tag>
+                                <Tag
+                                  bordered={false}
+                                  color={tagColor(PROCESSING_STATUS_COLOR, app.processing_status)}
+                                  style={{
+                                    margin: 0,
+                                    fontWeight: 700,
+                                    fontSize: 11,
+                                    padding: '2px 10px',
+                                    borderRadius: 999,
+                                  }}
+                                >
+                                  Processing: {app.processing_status}
+                                </Tag>
+                              </Flex>
+                            </div>
+                          </Flex>
+
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <Button
+                              type="link"
+                              size="small"
+                              icon={<FilePdfOutlined />}
+                              href={app.cv_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{ fontWeight: 600, paddingInline: 4 }}
+                            >
+                              CV
+                            </Button>
+                          </div>
+                        </Flex>
+                      </article>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {sortedApplications.length > 0 ? (
+                <div className="candidate-paginationBar">
+                  <Text style={{ color: token.colorTextSecondary }}>
+                    Page {page} of {Math.max(1, Math.ceil(sortedApplications.length / pageSize))}
+                  </Text>
+                  <Pagination
+                    className="candidate-pagination"
+                    current={page}
+                    total={sortedApplications.length}
+                    pageSize={pageSize}
+                    onChange={(p, ps) => {
+                      setPage(p)
+                      if (ps !== pageSize) setPageSize(ps)
+                    }}
+                    showSizeChanger
+                    pageSizeOptions={[10, 20, 50]}
+                    showQuickJumper={false}
+                  />
+                </div>
+              ) : null}
             </Flex>
-          </Col>
-        </Row>
-      </Flex>
-
-      <footer className="candidate-detailFooter" style={{ marginTop: 80 }}>
-        <div className="candidate-detailFooterInner">
-          <div>
-            <Text className="candidate-detailFooterBrand">Editorial Enterprise Recruitment</Text>
-            <div style={{ height: 6 }} />
-            <Text className="candidate-detailFooterCopy">
-              © 2026 Editorial Enterprise Recruitment. All rights reserved.
-            </Text>
           </div>
 
-          <Flex wrap gap={18} justify="center" className="candidate-detailFooterLinks">
-            {['Terms of Service', 'Privacy Policy', 'Help Center', 'API Documentation'].map((t) => (
-              <a key={t} href="#" className="candidate-detailFooterLink">
-                {t}
-              </a>
-            ))}
-          </Flex>
+          {isDesktop && selectedApplication ? (
+            <aside className="candidate-jobsPreviewCol" aria-label="Application preview">
+              <div className="candidate-jobPreviewSticky">
+                <ApplicationPreviewPanel application={selectedApplication} />
+              </div>
+            </aside>
+          ) : null}
         </div>
-      </footer>
+      </div>
     </main>
   )
 }

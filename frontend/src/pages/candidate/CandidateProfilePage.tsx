@@ -1,66 +1,36 @@
-import {
-  DownloadOutlined,
-  EditOutlined,
-  FilePdfOutlined,
-  FileTextOutlined,
-  PlusOutlined,
-  RocketOutlined,
-  SafetyCertificateOutlined,
-  SecurityScanOutlined,
-  UploadOutlined,
-} from '@ant-design/icons'
-import {
-  Avatar,
-  Button,
-  Card,
-  Col,
-  Alert,
-  Empty,
-  Flex,
-  Form,
-  Image,
-  Input,
-  Modal,
-  Row,
-  Table,
-  Tag,
-  Typography,
-  Upload,
-  message,
-  theme,
-  Spin,
-} from 'antd'
-import type { UploadFile } from 'antd'
+import { BankOutlined, FilePdfOutlined, RightOutlined } from '@ant-design/icons'
+import { Alert, Avatar, Button, Empty, Flex, Image, Tag, Typography, theme, Spin } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
-import { apiClient } from '@/lib/api'
+import { appEnv } from '@/config/env'
 import { useAuth } from '@/context/AuthContext'
+import { getMyApplications, type CandidateApplication } from '@/services/applicationsService'
 
 const { Title, Text, Paragraph } = Typography
 
-type Application = {
-  id: string
-  cv_url: string
-  hr_status: string
-  applied_at: string
-  jobs: {
-    id: string
-    title: string
-    companies: {
-      name: string
-      logo_url: string
-    }
-  }
-}
-
 const HR_STATUS_COLOR: Record<string, string> = {
-  Pending: 'default',
+  Pending: 'gold',
   Shortlisted: 'blue',
   Interviewing: 'processing',
-  Offered: 'gold',
+  Offered: 'orange',
   Accepted: 'success',
   Rejected: 'error',
+}
+
+const PROCESSING_STATUS_COLOR: Record<string, string> = {
+  Pending: 'cyan',
+  Processing: 'processing',
+  Analyzed: 'success',
+  Failed: 'error',
+}
+
+function tagColor(map: Record<string, string>, status: string | undefined): string {
+  const raw = (status ?? '').trim()
+  if (!raw) return 'geekblue'
+  if (map[raw]) return map[raw]
+  const pascal = raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase()
+  return map[pascal] ?? 'geekblue'
 }
 
 function getApiErrorMessage(err: unknown, fallback: string) {
@@ -72,7 +42,7 @@ function getApiErrorMessage(err: unknown, fallback: string) {
   return fallback
 }
 
-function formatCalendarDate(iso: string) {
+function formatAppliedDate(iso: string) {
   try {
     return new Intl.DateTimeFormat(undefined, {
       month: 'short',
@@ -84,611 +54,309 @@ function formatCalendarDate(iso: string) {
   }
 }
 
-type CvTableRow = {
-  key: string
-  fileName: string
-  uploadedAt: string
-  dataUrl: string
-  isPdf: boolean
+function resolveResumeUrl(cvUrl: string) {
+  const u = cvUrl.trim()
+  if (!u) return '#'
+  if (u.startsWith('http://') || u.startsWith('https://')) return u
+  const base = appEnv.apiUrl.replace(/\/$/, '')
+  const path = u.startsWith('/') ? u : `/${u}`
+  return `${base}${path}`
+}
+
+function resumeFileName(cvUrl: string) {
+  const part = cvUrl.split('/').pop()?.split('?')[0]
+  return part && part.length > 0 ? part : 'resume.pdf'
 }
 
 export function CandidateProfilePage() {
   const { token } = theme.useToken()
   const { user } = useAuth()
-  const [applications, setApplications] = useState<Application[]>([])
+  const [applications, setApplications] = useState<CandidateApplication[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const fetchApplications = async () => {
+    const run = async () => {
       try {
         setLoading(true)
-        const res = await apiClient.get('/applications')
-        setApplications(res.data.data)
+        const data = await getMyApplications()
+        setApplications(Array.isArray(data) ? data : [])
       } catch (err: unknown) {
-        setError(getApiErrorMessage(err, 'Failed to fetch applications'))
+        setError(getApiErrorMessage(err, 'Failed to load your applications.'))
       } finally {
         setLoading(false)
       }
     }
-    fetchApplications()
+    run()
   }, [])
 
-  const latest = applications[0]
-
-  const cvRows: CvTableRow[] = useMemo(() => {
-    return applications
-      .map((a) => ({
-        key: a.id,
-        fileName: a.cv_url.split('/').pop() || 'resume.pdf',
-        uploadedAt: a.applied_at,
-        dataUrl: a.cv_url,
-        isPdf: true,
-      }))
-      .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime())
+  const sorted = useMemo(() => {
+    return [...applications].sort(
+      (a, b) => new Date(b.applied_at).getTime() - new Date(a.applied_at).getTime()
+    )
   }, [applications])
 
-  const [editOpen, setEditOpen] = useState(false)
-  const [pwdOpen, setPwdOpen] = useState(false)
-  const [uploadOpen, setUploadOpen] = useState(false)
-  const [editForm] = Form.useForm<{ displayName: string; email: string }>()
-  const [pwdForm] = Form.useForm<{ password: string; confirm: string }>()
-  const [editPhotoList, setEditPhotoList] = useState<UploadFile[]>([])
-  const [cvUploadList, setCvUploadList] = useState<UploadFile[]>([])
-  const [uploading] = useState(false)
-
-  const openEdit = () => {
-    editForm.setFieldsValue({ displayName: user?.full_name || '', email: user?.email || '' })
-    setEditOpen(true)
-  }
-
-  const handleDownloadResume = () => {
-    const src = latest?.cv_url ?? cvRows[0]?.dataUrl
-    if (!src) {
-      message.warning('Apply to a job first to see your resume here.')
-      return
+  const initials = useMemo(() => {
+    const name = user?.full_name?.trim() || user?.email?.trim() || '?'
+    const parts = name.split(/\s+/).filter(Boolean)
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
     }
-    window.open(src, '_blank')
-  }
+    return name.slice(0, 2).toUpperCase()
+  }, [user?.full_name, user?.email])
 
   if (loading) {
     return (
-      <Flex justify="center" align="center" style={{ minHeight: 500 }}>
-        <Spin size="large" tip="Loading profile..." />
+      <Flex
+        justify="center"
+        align="center"
+        className="candidate-jobsMain"
+        style={{ minHeight: 500 }}
+      >
+        <Spin size="large" tip="Loading profile…" />
       </Flex>
     )
   }
 
+  const heroSubtitle = [
+    user?.email?.trim(),
+    `${sorted.length} application${sorted.length === 1 ? '' : 's'} on file`,
+  ]
+    .filter((p): p is string => Boolean(p))
+    .join(' · ')
+
   return (
-    <main style={{ maxWidth: 1152, margin: '0 auto', paddingTop: 8, paddingBottom: 48 }}>
-      {error && <Alert type="error" message={error} style={{ marginBottom: 24 }} />}
-      <header style={{ marginBottom: 48 }}>
-        <Flex vertical gap={24} align="center" style={{ textAlign: 'center' }}>
-          <Flex
-            vertical
-            gap={32}
-            align="center"
-            style={{ width: '100%' }}
-            className="candidate-profileHeader"
-          >
-            <Flex
-              wrap
-              gap={32}
-              align="flex-end"
-              justify="space-between"
-              style={{ width: '100%', maxWidth: 1100 }}
-            >
-              <Flex gap={32} align="flex-end" wrap style={{ flex: 1, justifyContent: 'center' }}>
-                <div style={{ position: 'relative' }}>
-                  <div
-                    style={{
-                      padding: 4,
-                      borderRadius: token.borderRadiusLG * 1.25,
-                      background: token.colorFillAlter,
-                      boxShadow: token.boxShadowSecondary,
-                    }}
-                  >
-                    <Avatar
-                      size={128}
-                      shape="square"
-                      style={{ borderRadius: token.borderRadiusLG }}
-                      icon={<PlusOutlined />}
-                    />
-                  </div>
-                  <Button
-                    type="primary"
-                    shape="circle"
-                    size="small"
-                    icon={<EditOutlined />}
-                    aria-label="Edit photo"
-                    onClick={openEdit}
-                    style={{
-                      position: 'absolute',
-                      right: -6,
-                      bottom: -6,
-                      boxShadow: token.boxShadowSecondary,
-                    }}
-                  />
-                </div>
+    <main className="candidate-jobsMain">
+      <section className="candidate-jobsHero" aria-labelledby="candidate-profile-hero-title">
+        <div className="candidate-jobsHeroOverlay" aria-hidden />
+        <div className="candidate-jobsHeroContent">
+          <Title id="candidate-profile-hero-title" level={2} className="candidate-jobsHeroTitle">
+            Your profile
+          </Title>
+          <Text className="candidate-jobsHeroSubtitle">{heroSubtitle}</Text>
+        </div>
+      </section>
 
-                <div style={{ textAlign: 'left', flex: '1 1 200px', minWidth: 200 }}>
-                  <Title
-                    level={2}
-                    style={{
-                      margin: 0,
-                      marginBottom: 4,
-                      fontWeight: 900,
-                      letterSpacing: '-0.02em',
-                    }}
-                  >
-                    {user?.full_name}
-                  </Title>
-                  <Text style={{ fontSize: 17, fontWeight: 500, color: token.colorTextSecondary }}>
-                    {user?.email}
-                  </Text>
-                </div>
-              </Flex>
+      <div className="candidate-jobsContainer">
+        {error ? (
+          <Alert type="error" message={error} showIcon className="candidate-profileAlert" />
+        ) : null}
 
-              <Flex gap={12} wrap justify="center">
-                <Button size="large" style={{ fontWeight: 600 }} onClick={openEdit}>
-                  Edit profile
+        <div className="candidate-profileToolbar">
+          <Flex justify="space-between" align="flex-start" gap={20} wrap>
+            <Flex align="center" gap={20} wrap style={{ minWidth: 0 }}>
+              <Avatar
+                size={72}
+                className="candidate-profileToolbarAvatar"
+                style={{
+                  backgroundColor: token.colorPrimary,
+                  color: '#fff',
+                  fontWeight: 700,
+                  fontSize: 22,
+                }}
+              >
+                {initials}
+              </Avatar>
+              <div style={{ minWidth: 0 }}>
+                <Title level={4} className="candidate-profileToolbarName">
+                  {user?.full_name ?? 'Candidate'}
+                </Title>
+                <Flex gap={10} wrap align="center" style={{ marginTop: 8 }}>
+                  <Tag className="candidate-profileRoleTag">{user?.role ?? 'CANDIDATE'}</Tag>
+                  {user?.email ? (
+                    <Text type="secondary" style={{ fontSize: 13 }}>
+                      {user.email}
+                    </Text>
+                  ) : null}
+                </Flex>
+              </div>
+            </Flex>
+            <Flex gap={12} wrap className="candidate-profileToolbarActions">
+              <Link to="/candidate/jobs">
+                <Button type="primary" size="large" className="candidate-profileCta">
+                  Browse jobs
                 </Button>
-                <Button
-                  type="primary"
-                  size="large"
-                  style={{ fontWeight: 700 }}
-                  onClick={handleDownloadResume}
-                >
-                  View resume
+              </Link>
+              <Link to="/candidate/your-applications">
+                <Button size="large" className="candidate-profileCta">
+                  Your applications
                 </Button>
-              </Flex>
+              </Link>
             </Flex>
           </Flex>
-        </Flex>
-      </header>
+        </div>
 
-      <Row gutter={[32, 32]}>
-        <Col xs={24} lg={8}>
-          <Card
-            style={{
-              position: 'relative',
-              borderRadius: token.borderRadiusLG * 1.25,
-              background: token.colorFillAlter,
-              borderColor: token.colorBorderSecondary,
-              overflow: 'hidden',
-            }}
-            styles={{ body: { padding: 32 } }}
-          >
-            <SafetyCertificateOutlined
-              style={{
-                position: 'absolute',
-                top: 16,
-                right: 16,
-                fontSize: 56,
-                color: token.colorPrimary,
-                opacity: 0.06,
-                pointerEvents: 'none',
-              }}
-            />
-            <div style={{ position: 'relative', zIndex: 1 }}>
-              <Title
-                level={4}
-                style={{
-                  marginTop: 0,
-                  marginBottom: 24,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                }}
-              >
-                <SecurityScanOutlined style={{ color: token.colorPrimary }} />
-                Security
-              </Title>
-              <div
-                style={{
-                  background: token.colorBgContainer,
-                  borderRadius: token.borderRadiusLG,
-                  padding: 24,
-                  marginBottom: 24,
-                }}
-              >
-                <Paragraph
-                  style={{ marginBottom: 16, fontSize: 13, color: token.colorTextSecondary }}
-                >
-                  Protect your account by regularly updating your password and monitoring login
-                  activity.
-                </Paragraph>
+        <div className="candidate-profileGrid">
+          <section className="candidate-profileCard candidate-profileCard--account">
+            <Title level={4} className="candidate-profileCardTitle">
+              Account
+            </Title>
+            <Paragraph type="secondary" className="candidate-profileCardLead">
+              This is what we have on file for your signed-in account. Editing your name, email, or
+              password is not supported in the product API yet.
+            </Paragraph>
+            <dl className="candidate-profileDl">
+              <div>
+                <dt>Full name</dt>
+                <dd>{user?.full_name ?? '—'}</dd>
               </div>
-              <Button
-                block
-                size="large"
-                style={{
-                  fontWeight: 700,
-                  background: token.colorText,
-                  color: token.colorBgContainer,
-                  border: 'none',
-                }}
-                onClick={() => setPwdOpen(true)}
-              >
-                Change password
-              </Button>
-            </div>
-          </Card>
-        </Col>
+              <div>
+                <dt>Email</dt>
+                <dd>{user?.email ?? '—'}</dd>
+              </div>
+              <div>
+                <dt>Role</dt>
+                <dd>{user?.role ?? '—'}</dd>
+              </div>
+            </dl>
+          </section>
 
-        <Col xs={24} lg={16}>
-          <Flex vertical gap={32}>
-            <Card
-              style={{
-                borderRadius: token.borderRadiusLG * 1.25,
-                background: token.colorFillAlter,
-                borderColor: token.colorBorderSecondary,
-              }}
-              styles={{ body: { padding: 32 } }}
+          <section className="candidate-profileCard candidate-profileCard--wide">
+            <Flex
+              justify="space-between"
+              align="center"
+              wrap
+              gap={12}
+              className="candidate-profileSectionHead"
             >
-              <Title
-                level={4}
-                style={{
-                  marginTop: 0,
-                  marginBottom: 24,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                }}
-              >
-                <RocketOutlined style={{ color: token.colorPrimary }} />
-                Latest application
+              <Title level={4} className="candidate-profileCardTitle" style={{ margin: 0 }}>
+                Applications
               </Title>
-              {latest ? (
-                <Link
-                  to={`/candidate/job/${latest.jobs.id}`}
-                  style={{ textDecoration: 'none', color: 'inherit' }}
-                >
-                  <Flex
-                    vertical
-                    gap={16}
-                    style={{
-                      background: token.colorBgContainer,
-                      padding: 32,
-                      borderRadius: token.borderRadiusLG * 1.25,
-                      border: `1px solid ${token.colorBorderSecondary}`,
-                      boxShadow: token.boxShadowTertiary,
-                      cursor: 'pointer',
-                      transition: 'background 0.2s ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = token.colorPrimaryBg
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = token.colorBgContainer
-                    }}
-                  >
-                    <Flex justify="space-between" align="flex-start" wrap gap={16}>
-                      <Flex align="center" gap={24} wrap>
-                        <div
-                          style={{
-                            width: 64,
-                            height: 64,
-                            borderRadius: token.borderRadiusLG,
-                            background: token.colorPrimaryBg,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexShrink: 0,
-                          }}
-                        >
-                          <Image
-                            src={latest.jobs.companies.logo_url}
-                            alt=""
-                            width={36}
-                            height={36}
-                            preview={false}
-                            style={{ objectFit: 'contain' }}
-                          />
-                        </div>
-                        <div>
-                          <Title level={4} style={{ margin: 0, marginBottom: 4 }}>
-                            {latest.jobs.title}
-                          </Title>
-                          <Text style={{ color: token.colorTextSecondary, fontWeight: 500 }}>
-                            {latest.jobs.companies.name} • Applied role
-                          </Text>
-                        </div>
-                      </Flex>
-                      <Flex vertical align="flex-end" gap={8}>
-                        <Tag
-                          bordered={false}
-                          color={HR_STATUS_COLOR[latest.hr_status] || 'default'}
-                          style={{
-                            margin: 0,
-                            fontWeight: 700,
-                            fontSize: 11,
-                            padding: '4px 14px',
-                            borderRadius: 999,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.06em',
-                          }}
-                        >
-                          {latest.hr_status}
-                        </Tag>
-                        <Text type="secondary" style={{ fontSize: 12 }}>
-                          Applied on {formatCalendarDate(latest.applied_at)}
-                        </Text>
-                      </Flex>
-                    </Flex>
-                  </Flex>
+              {sorted.length > 0 ? (
+                <Link to="/candidate/your-applications" className="candidate-profileTextLink">
+                  View all
+                  <RightOutlined style={{ fontSize: 11, marginLeft: 4 }} />
                 </Link>
-              ) : (
-                <Empty description="No applications yet">
-                  <Link to="/candidate/jobs">
-                    <Button type="primary">Browse jobs</Button>
-                  </Link>
-                </Empty>
-              )}
-            </Card>
+              ) : null}
+            </Flex>
 
-            <Card
-              style={{
-                borderRadius: token.borderRadiusLG * 1.25,
-                background: token.colorFillAlter,
-                borderColor: token.colorBorderSecondary,
-              }}
-              styles={{ body: { padding: 32 } }}
-            >
-              <Flex
-                justify="space-between"
-                align="center"
-                wrap
-                gap={12}
-                style={{ marginBottom: 24 }}
+            {sorted.length === 0 ? (
+              <Empty
+                className="candidate-profileEmpty"
+                description="You have not applied to any roles yet."
               >
-                <Title
-                  level={4}
-                  style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}
-                >
-                  <FileTextOutlined style={{ color: token.colorPrimary }} />
-                  Applied CVs
-                </Title>
-                <Button
-                  type="link"
-                  icon={<PlusOutlined />}
-                  style={{ fontWeight: 700 }}
-                  onClick={() => {
-                    setCvUploadList([])
-                    setUploadOpen(true)
-                  }}
-                >
-                  Upload new
-                </Button>
-              </Flex>
-
-              <div
-                style={{
-                  borderRadius: token.borderRadiusLG * 1.25,
-                  overflow: 'hidden',
-                  background: token.colorBgContainer,
-                  border: `1px solid ${token.colorBorderSecondary}`,
-                }}
-              >
-                <Table<CvTableRow>
-                  pagination={false}
-                  size="middle"
-                  rowKey="key"
-                  dataSource={cvRows}
-                  locale={{
-                    emptyText: (
-                      <Empty
-                        description="No CVs yet — apply to a job to see your resumes here."
-                        style={{ padding: 24 }}
-                      >
-                        <Link to="/candidate/jobs">
-                          <Button type="primary">Find jobs</Button>
-                        </Link>
-                      </Empty>
-                    ),
-                  }}
-                  columns={[
-                    {
-                      title: (
-                        <Text
-                          style={{
-                            fontSize: 10,
-                            fontWeight: 800,
-                            letterSpacing: '0.12em',
-                            textTransform: 'uppercase',
-                            color: token.colorTextTertiary,
-                          }}
-                        >
-                          Filename
-                        </Text>
-                      ),
-                      dataIndex: 'fileName',
-                      render: (name: string, row) => (
-                        <Flex align="center" gap={12}>
-                          {row.isPdf ? (
-                            <FilePdfOutlined style={{ fontSize: 20, color: token.colorError }} />
+                <Link to="/candidate/jobs">
+                  <Button type="primary">Find a job</Button>
+                </Link>
+              </Empty>
+            ) : (
+              <div className="candidate-profileAppListWrap">
+                <ul className="candidate-profileAppList">
+                  {sorted.map((app) => (
+                    <li key={app.id}>
+                      <Link to={`/candidate/job/${app.job_id}`} className="candidate-profileAppRow">
+                        <div className="candidate-profileAppLogo">
+                          {app.jobs?.companies?.logo_url ? (
+                            <Image
+                              src={app.jobs.companies.logo_url}
+                              alt=""
+                              preview={false}
+                              width={40}
+                              height={40}
+                              style={{ objectFit: 'contain' }}
+                            />
                           ) : (
-                            <FileTextOutlined style={{ fontSize: 20, color: token.colorPrimary }} />
+                            <BankOutlined
+                              style={{ fontSize: 20, color: token.colorTextSecondary }}
+                            />
                           )}
-                          <Text strong style={{ fontSize: 13 }}>
-                            {name}
+                        </div>
+                        <div className="candidate-profileAppBody">
+                          <Text strong className="candidate-profileAppTitle">
+                            {app.jobs?.title ?? '—'}
                           </Text>
-                        </Flex>
-                      ),
-                    },
-                    {
-                      title: (
-                        <Text
-                          style={{
-                            fontSize: 10,
-                            fontWeight: 800,
-                            letterSpacing: '0.12em',
-                            textTransform: 'uppercase',
-                            color: token.colorTextTertiary,
-                          }}
-                        >
-                          Date uploaded
-                        </Text>
-                      ),
-                      dataIndex: 'uploadedAt',
-                      render: (iso: string) => (
-                        <Text type="secondary" style={{ fontSize: 13 }}>
-                          {formatCalendarDate(iso)}
-                        </Text>
-                      ),
-                    },
-                    {
-                      title: (
-                        <Text
-                          style={{
-                            fontSize: 10,
-                            fontWeight: 800,
-                            letterSpacing: '0.12em',
-                            textTransform: 'uppercase',
-                            color: token.colorTextTertiary,
-                            textAlign: 'right',
-                            display: 'block',
-                          }}
-                        >
-                          Actions
-                        </Text>
-                      ),
-                      align: 'right',
-                      width: 100,
-                      render: (_, row) => (
-                        <Button
-                          type="text"
-                          icon={<DownloadOutlined />}
-                          aria-label={`Download ${row.fileName}`}
-                          href={row.dataUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          style={{ color: token.colorTextSecondary }}
-                        />
-                      ),
-                    },
-                  ]}
-                />
+                          <Text type="secondary" className="candidate-profileAppMeta">
+                            {app.jobs?.companies?.name ?? '—'} · Applied{' '}
+                            {formatAppliedDate(app.applied_at)}
+                          </Text>
+                          <Flex gap={8} wrap className="candidate-profileAppTags">
+                            <Tag
+                              bordered={false}
+                              color={tagColor(HR_STATUS_COLOR, app.hr_status)}
+                              style={{
+                                margin: 0,
+                                fontWeight: 600,
+                                fontSize: 11,
+                                borderRadius: 999,
+                              }}
+                            >
+                              HR: {app.hr_status}
+                            </Tag>
+                            <Tag
+                              bordered={false}
+                              color={tagColor(PROCESSING_STATUS_COLOR, app.processing_status)}
+                              style={{
+                                margin: 0,
+                                fontWeight: 600,
+                                fontSize: 11,
+                                borderRadius: 999,
+                              }}
+                            >
+                              AI: {app.processing_status}
+                            </Tag>
+                          </Flex>
+                        </div>
+                        <RightOutlined className="candidate-profileAppChevron" />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </Card>
-          </Flex>
-        </Col>
-      </Row>
+            )}
+          </section>
 
-      <Modal
-        title="Edit profile"
-        open={editOpen}
-        onCancel={() => {
-          setEditPhotoList([])
-          setEditOpen(false)
-        }}
-        onOk={() => editForm.submit()}
-        okText="Save"
-      >
-        <Form
-          form={editForm}
-          layout="vertical"
-          onFinish={async (v) => {
-            message.info('Profile update is coming soon in the production environment.')
-            setEditOpen(false)
-          }}
-        >
-          <Form.Item name="displayName" label="Display name" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email' }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item label="Photo">
-            <Upload
-              accept="image/*"
-              maxCount={1}
-              fileList={editPhotoList}
-              beforeUpload={() => false}
-              onChange={({ fileList: fl }) => setEditPhotoList(fl)}
-            >
-              <Button icon={<UploadOutlined />}>Change photo</Button>
-            </Upload>
-          </Form.Item>
-        </Form>
-      </Modal>
+          <section className="candidate-profileCard candidate-profileCard--wide candidate-profileCard--resumes">
+            <Title level={4} className="candidate-profileCardTitle">
+              Resumes submitted
+            </Title>
+            <Paragraph type="secondary" className="candidate-profileCardLead">
+              Each resume is stored when you submit an application. To use a new file, apply again
+              and attach the PDF there.
+            </Paragraph>
 
-      <Modal
-        title="Change password"
-        open={pwdOpen}
-        onCancel={() => {
-          pwdForm.resetFields()
-          setPwdOpen(false)
-        }}
-        onOk={() => pwdForm.submit()}
-        okText="Update"
-      >
-        <Form
-          form={pwdForm}
-          layout="vertical"
-          onFinish={() => {
-            message.info('Password change is coming soon in the production environment.')
-            setPwdOpen(false)
-          }}
-        >
-          <Form.Item
-            name="password"
-            label="New password"
-            rules={[{ required: true, min: 8, message: 'At least 8 characters.' }]}
-          >
-            <Input.Password />
-          </Form.Item>
-          <Form.Item
-            name="confirm"
-            label="Confirm password"
-            dependencies={['password']}
-            rules={[
-              { required: true },
-              ({ getFieldValue }) => ({
-                validator(_, value) {
-                  if (!value || getFieldValue('password') === value) return Promise.resolve()
-                  return Promise.reject(new Error('Passwords do not match.'))
-                },
-              }),
-            ]}
-          >
-            <Input.Password />
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      <Modal
-        title="Upload CV"
-        open={uploadOpen}
-        onCancel={() => {
-          setCvUploadList([])
-          setUploadOpen(false)
-        }}
-        okText="Add"
-        confirmLoading={uploading}
-        onOk={async () => {
-          message.info('CV Library upload is coming soon. Please apply to jobs to upload CVs.')
-          setUploadOpen(false)
-        }}
-      >
-        <Upload.Dragger
-          accept=".pdf,.doc,.docx,application/pdf"
-          maxCount={1}
-          fileList={cvUploadList}
-          beforeUpload={() => false}
-          onChange={({ fileList: fl }) => setCvUploadList(fl)}
-        >
-          <p className="ant-upload-drag-icon">
-            <UploadOutlined style={{ fontSize: 40, color: token.colorPrimary }} />
-          </p>
-          <Text strong>Drop a file or click to browse</Text>
-          <div style={{ marginTop: 8 }}>
-            <Text type="secondary" style={{ fontSize: 12 }}>
-              PDF, DOC, or DOCX
-            </Text>
-          </div>
-        </Upload.Dragger>
-      </Modal>
+            {sorted.length === 0 ? (
+              <Empty className="candidate-profileEmpty" description="No resumes yet." />
+            ) : (
+              <ul className="candidate-profileResumeList">
+                {sorted.map((app) => (
+                  <li key={`cv-${app.id}`}>
+                    <Flex
+                      align="center"
+                      justify="space-between"
+                      gap={16}
+                      wrap
+                      className="candidate-profileResumeRow"
+                    >
+                      <Flex align="center" gap={12} className="candidate-profileResumeInfo">
+                        <FilePdfOutlined className="candidate-profilePdfIcon" />
+                        <div>
+                          <Text strong>{resumeFileName(app.cv_url)}</Text>
+                          <div>
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                              {app.jobs?.title ?? 'Application'} ·{' '}
+                              {formatAppliedDate(app.applied_at)}
+                            </Text>
+                          </div>
+                        </div>
+                      </Flex>
+                      <Button
+                        type="link"
+                        href={resolveResumeUrl(app.cv_url)}
+                        target="_blank"
+                        rel="noreferrer"
+                        icon={<FilePdfOutlined />}
+                        className="candidate-profileResumeOpen"
+                      >
+                        Open
+                      </Button>
+                    </Flex>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
+      </div>
     </main>
   )
 }

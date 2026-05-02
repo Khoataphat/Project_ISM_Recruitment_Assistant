@@ -1,4 +1,4 @@
-import { apiClient } from '@/lib/api'
+import { apiClient, refreshAccessToken } from '@/lib/api'
 import { unwrapData, unwrapMessage } from '@/services/http'
 import type { ApiSuccessEnvelope, AuthUser } from '@/types'
 
@@ -64,8 +64,7 @@ export async function resendVerification(data: ResendVerificationRequest) {
   return unwrapMessage(response, 'Verification email sent')
 }
 
-export async function refreshToken() {
-  const response =
-    await apiClient.post<ApiSuccessEnvelope<RefreshTokenPayload>>('/auth/refresh-token')
-  return unwrapData(response)
+export async function refreshToken(): Promise<RefreshTokenPayload> {
+  const token = await refreshAccessToken()
+  return { token }
 }
