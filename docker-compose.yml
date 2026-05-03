@@ -19,9 +19,11 @@ services:
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - REDIS_URL=redis://redis:6379
       - NODE_ENV=development
     volumes:
       - ./backend:/app
+      - ./database:/database:ro
       - /app/node_modules
     depends_on:
       - redis
@@ -29,7 +31,7 @@ services:
 
   # 3. Các Option phụ (Postgres local)
   postgres:
-    image: postgres:17-alpine
+    image: pgvector/pgvector:pg17
     profiles: [local-db]
     ports:
       - "5432:5432"
@@ -57,10 +59,12 @@ services:
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - REDIS_URL=redis://redis:6379
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/recruitment
       - DIRECT_URL=postgresql://postgres:postgres@postgres:5432/recruitment
     volumes:
       - ./backend:/app
+      - ./database:/database:ro
       - /app/node_modules
     depends_on:
       postgres:

@@ -12,6 +12,7 @@ import { connectRedis, disconnectRedis } from "./shared/redis.service";
 
 import authRoute from "./modules/auth/auth.route";
 import applicationRoute from "./modules/application/application.route";
+import aiResultRoute from "./modules/ai-result/ai-result.route";
 import dashboardRoute from "./modules/dashboard/dashboard.route";
 import jobRoute from "./modules/job/job.route";
 import { authMiddleware, authorizeRole } from "./modules/auth/auth.middleware";
@@ -38,6 +39,7 @@ app.use("/uploads", express.static(path.resolve(process.cwd(), "uploads")));
 
 app.use("/auth", authRoute);
 app.use("/jobs", jobRoute);
+app.use("/ai", aiResultRoute);
 app.use("/applications", authMiddleware, authorizeRole(user_role.User), applicationRoute);
 app.use("/dashboard", authMiddleware, authorizeRole(user_role.HR), dashboardRoute);
 
