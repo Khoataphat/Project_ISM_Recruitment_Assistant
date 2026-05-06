@@ -1,9 +1,17 @@
-import { EnvironmentOutlined, FileTextOutlined, RightOutlined, StarFilled } from '@ant-design/icons'
+import {
+  DownloadOutlined,
+  EditOutlined,
+  EnvironmentOutlined,
+  FileTextOutlined,
+  RightOutlined,
+  StarFilled,
+} from '@ant-design/icons'
 import {
   Avatar,
   Breadcrumb,
   Button,
   Col,
+  Empty,
   Flex,
   Image,
   Pagination,
@@ -122,10 +130,19 @@ function CandidateTableRow({
 }) {
   const [hovered, setHovered] = useState(false)
 
-  const rowStyle: CSSProperties = {
-    padding: `${token.paddingLG}px ${token.paddingLG * 1.5}px`,
-    transition: `background ${token.motionDurationMid}`,
-  }
+  const rowStyle: CSSProperties = useMemo(
+    () => ({
+      padding: `${token.paddingLG}px ${token.paddingLG * 1.5}px`,
+      borderTop: `1px solid rgba(15, 23, 42, 0.06)`,
+      background: hovered ? 'rgba(22, 119, 255, 0.06)' : 'transparent',
+      boxShadow: hovered ? 'inset 3px 0 0 rgba(22, 119, 255, 0.65)' : 'none',
+      outline: hovered ? `2px solid rgba(22, 119, 255, 0.22)` : 'none',
+      outlineOffset: -2,
+      transition:
+        'background-color 220ms ease, background 220ms ease, border-color 220ms ease, box-shadow 220ms ease',
+    }),
+    [hovered, token]
+  )
 
   const initials =
     row.name
@@ -140,14 +157,15 @@ function CandidateTableRow({
       gutter={[16, 16]}
       align="middle"
       style={rowStyle}
-      onMouseEnter={(e) => {
-        setHovered(true)
-        e.currentTarget.style.background = `color-mix(in srgb, ${token.colorFillAlter} 45%, transparent)`
-      }}
-      onMouseLeave={(e) => {
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocusCapture={() => setHovered(true)}
+      onBlurCapture={(e) => {
+        if (e.currentTarget.contains(e.relatedTarget as Node | null)) return
         setHovered(false)
-        e.currentTarget.style.background = 'transparent'
       }}
+      role="group"
+      aria-label={`Candidate: ${row.name}`}
     >
       <Col xs={24} lg={7}>
         <Flex align="center" gap={token.margin}>
@@ -344,41 +362,77 @@ export function HrJobDetailsPage() {
     return filteredRows.slice(start, start + pageSize)
   }, [filteredRows, page])
 
+  const pageStyle: CSSProperties = {
+    position: 'relative',
+    margin: '0 auto',
+  }
+
+  const pageBgStyle: CSSProperties = {
+    position: 'absolute',
+    inset: -24,
+    top: -token.paddingXL * 2,
+    pointerEvents: 'none',
+    zIndex: 0,
+    background: [
+      `radial-gradient(820px 520px at 12% 10%, rgba(22, 119, 255, 0.18), transparent 62%)`,
+      `radial-gradient(740px 460px at 86% 0%, rgba(56, 189, 248, 0.14), transparent 60%)`,
+      `radial-gradient(520px 320px at 55% 42%, rgba(22, 119, 255, 0.08), transparent 60%)`,
+    ].join(','),
+    filter: 'saturate(1.05)',
+  }
+
   const pipelineCardStyle: CSSProperties = {
-    background: token.colorFillAlter,
     borderRadius: token.borderRadiusLG * 2,
     padding: token.paddingLG * 1.5,
     position: 'relative',
     overflow: 'hidden',
     minHeight: 200,
+    border: '1px solid rgba(15, 23, 42, 0.08)',
+    background: [
+      'linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.72))',
+      `radial-gradient(520px 300px at 18% 20%, rgba(22, 119, 255, 0.18), transparent 62%)`,
+      `radial-gradient(520px 300px at 82% 10%, rgba(56, 189, 248, 0.12), transparent 58%)`,
+    ].join(','),
+    backdropFilter: 'blur(14px)',
+    boxShadow: '0 22px 70px rgba(0, 26, 67, 0.08)',
   }
 
   const alertCardStyle: CSSProperties = {
-    background: token.colorPrimary,
+    background: `linear-gradient(135deg, ${token.colorPrimary} 0%, color-mix(in srgb, ${token.colorPrimary} 70%, #312e81) 100%)`,
     color: token.colorTextLightSolid,
     borderRadius: token.borderRadiusLG * 2,
     padding: token.paddingLG * 1.5,
     position: 'relative',
     overflow: 'hidden',
     minHeight: 200,
+    boxShadow: '0 22px 70px rgba(22, 119, 255, 0.28)',
+    border: '1px solid rgba(255, 255, 255, 0.18)',
+    height: '100%',
   }
 
   const listCardStyle: CSSProperties = {
     borderRadius: token.borderRadiusLG * 2,
     overflow: 'hidden',
-    boxShadow: '0 12px 40px rgba(0, 26, 67, 0.06)',
-    background: token.colorBgContainer,
+    boxShadow: '0 18px 55px rgba(0, 26, 67, 0.08)',
+    background: 'rgba(255, 255, 255, 0.78)',
+    backdropFilter: 'blur(14px)',
+    border: '1px solid rgba(15, 23, 42, 0.08)',
   }
 
   const listHeaderStyle: CSSProperties = {
     padding: `${token.paddingLG}px ${token.paddingLG * 1.5}px`,
     borderBottom: `1px solid color-mix(in srgb, ${token.colorBorderSecondary} 55%, transparent)`,
+    background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.68))',
+    position: 'sticky',
+    top: 0,
+    zIndex: 3,
+    backdropFilter: 'blur(14px)',
   }
 
   const tableHeadStyle: CSSProperties = {
     padding: `${token.padding}px ${token.paddingLG * 1.5}px`,
-    background: token.colorFillAlter,
-    color: token.colorTextSecondary,
+    background: 'rgba(15, 23, 42, 0.03)',
+    color: `color-mix(in srgb, ${token.colorText} 62%, transparent)`,
     fontSize: 11,
     fontWeight: 800,
     letterSpacing: '0.12em',
@@ -396,11 +450,17 @@ export function HrJobDetailsPage() {
           setPage(1)
         }}
         style={{
-          fontSize: token.fontSizeSM,
-          fontWeight: 800,
-          borderRadius: token.borderRadius,
-          color: active ? token.colorPrimary : token.colorTextSecondary,
-          background: active ? token.colorPrimaryBg : undefined,
+          fontSize: 12,
+          fontWeight: 900,
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+          borderRadius: 999,
+          color: active
+            ? token.colorPrimary
+            : `color-mix(in srgb, ${token.colorText} 60%, transparent)`,
+          background: active
+            ? `linear-gradient(180deg, rgba(22, 119, 255, 0.14), rgba(22, 119, 255, 0.06))`
+            : 'transparent',
         }}
       >
         {label}
@@ -436,8 +496,9 @@ export function HrJobDetailsPage() {
   const highlightCount = Math.min(3, stats.total)
 
   return (
-    <div style={{ maxWidth: 1280, margin: '0 auto' }}>
-      <Flex vertical gap={token.marginXL * 1.25}>
+    <div style={pageStyle}>
+      <div style={pageBgStyle} />
+      <Flex vertical gap={token.marginXL * 1.25} style={{ position: 'relative', zIndex: 1 }}>
         <Flex justify="space-between" align="flex-end" wrap="wrap" gap={token.marginLG}>
           <div>
             <Breadcrumb
@@ -464,7 +525,12 @@ export function HrJobDetailsPage() {
             />
             <Typography.Title
               level={2}
-              style={{ margin: 0, fontWeight: 800, letterSpacing: '-0.02em' }}
+              style={{
+                margin: 0,
+                fontWeight: 900,
+                letterSpacing: '-0.03em',
+                lineHeight: 1.12,
+              }}
             >
               {job.title}
             </Typography.Title>
@@ -474,11 +540,13 @@ export function HrJobDetailsPage() {
                   margin: 0,
                   borderRadius: 999,
                   padding: `${token.paddingXXS + 2}px ${token.paddingSM}px`,
-                  fontWeight: 600,
+                  fontWeight: 700,
                   fontSize: token.fontSizeSM,
-                  border: 'none',
-                  background: token.colorFillTertiary,
-                  color: token.colorTextSecondary,
+                  border: `1px solid rgba(15, 23, 42, 0.08)`,
+                  background:
+                    'linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.68))',
+                  color: `color-mix(in srgb, ${token.colorText} 78%, transparent)`,
+                  backdropFilter: 'blur(10px)',
                 }}
               >
                 <span
@@ -487,8 +555,9 @@ export function HrJobDetailsPage() {
                     width: 8,
                     height: 8,
                     borderRadius: '50%',
-                    background: token.colorSuccess,
+                    background: `linear-gradient(180deg, ${token.colorSuccess} 0%, color-mix(in srgb, ${token.colorSuccess} 55%, #16a34a) 100%)`,
                     marginRight: token.marginXXS,
+                    boxShadow: '0 0 0 4px rgba(34, 197, 94, 0.12)',
                   }}
                 />
                 Active Role
@@ -499,11 +568,13 @@ export function HrJobDetailsPage() {
                   margin: 0,
                   borderRadius: 999,
                   padding: `${token.paddingXXS + 2}px ${token.paddingSM}px`,
-                  fontWeight: 600,
+                  fontWeight: 700,
                   fontSize: token.fontSizeSM,
-                  border: 'none',
-                  background: token.colorFillTertiary,
-                  color: token.colorTextSecondary,
+                  border: `1px solid rgba(15, 23, 42, 0.08)`,
+                  background:
+                    'linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.68))',
+                  color: `color-mix(in srgb, ${token.colorText} 74%, transparent)`,
+                  backdropFilter: 'blur(10px)',
                 }}
               >
                 {job.location}
@@ -513,22 +584,37 @@ export function HrJobDetailsPage() {
           <Space wrap>
             <Button
               size="large"
+              icon={<DownloadOutlined />}
               style={{
-                fontWeight: 600,
+                fontWeight: 750,
                 borderRadius: token.borderRadiusLG,
                 boxShadow: token.boxShadowTertiary,
                 borderColor: `color-mix(in srgb, ${token.colorBorder} 45%, transparent)`,
+                background: 'rgba(255, 255, 255, 0.78)',
+                backdropFilter: 'blur(12px)',
+                display: 'none',
               }}
             >
               Export List
             </Button>
-            <Button
-              type="primary"
-              size="large"
-              style={{ fontWeight: 600, borderRadius: token.borderRadiusLG }}
+            <Link
+              to={`/hr/job/${job.id}/edit`}
+              state={{ mode: 'edit' }}
+              style={{ textDecoration: 'none' }}
             >
-              Edit Job Detail
-            </Button>
+              <Button
+                type="primary"
+                size="large"
+                icon={<EditOutlined />}
+                style={{
+                  fontWeight: 750,
+                  borderRadius: token.borderRadiusLG,
+                  boxShadow: '0 18px 55px rgba(22, 119, 255, 0.22)',
+                }}
+              >
+                Edit Job Detail
+              </Button>
+            </Link>
           </Space>
         </Flex>
 
@@ -538,68 +624,74 @@ export function HrJobDetailsPage() {
               <div style={{ position: 'relative', zIndex: 1 }}>
                 <Typography.Text
                   type="secondary"
-                  style={{ fontWeight: 500, fontSize: token.fontSize }}
+                  style={{
+                    fontWeight: 750,
+                    fontSize: token.fontSizeSM,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.12em',
+                    color: `color-mix(in srgb, ${token.colorText} 58%, transparent)`,
+                  }}
                 >
                   Total Pipeline
                 </Typography.Text>
                 <Typography.Title
                   level={2}
-                  style={{ margin: `${token.marginXXS}px 0 0`, fontSize: 48, fontWeight: 800 }}
+                  style={{
+                    margin: `${token.marginXXS}px 0 0`,
+                    fontSize: 52,
+                    fontWeight: 950,
+                    letterSpacing: '-0.04em',
+                  }}
                 >
                   {stats.total}
                 </Typography.Title>
                 <Flex gap={token.marginLG} wrap="wrap" style={{ marginTop: token.marginLG }}>
-                  <div>
-                    <Typography.Text
+                  {[
+                    { label: 'Applied', value: stats.applied, accent: 'muted' as const },
+                    {
+                      label: 'Interviewing',
+                      value: stats.interviewing,
+                      accent: 'primary' as const,
+                    },
+                    { label: 'Closed', value: stats.closed, accent: 'muted' as const },
+                  ].map((item) => (
+                    <div
+                      key={item.label}
                       style={{
-                        display: 'block',
-                        fontSize: token.fontSizeSM,
-                        fontWeight: 800,
-                        color: token.colorTextSecondary,
-                        marginBottom: token.marginXXS,
+                        minWidth: 140,
+                        padding: `${token.paddingSM}px ${token.paddingMD}px`,
+                        borderRadius: token.borderRadiusLG * 1.25,
+                        border: '1px solid rgba(15, 23, 42, 0.06)',
+                        background: 'rgba(255, 255, 255, 0.62)',
+                        backdropFilter: 'blur(10px)',
+                        boxShadow: '0 10px 28px rgba(0, 26, 67, 0.06)',
                       }}
                     >
-                      APPLIED
-                    </Typography.Text>
-                    <Typography.Text strong style={{ fontSize: token.fontSizeHeading3 }}>
-                      {stats.applied}
-                    </Typography.Text>
-                  </div>
-                  <div>
-                    <Typography.Text
-                      style={{
-                        display: 'block',
-                        fontSize: token.fontSizeSM,
-                        fontWeight: 800,
-                        color: token.colorTextSecondary,
-                        marginBottom: token.marginXXS,
-                      }}
-                    >
-                      INTERVIEWING
-                    </Typography.Text>
-                    <Typography.Text
-                      strong
-                      style={{ fontSize: token.fontSizeHeading3, color: token.colorPrimary }}
-                    >
-                      {stats.interviewing}
-                    </Typography.Text>
-                  </div>
-                  <div>
-                    <Typography.Text
-                      style={{
-                        display: 'block',
-                        fontSize: token.fontSizeSM,
-                        fontWeight: 800,
-                        color: token.colorTextSecondary,
-                        marginBottom: token.marginXXS,
-                      }}
-                    >
-                      CLOSED
-                    </Typography.Text>
-                    <Typography.Text strong style={{ fontSize: token.fontSizeHeading3 }}>
-                      {stats.closed}
-                    </Typography.Text>
-                  </div>
+                      <Typography.Text
+                        style={{
+                          display: 'block',
+                          fontSize: 11,
+                          fontWeight: 900,
+                          letterSpacing: '0.16em',
+                          textTransform: 'uppercase',
+                          color: `color-mix(in srgb, ${token.colorText} 56%, transparent)`,
+                          marginBottom: token.marginXXS,
+                        }}
+                      >
+                        {item.label}
+                      </Typography.Text>
+                      <Typography.Text
+                        strong
+                        style={{
+                          fontSize: token.fontSizeHeading3,
+                          letterSpacing: '-0.02em',
+                          color: item.accent === 'primary' ? token.colorPrimary : token.colorText,
+                        }}
+                      >
+                        {item.value}
+                      </Typography.Text>
+                    </div>
+                  ))}
                 </Flex>
               </div>
               <div
@@ -609,17 +701,33 @@ export function HrJobDetailsPage() {
                   top: 0,
                   width: '50%',
                   height: '100%',
-                  opacity: 0.1,
                   pointerEvents: 'none',
+                  borderRadius: token.borderRadiusLG * 2,
+                  overflow: 'hidden',
                 }}
               >
                 <Image
                   src={PIPELINE_BG}
                   alt=""
                   preview={false}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    borderRadius: token.borderRadiusLG * 2,
+                    overflow: 'hidden',
+                  }}
                 />
               </div>
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  pointerEvents: 'none',
+                  background:
+                    'linear-gradient(90deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.25) 55%, rgba(255, 255, 255, 0.0) 78%)',
+                }}
+              />
             </div>
           </Col>
           <Col xs={24} lg={8}>
@@ -627,10 +735,10 @@ export function HrJobDetailsPage() {
               <Typography.Text
                 style={{
                   color: `color-mix(in srgb, ${token.colorTextLightSolid} 88%, transparent)`,
-                  fontWeight: 500,
+                  fontWeight: 750,
                   fontSize: token.fontSizeSM,
                   textTransform: 'uppercase',
-                  letterSpacing: '0.06em',
+                  letterSpacing: '0.14em',
                 }}
               >
                 Top Talent Alert
@@ -640,14 +748,26 @@ export function HrJobDetailsPage() {
                 style={{
                   color: token.colorTextLightSolid,
                   margin: `${token.marginSM}px 0 ${token.margin}px`,
-                  fontWeight: 700,
+                  fontWeight: 850,
                   lineHeight: 1.35,
+                  letterSpacing: '-0.02em',
                 }}
               >
                 {stats.total === 0
                   ? 'No applications yet for this role'
                   : `${highlightCount} candidate${highlightCount === 1 ? '' : 's'} in the active pipeline`}
               </Typography.Title>
+              <Typography.Paragraph
+                style={{
+                  margin: 0,
+                  maxWidth: 360,
+                  color: `color-mix(in srgb, ${token.colorTextLightSolid} 84%, transparent)`,
+                  lineHeight: 1.6,
+                }}
+              >
+                Review standout applicants, compare CVs, and move strong matches into interviews in
+                a few clicks.
+              </Typography.Paragraph>
               <Link to="/hr/candidates">
                 <Button
                   style={{
@@ -656,6 +776,9 @@ export function HrJobDetailsPage() {
                     borderRadius: token.borderRadiusLG,
                     color: token.colorPrimary,
                     border: 'none',
+                    height: 40,
+                    paddingInline: 16,
+                    boxShadow: '0 18px 45px rgba(0, 0, 0, 0.16)',
                   }}
                 >
                   View all candidates
@@ -669,6 +792,18 @@ export function HrJobDetailsPage() {
                   fontSize: 120,
                   color: token.colorTextLightSolid,
                   opacity: 0.12,
+                }}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  pointerEvents: 'none',
+                  opacity: 0.9,
+                  background: [
+                    'radial-gradient(600px 360px at 20% 20%, rgba(255, 255, 255, 0.22), transparent 60%)',
+                    'radial-gradient(420px 260px at 90% 10%, rgba(56, 189, 248, 0.24), transparent 58%)',
+                  ].join(','),
                 }}
               />
             </div>
@@ -686,11 +821,21 @@ export function HrJobDetailsPage() {
             <Typography.Title level={5} style={{ margin: 0, fontWeight: 700 }}>
               Active Pipeline
             </Typography.Title>
-            <Space size={token.marginXS}>
-              {filterBtn('all', 'ALL')}
-              {filterBtn('interviewing', 'INTERVIEWING')}
-              {filterBtn('new', 'NEW')}
-            </Space>
+            <div
+              style={{
+                padding: 6,
+                borderRadius: 999,
+                background: 'rgba(15, 23, 42, 0.04)',
+                border: '1px solid rgba(15, 23, 42, 0.06)',
+                backdropFilter: 'blur(10px)',
+              }}
+            >
+              <Space size={4}>
+                {filterBtn('all', 'ALL')}
+                {filterBtn('interviewing', 'INTERVIEWING')}
+                {filterBtn('new', 'NEW')}
+              </Space>
+            </div>
           </Flex>
 
           <div>
@@ -714,7 +859,33 @@ export function HrJobDetailsPage() {
 
             {paged.length === 0 ? (
               <div style={{ padding: token.paddingLG * 2, textAlign: 'center' }}>
-                <Typography.Text type="secondary">No candidates in this view.</Typography.Text>
+                <Empty
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  description={
+                    <div>
+                      <Typography.Text strong style={{ display: 'block' }}>
+                        No candidates in this view
+                      </Typography.Text>
+                      <Typography.Text type="secondary">
+                        Try switching filters or check back later for new applications.
+                      </Typography.Text>
+                    </div>
+                  }
+                >
+                  <Space wrap>
+                    <Button
+                      onClick={() => {
+                        setPipelineFilter('all')
+                        setPage(1)
+                      }}
+                    >
+                      Show all
+                    </Button>
+                    <Link to="/hr/candidates" style={{ textDecoration: 'none' }}>
+                      <Button type="primary">Browse candidates</Button>
+                    </Link>
+                  </Space>
+                </Empty>
               </div>
             ) : (
               paged.map((row) => (
@@ -730,7 +901,8 @@ export function HrJobDetailsPage() {
             gap={token.margin}
             style={{
               padding: `${token.paddingLG}px ${token.paddingLG * 1.5}px`,
-              background: `color-mix(in srgb, ${token.colorFillAlter} 50%, transparent)`,
+              background: 'rgba(15, 23, 42, 0.02)',
+              borderTop: '1px solid rgba(15, 23, 42, 0.06)',
             }}
           >
             <Typography.Text
