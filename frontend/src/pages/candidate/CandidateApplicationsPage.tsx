@@ -18,6 +18,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { ApplicationPreviewPanel } from '@/components/candidate/ApplicationPreviewPanel'
+import { ApplicationJourneyTracker } from '@/components/candidate/ApplicationJourneyTracker'
 import { getMyApplications, type CandidateApplication } from '@/services/applicationsService'
 
 const { Title, Text } = Typography
@@ -54,6 +55,12 @@ const HR_STATUS_SORT_ORDER: Record<string, number> = {
   Offered: 3,
   Accepted: 4,
   Rejected: 5,
+}
+
+function getJobThematicImage(job: any) {
+  if (!job) return ''
+  const seed = (job.id || '1').split('-').pop() || '1'
+  return `https://loremflickr.com/400/400/business,office,technology?random=${seed}`
 }
 
 function getApiErrorMessage(err: unknown, fallback: string) {
@@ -265,12 +272,12 @@ export function CandidateApplicationsPage() {
                             <div className="candidate-jobLogoBox">
                               <Image
                                 className="candidate-jobLogo"
-                                src={app.jobs?.companies?.logo_url ?? undefined}
+                                src={getJobThematicImage(app.jobs)}
                                 alt={`${app.jobs?.companies?.name ?? 'Company'} logo`}
                                 preview={false}
                                 width="100%"
                                 height="100%"
-                                style={{ objectFit: 'contain' }}
+                                style={{ objectFit: 'cover', borderRadius: 8 }}
                               />
                             </div>
 
@@ -338,6 +345,10 @@ export function CandidateApplicationsPage() {
                             </Button>
                           </div>
                         </Flex>
+
+                        <div style={{ marginTop: 16, paddingLeft: screens.md ? 68 : 0 }}>
+                          <ApplicationJourneyTracker application={app} direction="horizontal" />
+                        </div>
                       </article>
                     ))
                   )}

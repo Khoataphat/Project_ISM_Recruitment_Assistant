@@ -24,6 +24,8 @@ type ApiApplication = {
   id: string
   hr_status: string
   applied_at: string
+  ai_matching_score: string | number | null
+  ai_summary: any
   jobs: {
     id: string
     title: string
@@ -101,20 +103,26 @@ export function HrCandidatesPage() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
-    return applications.filter((a) => {
-      if (statusFilter !== 'all' && a.hr_status !== statusFilter) return false
-      if (!q) return true
-      const blob = [
-        a.candidates.users.full_name,
-        a.candidates.users.email,
-        a.jobs.title,
-        a.jobs.companies.name,
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase()
-      return blob.includes(q)
-    })
+    return applications
+      .filter((a) => {
+        if (statusFilter !== 'all' && a.hr_status !== statusFilter) return false
+        if (!q) return true
+        const blob = [
+          a.candidates.users.full_name,
+          a.candidates.users.email,
+          a.jobs.title,
+          a.jobs.companies.name,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase()
+        return blob.includes(q)
+      })
+      .sort((a, b) => {
+        const scoreA = a.ai_matching_score != null ? Number(a.ai_matching_score) : -1
+        const scoreB = b.ai_matching_score != null ? Number(b.ai_matching_score) : -1
+        return scoreB - scoreA
+      })
   }, [applications, search, statusFilter])
 
   const handleStatusChange = async (applicationId: string, newStatus: string) => {
@@ -159,9 +167,51 @@ export function HrCandidatesPage() {
             <Text type="secondary" style={{ fontSize: 12 }}>
               {a.candidates.users.email}
             </Text>
+            {a.ai_summary && (
+              <Text 
+                type="secondary" 
+                italic 
+                ellipsis 
+                style={{ fontSize: 11, display: 'block', maxWidth: 200, opacity: 0.8 }}
+              >
+                {typeof a.ai_summary === 'string' ? a.ai_summary : (a.ai_summary.summary || a.ai_summary.reasoning || '')}
+              </Text>
+            )}
           </div>
         </Flex>
       ),
+    },
+    {
+      title: 'AI Match',
+      key: 'ai_score',
+      width: 140,
+      render: (_, a) => {
+        const score = a.ai_matching_score != null ? Number(a.ai_matching_score) : null
+        let color = 'default'
+        let label = 'N/A'
+        if (score !== null) {
+          if (score >= 70) {
+            color = 'success'
+            label = 'Highly Recommended'
+          } else if (score >= 50) {
+            color = 'warning'
+            label = 'Consider'
+          } else {
+            color = 'error'
+            label = 'Not a fit'
+          }
+        }
+        return (
+          <Flex vertical gap={2}>
+            <Text strong style={{ color: score !== null ? (score >= 70 ? token.colorSuccess : score >= 50 ? token.colorWarning : token.colorError) : undefined }}>
+              {score !== null ? `${Math.round(score)}%` : '—'}
+            </Text>
+            <Tag color={color} style={{ margin: 0, fontSize: 10, lineHeight: '16px' }}>
+              {label}
+            </Tag>
+          </Flex>
+        )
+      },
     },
     {
       title: 'Role',

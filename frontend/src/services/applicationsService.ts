@@ -26,6 +26,7 @@ export type CandidateApplication = {
   hr_status: string
   skills_radar: unknown
   ai_matching_score: string | number | null | undefined
+  viewed_by_hr_at: string | null
   applied_at: string
   updated_at: string
   jobs: CandidateApplicationJob

@@ -8,6 +8,12 @@ import type { CandidateApplication } from '@/services/applicationsService'
 
 const { Title, Text, Paragraph } = Typography
 
+function getJobThematicImage(job: any) {
+  if (!job) return ''
+  const seed = (job.id || '1').split('-').pop() || '1'
+  return `https://loremflickr.com/400/400/business,office,technology?random=${seed}`
+}
+
 const HR_STATUS_COLOR: Record<string, string> = {
   Pending: 'gold',
   Shortlisted: 'blue',
@@ -69,12 +75,12 @@ export function ApplicationPreviewPanel({ application }: ApplicationPreviewPanel
           style={{ background: token.colorFillQuaternary }}
         >
           <Image
-            src={job.companies?.logo_url ?? undefined}
-            alt={`${job.companies?.name ?? 'Company'} logo`}
+            src={getJobThematicImage(job)}
+            alt={`${job?.companies?.name ?? 'Company'} logo`}
             preview={false}
             width="100%"
             height="100%"
-            style={{ objectFit: 'contain' }}
+            style={{ objectFit: 'cover', borderRadius: 8 }}
           />
         </div>
         <div className="candidate-appPreviewPanel-meta">
@@ -140,7 +146,15 @@ export function ApplicationPreviewPanel({ application }: ApplicationPreviewPanel
           </div>
         ) : null}
 
-        <div className="candidate-appPreviewRadarSection">
+        <div className="candidate-appPreviewRadarSection" style={{ marginTop: 24 }}>
+          <div style={{ marginBottom: 16 }}>
+            <Text strong style={{ fontSize: 13, display: 'block', color: token.colorText }}>
+              Phân tích độ khớp kỹ năng
+            </Text>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              Độ khớp CV của bạn so với công việc này được hệ thống AI tính toán dựa trên yêu cầu cụ thể của vị trí.
+            </Text>
+          </div>
           {hasRadar ? (
             <SkillsRadarChart skillsRadar={application.skills_radar} />
           ) : (

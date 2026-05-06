@@ -1,4 +1,4 @@
-import { BankOutlined, EnvironmentOutlined } from '@ant-design/icons'
+import { BankOutlined, CheckCircleOutlined, EnvironmentOutlined } from '@ant-design/icons'
 import {
   Button,
   Flex,
@@ -11,14 +11,21 @@ import {
   theme,
   Spin,
   Alert,
+  Tag,
 } from 'antd'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
 import { getOpenJobs, type ApiJob } from '@/services/jobsService'
+import { getMyApplications } from '@/services/applicationsService'
 import { useCandidateJobsFilters } from '@/layouts/candidate/CandidateJobsFiltersContext.ts'
 
 const { Title, Text, Paragraph } = Typography
+
+function getJobThematicImage(job: ApiJob) {
+  const seed = job.id.split('-').pop() || '1'
+  return `https://loremflickr.com/800/600/business,office,technology?random=${seed}`
+}
 
 function getApiErrorMessage(err: unknown, fallback: string) {
   if (err && typeof err === 'object') {
@@ -36,6 +43,7 @@ export function CandidateJobsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { appliedFilters, setOptions, patchFilters } = useCandidateJobsFilters()
   const [jobs, setJobs] = useState<ApiJob[]>([])
+  const [appliedJobIds, setAppliedJobIds] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string>('')
@@ -81,19 +89,25 @@ export function CandidateJobsPage() {
   )
 
   useEffect(() => {
-    const fetchJobs = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true)
-        const data = await getOpenJobs()
-        setJobs(data ?? [])
-        if (data?.length) setSelectedId(data[0].id)
+        const [jobsData, appsData] = await Promise.all([
+          getOpenJobs(),
+          getMyApplications(),
+        ])
+        setJobs(jobsData ?? [])
+        if (jobsData?.length) setSelectedId(jobsData[0].id)
+        
+        const appliedIds = new Set((appsData ?? []).map((app: any) => app.job_id))
+        setAppliedJobIds(appliedIds)
       } catch (err: unknown) {
-        setError(getApiErrorMessage(err, 'Failed to fetch jobs'))
+        setError(getApiErrorMessage(err, 'Failed to fetch data'))
       } finally {
         setLoading(false)
       }
     }
-    fetchJobs()
+    fetchData()
   }, [])
 
   useEffect(() => {
@@ -302,11 +316,18 @@ export function CandidateJobsPage() {
 
               <div className="candidate-jobsListScroll">
                 <div className="candidate-jobsListInner">
-                  {visibleJobs.map((job) => (
-                    <article
-                      key={job.id}
-                      className={`candidate-jobCard${job.id === selectedJob?.id ? ' candidate-jobCard--selected' : ''}`}
-                      role="button"
+                  {visibleJobs.map((job) => {
+                    const isApplied = appliedJobIds.has(job.id)
+                    return (
+                      <article
+                        key={job.id}
+                        className={`candidate-jobCard${job.id === selectedJob?.id ? ' candidate-jobCard--selected' : ''}`}
+                        style={isApplied ? { 
+                          background: token.colorInfoBg,
+                          opacity: 0.7,
+                          position: 'relative',
+                        } : { position: 'relative' }}
+                        role="button"
                       tabIndex={0}
                       aria-current={job.id === selectedJob?.id ? 'true' : undefined}
                       onClick={() => setSelectedId(job.id)}
@@ -322,12 +343,12 @@ export function CandidateJobsPage() {
                           <div className="candidate-jobLogoBox">
                             <Image
                               className="candidate-jobLogo"
-                              src={job.companies?.logo_url ?? undefined}
+                              src={getJobThematicImage(job)}
                               alt={`${job.companies?.name ?? 'Company'} logo`}
                               preview={false}
                               width={'100%'}
                               height={'100%'}
-                              style={{ objectFit: 'contain' }}
+                              style={{ objectFit: 'cover', borderRadius: 8 }}
                             />
                           </div>
 
@@ -335,6 +356,31 @@ export function CandidateJobsPage() {
                             <div className="candidate-jobTitleRow">
                               <Text className="candidate-jobTitle">{job.title}</Text>
                             </div>
+                              {isApplied && (
+                                <Tag 
+                                  icon={<CheckCircleOutlined />}
+                                  color="processing" 
+                                  bordered={true}
+                                  style={{ 
+                                    position: 'absolute',
+                                    top: 14,
+                                    right: 14,
+                                    borderRadius: 99, 
+                                    paddingInline: 14,
+                                    paddingBlock: 2,
+                                    fontWeight: 800, 
+                                    fontSize: 11,
+                                    margin: 0,
+                                    background: '#fff',
+                                    borderColor: token.colorPrimary,
+                                    color: token.colorPrimary,
+                                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                                    zIndex: 2,
+                                  }}
+                                >
+                                  Đã ứng tuyển
+                                </Tag>
+                              )}
 
                             <Flex className="candidate-jobMeta" align="center" wrap gap={10}>
                               <Text style={{ color: token.colorTextSecondary, fontWeight: 600 }}>
@@ -371,134 +417,153 @@ export function CandidateJobsPage() {
                         <div onClick={(e) => e.stopPropagation()} />
                       </Flex>
                     </article>
-                  ))}
-                </div>
+                  )
+                })}
               </div>
+            </div>
 
-              <div className="candidate-paginationBar">
-                <Text style={{ color: token.colorTextSecondary }}>
-                  Page {page} of {Math.max(1, Math.ceil(sortedJobs.length / pageSize))}
-                </Text>
-                <Pagination
-                  className="candidate-pagination"
-                  current={page}
-                  total={sortedJobs.length}
-                  pageSize={pageSize}
-                  onChange={(p, ps) => {
-                    setPage(p)
-                    if (ps !== pageSize) setPageSize(ps)
-                  }}
-                  showSizeChanger
-                  pageSizeOptions={[10, 20, 50]}
-                  showQuickJumper={false}
-                />
-              </div>
-            </Flex>
-          </div>
+            <div className="candidate-paginationBar">
+              <Text style={{ color: token.colorTextSecondary }}>
+                Page {page} of {Math.max(1, Math.ceil(sortedJobs.length / pageSize))}
+              </Text>
+              <Pagination
+                className="candidate-pagination"
+                current={page}
+                total={sortedJobs.length}
+                pageSize={pageSize}
+                onChange={(p, ps) => {
+                  setPage(p)
+                  if (ps !== pageSize) setPageSize(ps)
+                }}
+                showSizeChanger
+                pageSizeOptions={[10, 20, 50]}
+                showQuickJumper={false}
+              />
+            </div>
+          </Flex>
+        </div>
 
-          {isDesktop ? (
-            <aside className="candidate-jobsPreviewCol" aria-label="Job preview">
-              {selectedJob ? (
-                <div className="candidate-jobPreviewSticky">
-                  <div className="candidate-jobPreview">
-                    <div className="candidate-jobPreviewMedia">
-                      <Image
-                        src={selectedJob.companies?.logo_url ?? undefined} // Placeholder for cover if missing
-                        alt=""
-                        preview={false}
-                        width="100%"
-                        style={{
-                          height: '100%',
-                          objectFit: 'cover',
-                        }}
-                      />
-                      <div className="candidate-jobPreviewMediaShade" aria-hidden />
-                    </div>
+        {isDesktop ? (
+          <aside className="candidate-jobsPreviewCol" aria-label="Job preview">
+            {selectedJob ? (
+              <div className="candidate-jobPreviewSticky">
+                <div className="candidate-jobPreview">
+                  <div className="candidate-jobPreviewMedia">
+                    <Image
+                      src={getJobThematicImage(selectedJob)}
+                      alt=""
+                      preview={false}
+                      width="100%"
+                      style={{
+                        height: '100%',
+                        objectFit: 'cover',
+                      }}
+                    />
+                    <div className="candidate-jobPreviewMediaShade" aria-hidden />
+                  </div>
 
-                    <div className="candidate-jobPreviewBody">
-                      <Flex align="center" wrap gap={10} style={{ marginBottom: 10 }}>
-                        <Title
-                          level={3}
-                          className="candidate-jobPreviewTitle"
-                          style={{ margin: 0, flex: '1 1 200px' }}
+                  <div className="candidate-jobPreviewBody">
+                    <Flex align="center" wrap gap={10} style={{ marginBottom: 10 }}>
+                      <Title
+                        level={3}
+                        className="candidate-jobPreviewTitle"
+                        style={{ margin: 0, flex: '1 1 200px' }}
+                      >
+                        {selectedJob.title}
+                      </Title>
+                        {appliedJobIds.has(selectedJob.id) && (
+                          <Tag 
+                            icon={<CheckCircleOutlined />}
+                            color="processing" 
+                            style={{ fontWeight: 700, borderRadius: 99, paddingInline: 12 }}
+                          >
+                            Đã ứng tuyển
+                          </Tag>
+                        )}
+                    </Flex>
+
+                    <Flex wrap gap={16} align="center" style={{ marginBottom: 16 }}>
+                      <Flex gap={8} align="center">
+                        <BankOutlined style={{ fontSize: 16, color: token.colorTextSecondary }} />
+                        <Text style={{ fontWeight: 700, color: token.colorText }}>
+                          {selectedJob.companies?.name ?? '—'}
+                        </Text>
+                      </Flex>
+                      <Flex gap={8} align="center">
+                        <EnvironmentOutlined
+                          style={{ fontSize: 16, color: token.colorTextSecondary }}
+                        />
+                        <Text style={{ color: token.colorTextSecondary }}>
+                          {selectedJob.location ?? '—'}
+                        </Text>
+                      </Flex>
+                      <Flex gap={8} align="center">
+                        <span className="candidate-moneyIcon" />
+                        <Text className="candidate-jobPay">{formatSalary(selectedJob)}</Text>
+                      </Flex>
+                    </Flex>
+
+                    <Flex
+                      wrap
+                      gap={8}
+                      className="candidate-jobPills"
+                      style={{ marginBottom: 16 }}
+                    >
+                      {selectedJob.level ? (
+                        <span className="candidate-pill">{selectedJob.level}</span>
+                      ) : null}
+                      {selectedJob.type ? (
+                        <span className="candidate-pill">{selectedJob.type}</span>
+                      ) : null}
+                      {selectedJob.is_remote ? (
+                        <span className="candidate-pill">Remote</span>
+                      ) : null}
+                      {selectedJob.application_deadline ? (
+                        <span className="candidate-pill">
+                          Deadline: {formatDate(selectedJob.application_deadline)}
+                        </span>
+                      ) : null}
+                    </Flex>
+
+                    <Paragraph
+                      style={{
+                        marginBottom: 20,
+                        color: token.colorTextSecondary,
+                      }}
+                      className="candidate-jobPreviewSummary"
+                    >
+                      {selectedJob.description ?? '—'}
+                    </Paragraph>
+
+                    <Flex gap={10} wrap style={{ marginTop: 'auto' }}>
+                      <Link to={`/candidate/job/${selectedJob.id}`} style={{ flex: '1 1 auto' }}>
+                        <Button block className="candidate-jobPreviewSecondaryBtn">
+                          View full role
+                        </Button>
+                      </Link>
+                      <Link to={`/candidate/job/${selectedJob.id}`} style={{ flex: '1 1 auto' }}>
+                        <Button 
+                          type={appliedJobIds.has(selectedJob.id) ? 'default' : 'primary'} 
+                          block 
+                          className="candidate-applyNowBtn"
+                          style={appliedJobIds.has(selectedJob.id) ? { 
+                            background: token.colorFillSecondary,
+                            borderColor: 'transparent',
+                            color: token.colorTextSecondary
+                          } : undefined}
                         >
-                          {selectedJob.title}
-                        </Title>
-                      </Flex>
-
-                      <Flex wrap gap={16} align="center" style={{ marginBottom: 16 }}>
-                        <Flex gap={8} align="center">
-                          <BankOutlined style={{ fontSize: 16, color: token.colorTextSecondary }} />
-                          <Text style={{ fontWeight: 700, color: token.colorText }}>
-                            {selectedJob.companies?.name ?? '—'}
-                          </Text>
-                        </Flex>
-                        <Flex gap={8} align="center">
-                          <EnvironmentOutlined
-                            style={{ fontSize: 16, color: token.colorTextSecondary }}
-                          />
-                          <Text style={{ color: token.colorTextSecondary }}>
-                            {selectedJob.location ?? '—'}
-                          </Text>
-                        </Flex>
-                        <Flex gap={8} align="center">
-                          <span className="candidate-moneyIcon" />
-                          <Text className="candidate-jobPay">{formatSalary(selectedJob)}</Text>
-                        </Flex>
-                      </Flex>
-
-                      <Flex
-                        wrap
-                        gap={8}
-                        className="candidate-jobPills"
-                        style={{ marginBottom: 16 }}
-                      >
-                        {selectedJob.level ? (
-                          <span className="candidate-pill">{selectedJob.level}</span>
-                        ) : null}
-                        {selectedJob.type ? (
-                          <span className="candidate-pill">{selectedJob.type}</span>
-                        ) : null}
-                        {selectedJob.is_remote ? (
-                          <span className="candidate-pill">Remote</span>
-                        ) : null}
-                        {selectedJob.application_deadline ? (
-                          <span className="candidate-pill">
-                            Deadline: {formatDate(selectedJob.application_deadline)}
-                          </span>
-                        ) : null}
-                      </Flex>
-
-                      <Paragraph
-                        style={{
-                          marginBottom: 20,
-                          color: token.colorTextSecondary,
-                        }}
-                        className="candidate-jobPreviewSummary"
-                      >
-                        {selectedJob.description ?? '—'}
-                      </Paragraph>
-
-                      <Flex gap={10} wrap style={{ marginTop: 'auto' }}>
-                        <Link to={`/candidate/job/${selectedJob.id}`} style={{ flex: '1 1 auto' }}>
-                          <Button block className="candidate-jobPreviewSecondaryBtn">
-                            View full role
-                          </Button>
-                        </Link>
-                        <Link to={`/candidate/job/${selectedJob.id}`} style={{ flex: '1 1 auto' }}>
-                          <Button type="primary" block className="candidate-applyNowBtn">
-                            Apply now
-                          </Button>
-                        </Link>
-                      </Flex>
-                    </div>
+                          {appliedJobIds.has(selectedJob.id) ? 'Đã ứng tuyển' : 'Apply now'}
+                        </Button>
+                      </Link>
+                    </Flex>
                   </div>
                 </div>
-              ) : null}
-            </aside>
-          ) : null}
-        </div>
+              </div>
+            ) : null}
+          </aside>
+        ) : null}
       </div>
+    </div>
     </main>
   )
 }
