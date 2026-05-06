@@ -13,9 +13,12 @@ import {
   Typography,
 } from 'antd'
 import type { MenuProps } from 'antd'
-import { DashboardOutlined, LogoutOutlined, MenuOutlined } from '@ant-design/icons'
-import { Button, ConfigProvider, Drawer, Grid, Layout, Menu, Space, theme, Typography } from 'antd'
-import { LogoutOutlined, MenuOutlined, UserOutlined } from '@ant-design/icons'
+import {
+  DashboardOutlined,
+  LogoutOutlined,
+  MenuOutlined,
+  UserOutlined,
+} from '@ant-design/icons'
 import { useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { appEnv } from '@/config/env'
@@ -40,9 +43,8 @@ function selectedNavKey(pathname: string, items: NavItem[]): string | undefined 
 
 export function TopNavBar() {
   const navigate = useNavigate()
-  const { user, logout, isAuthenticated, isHR } = useAuth()
+  const { user, logout, isAuthenticated, isHR, isCandidate } = useAuth()
   const { token } = theme.useToken()
-  const { isAuthenticated, user, logout, isCandidate, isHR } = useAuth()
   const screens = Grid.useBreakpoint()
   const [mobileOpen, setMobileOpen] = useState(false)
   const location = useLocation()
@@ -108,20 +110,21 @@ export function TopNavBar() {
   const onLogout = () => {
     logout()
     setMobileOpen(false)
-    navigate('/login')
+    navigate('/')
   }
 
+  const profilePath = isHR ? '/hr/dashboard' : '/candidate/profile'
+
   const userAvatarMenuItems: MenuProps['items'] = [
-    ...(isHR
-      ? [
-          {
-            key: 'hr-dashboard',
-            label: 'HR Dashboard',
-            icon: <DashboardOutlined />,
-            onClick: () => navigate('/hr/dashboard'),
-          },
-        ]
-      : []),
+    {
+      key: 'profile',
+      label: isHR ? 'HR Dashboard' : 'My Profile',
+      icon: isHR ? <DashboardOutlined /> : <UserOutlined />,
+      onClick: () => {
+        navigate(profilePath)
+        setMobileOpen(false)
+      },
+    },
     {
       key: 'logout',
       label: 'Logout',
@@ -129,12 +132,6 @@ export function TopNavBar() {
       onClick: onLogout,
     },
   ]
-  const profilePath = isHR ? '/hr/dashboard' : '/candidate/profile'
-  const handleLogout = () => {
-    logout()
-    setMobileOpen(false)
-    navigate('/')
-  }
 
   return (
     <Layout.Header
@@ -156,6 +153,9 @@ export function TopNavBar() {
         className="top-nav-inner"
         style={{
           height: headerHeight,
+          maxWidth: 1400,
+          margin: '0 auto',
+          paddingInline: screens.xl ? 40 : screens.lg ? 24 : 16,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -212,49 +212,53 @@ export function TopNavBar() {
           <div style={{ flex: 1 }} />
         )}
 
-        {isDesktop ? (
-          <Space size={12}>
-            {isAuthenticated ? (
-              <>
-                <Link to={profilePath} style={{ textDecoration: 'none' }}>
-                  <Button type="text" icon={<UserOutlined />}>
-                    {user?.full_name ?? 'Account'}
-                  </Button>
-                </Link>
-                <Button type="primary" danger icon={<LogoutOutlined />} onClick={handleLogout}>
-                  Logout
-                </Button>
-              </>
-            ) : (
-              <>
-                <Link to="/login" style={{ textDecoration: 'none' }}>
-                  <Button type="text">Sign In</Button>
-                </Link>
-                <Link to="/register" style={{ textDecoration: 'none' }}>
-                  <Button type="primary">Sign Up</Button>
-                </Link>
-              </>
-            )}
-          </Space>
-        ) : (
-          <Space size={8}>
-            {isAuthenticated ? (
-              <Button type="primary" icon={<UserOutlined />} onClick={() => navigate(profilePath)}>
-                Account
+        <Space size={isDesktop ? 12 : 8}>
+          {isAuthenticated && user ? (
+            <Dropdown
+              menu={{ items: userAvatarMenuItems }}
+              trigger={['click']}
+              placement="bottomRight"
+            >
+              <Button
+                type="text"
+                className="top-nav-user-trigger"
+                style={{ paddingInline: 8, height: 40 }}
+              >
+                <Space size={10}>
+                  <Avatar size="small" style={{ background: token.colorPrimary }}>
+                    {avatarText}
+                  </Avatar>
+                  {isDesktop && (
+                    <Typography.Text style={{ fontWeight: 650 }}>
+                      {displayName}
+                    </Typography.Text>
+                  )}
+                </Space>
               </Button>
-            ) : (
+            </Dropdown>
+          ) : (
+            <Space size={12} className="top-nav-actions-desktop">
               <Link to="/login" style={{ textDecoration: 'none' }}>
-                <Button type="primary">Sign In</Button>
+                <Button type="text" className="top-nav-cta-secondary">
+                  Sign In
+                </Button>
               </Link>
-            )}
+              <Link to="/register" style={{ textDecoration: 'none' }}>
+                <Button type="primary" className="top-nav-cta-primary">
+                  Sign Up
+                </Button>
+              </Link>
+            </Space>
+          )}
+          {!isDesktop && (
             <Button
               aria-label="Open menu"
               icon={<MenuOutlined />}
               className="top-nav-menu-toggle"
               onClick={() => setMobileOpen(true)}
             />
-          </Space>
-        )}
+          )}
+        </Space>
       </div>
 
       <Drawer
@@ -280,33 +284,53 @@ export function TopNavBar() {
         >
           <Menu mode="inline" selectedKeys={selectedKey ? [selectedKey] : []} items={menuItems} />
         </ConfigProvider>
-        <Space direction="vertical" size={10} style={{ marginTop: 16, width: '100%' }}>
-          {isAuthenticated ? (
-            <>
-              <Link to={profilePath} style={{ textDecoration: 'none' }}>
-                <Button block type="default" icon={<UserOutlined />} onClick={() => setMobileOpen(false)}>
-                  {user?.full_name ?? 'Account'}
+        <Divider style={{ margin: '16px 0' }} />
+        <div>
+          {isAuthenticated && user ? (
+            <div>
+              <div style={{ marginBottom: 12 }}>
+                <Space size={12}>
+                  <Avatar style={{ background: token.colorPrimary }}>{avatarText}</Avatar>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <Typography.Text style={{ fontWeight: 650 }}>{displayName}</Typography.Text>
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                      {user.email}
+                    </Typography.Text>
+                  </div>
+                </Space>
+              </div>
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Button
+                  block
+                  type="default"
+                  icon={isHR ? <DashboardOutlined /> : <UserOutlined />}
+                  onClick={() => {
+                    navigate(profilePath)
+                    setMobileOpen(false)
+                  }}
+                >
+                  {isHR ? 'Dashboard' : 'Profile'}
                 </Button>
-              </Link>
-              <Button block danger icon={<LogoutOutlined />} onClick={handleLogout}>
-                Logout
-              </Button>
-            </>
+                <Button block danger icon={<LogoutOutlined />} onClick={onLogout}>
+                  Logout
+                </Button>
+              </Space>
+            </div>
           ) : (
-            <>
-              <Link to="/login" style={{ textDecoration: 'none' }}>
-                <Button block type="default" onClick={() => setMobileOpen(false)}>
+            <Space direction="vertical" size={12} style={{ width: '100%' }}>
+              <Link to="/login" style={{ textDecoration: 'none', display: 'block' }}>
+                <Button block type="primary" onClick={() => setMobileOpen(false)}>
                   Sign In
                 </Button>
               </Link>
-              <Link to="/register" style={{ textDecoration: 'none' }}>
-                <Button block type="primary" onClick={() => setMobileOpen(false)}>
+              <Link to="/register" style={{ textDecoration: 'none', display: 'block' }}>
+                <Button block type="default" onClick={() => setMobileOpen(false)}>
                   Sign Up
                 </Button>
               </Link>
-            </>
+            </Space>
           )}
-        </Space>
+        </div>
       </Drawer>
     </Layout.Header>
   )

@@ -41,6 +41,7 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - NODE_ENV=development
+      - AI_SERVICE_URL=http://ai-service:8000/analyze-cv
       # Override DB URLs if using local postgres
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/recruitment
       - DIRECT_URL=postgresql://postgres:postgres@postgres:5432/recruitment
@@ -55,24 +56,37 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  # # 4. Frontend
-  # frontend:
-  #   build:
-  #     context: ./frontend
-  #     target: development
-  #   container_name: recruitment-frontend
-  #   ports:
-  #     - "5173:5173"
-  #   env_file:
-  #     - ./frontend/.env
-  #   environment:
-  #     - VITE_API_URL=http://localhost:3000
-  #   volumes:
-  #     - ./frontend:/app
-  #     - /app/node_modules
-  #   depends_on:
-  #     - backend
-  #   restart: unless-stopped
+  # 3.5 AI Service (Python)
+  ai-service:
+    build:
+      context: "./ai python"
+    container_name: recruitment-ai-service
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - "./ai python:/app"
+    restart: unless-stopped
+
+  # 4. Frontend
+  frontend:
+    build:
+      context: ./frontend
+      target: development
+    container_name: recruitment-frontend
+    ports:
+      - "5173:5173"
+    env_file:
+      - ./frontend/.env
+    environment:
+      - VITE_API_URL=http://localhost:3000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    restart: unless-stopped
 
 volumes:
   pgdata:

@@ -4,6 +4,11 @@ from parser import extract_text_from_pdf, ai_resume_parser
 from models import MatchingEngine
 import os
 import uvicorn
+import sys
+
+# Cấu hình encoding UTF-8 cho stdout để tránh lỗi khi print tiếng Việt trên môi trường không hỗ trợ (như Windows Console cũ hoặc Docker logs)
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
 
 app = FastAPI(title="Recruitment AI Service")
 
@@ -31,8 +36,10 @@ async def analyze_cv(file: UploadFile = File(...), jd_text: str = Form(...)):
         raw_text = extract_text_from_pdf(temp_path)
         cv_data = ai_resume_parser(raw_text)
         
-        skills_list = cv_data.get("skills", [])
-        matching_result = engine.calculate_match(skills_list, jd_text)
+        if not cv_data:
+            raise ValueError("AI Resume Parser returned no data. Check API keys or model availability.")
+        
+        matching_result = engine.calculate_match(cv_data, jd_text)
         
         # Xóa file tạm sau khi xong
         os.remove(temp_path)
