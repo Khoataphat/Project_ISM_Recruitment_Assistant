@@ -4,6 +4,7 @@ import {
   EnvironmentOutlined,
   LeftOutlined,
   TeamOutlined,
+  CheckCircleOutlined,
   UserOutlined,
 } from '@ant-design/icons'
 import {
@@ -27,10 +28,15 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
 import { JobApplyModal } from '@/components/candidate/JobApplyModal.tsx'
-import { submitApplication } from '@/services/applicationsService'
+import { getMyApplications, submitApplication } from '@/services/applicationsService'
 import { getJobById, type ApiJob } from '@/services/jobsService'
 
 const { Title, Text } = Typography
+
+function getJobThematicImage(job: ApiJob) {
+  const seed = job.id.split('-').pop() || '1'
+  return `https://loremflickr.com/800/600/business,office,technology?random=${seed}`
+}
 
 function getApiErrorMessage(err: unknown, fallback: string) {
   if (err && typeof err === 'object') {
@@ -63,23 +69,29 @@ export function CandidateJobDetailsPage() {
   const { id } = useParams()
   const [applyOpen, setApplyOpen] = useState(false)
   const [job, setJob] = useState<ApiJob | null>(null)
+  const [isApplied, setIsApplied] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const fetchJob = async () => {
+    const fetchData = async () => {
       if (!id) return
       try {
         setLoading(true)
-        const data = await getJobById(id)
-        setJob(data)
+        const [jobData, appsData] = await Promise.all([
+          getJobById(id),
+          getMyApplications(),
+        ])
+        setJob(jobData)
+        const alreadyApplied = (appsData ?? []).some((app: any) => app.job_id === id)
+        setIsApplied(alreadyApplied)
       } catch (err: unknown) {
-        setError(getApiErrorMessage(err, 'Failed to fetch job details'))
+        setError(getApiErrorMessage(err, 'Failed to fetch data'))
       } finally {
         setLoading(false)
       }
     }
-    fetchJob()
+    fetchData()
   }, [id])
 
   const formatDate = (iso: string | null | undefined) => {
@@ -171,16 +183,37 @@ export function CandidateJobDetailsPage() {
               <div className="candidate-jobHeaderBrand">
                 <Image
                   className="candidate-jobHeaderLogo"
-                  src={job.companies?.logo_url ?? undefined}
+                  src={getJobThematicImage(job)}
                   alt={companyName}
                   preview={false}
                   width={176}
                   height={176}
+                  style={{ borderRadius: 12, objectFit: 'cover' }}
                 />
                 <div className="candidate-jobHeaderMeta">
-                  <Title className="candidate-jobH1" level={2} style={{ margin: 0 }}>
-                    {job.title}
-                  </Title>
+                  <Flex align="center" gap={12}>
+                    <Title className="candidate-jobH1" level={2} style={{ margin: 0 }}>
+                      {job.title}
+                    </Title>
+                    {isApplied && (
+                      <Tag 
+                        icon={<CheckCircleOutlined />}
+                        color="processing" 
+                        style={{ 
+                          fontWeight: 800, 
+                          borderRadius: 99, 
+                          paddingInline: 16,
+                          paddingBlock: 2,
+                          background: '#fff',
+                          borderColor: token.colorPrimary,
+                          color: token.colorPrimary,
+                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)'
+                        }}
+                      >
+                        Đã ứng tuyển
+                      </Tag>
+                    )}
+                  </Flex>
                   <div className="candidate-jobHeaderLine">
                     <BankOutlined
                       className="candidate-jobHeaderLineIcon"
@@ -249,11 +282,16 @@ export function CandidateJobDetailsPage() {
                   </Button>
                 </Link>
                 <Button
-                  type="primary"
+                  type={isApplied ? 'default' : 'primary'}
                   className="candidate-applyNowBtn"
                   onClick={() => setApplyOpen(true)}
+                  style={isApplied ? { 
+                    background: token.colorFillSecondary,
+                    borderColor: 'transparent',
+                    color: token.colorTextSecondary
+                  } : undefined}
                 >
-                  Apply now
+                  {isApplied ? 'Đã ứng tuyển' : 'Apply now'}
                 </Button>
               </Flex>
             </div>

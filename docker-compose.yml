@@ -7,24 +7,7 @@ services:
       - "6379:6379"
     restart: unless-stopped
 
-  # 2. Local Postgres with pgvector extension (required for vector(1536) columns in schema)
-  postgres:
-    image: pgvector/pgvector:pg17
-    container_name: recruitment-postgres
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: recruitment
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
+
 
   # 3. Backend
   backend:
@@ -42,9 +25,6 @@ services:
       - REDIS_PORT=6379
       - NODE_ENV=development
       - AI_SERVICE_URL=http://ai-service:8000/analyze-cv
-      # Override DB URLs if using local postgres
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/recruitment
-      - DIRECT_URL=postgresql://postgres:postgres@postgres:5432/recruitment
     volumes:
       - ./backend:/app
       - /app/node_modules
@@ -52,8 +32,6 @@ services:
     depends_on:
       redis:
         condition: service_started
-      postgres:
-        condition: service_healthy
     restart: unless-stopped
 
   # 3.5 AI Service (Python)
@@ -87,6 +65,3 @@ services:
     depends_on:
       - backend
     restart: unless-stopped
-
-volumes:
-  pgdata:
