@@ -254,9 +254,7 @@ export function HrCandidateDetailsPage() {
                   </Text>
                   {app.ai_summary?.ai_explanation?.score_reason && (
                     <div style={{ marginTop: 12 }}>
-                      <Text strong>
-                        Reason:
-                      </Text>
+                      <Text strong>Reason:</Text>
                       <br />
                       <Text type="secondary" style={{ fontSize: 13 }}>
                         {app.ai_summary.ai_explanation.score_reason}

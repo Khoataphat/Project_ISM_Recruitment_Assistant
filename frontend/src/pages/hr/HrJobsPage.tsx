@@ -3,32 +3,15 @@ import { Alert, Button, Card, Col, Flex, Row, Spin, Table, Tag, Typography, them
 import type { ColumnsType } from 'antd/es/table'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { apiClient } from '@/lib/api'
+
+import { getHrJobs, type ApiJob } from '@/services/jobsService'
 
 const { Title, Text } = Typography
-
-type ApiJob = {
-  id: string
-  title: string
-  location?: string
-  status: string
-  _count: { applications: number }
-  companies: { name: string; logo_url?: string }
-}
 
 const STATUS_COLOR: Record<string, string> = {
   Open: 'success',
   Closed: 'error',
   Draft: 'default',
-}
-
-function getApiErrorMessage(err: unknown, fallback: string) {
-  if (err && typeof err === 'object') {
-    const maybe = err as { response?: { data?: { message?: unknown } } }
-    const msg = maybe.response?.data?.message
-    if (typeof msg === 'string' && msg.trim()) return msg
-  }
-  return fallback
 }
 
 export function HrJobsPage() {
@@ -42,10 +25,14 @@ export function HrJobsPage() {
       try {
         setLoading(true)
         setError(null)
-        const res = await apiClient.get('/jobs/hr')
-        setJobs(res.data.data ?? [])
+        const apiJobs = await getHrJobs()
+        setJobs(apiJobs)
       } catch (err: unknown) {
-        setError(getApiErrorMessage(err, 'Failed to load jobs'))
+        const msg =
+          err && typeof err === 'object'
+            ? ((err as { message?: unknown }).message as string | undefined)
+            : undefined
+        setError(typeof msg === 'string' && msg.trim() ? msg : 'Failed to load jobs')
       } finally {
         setLoading(false)
       }
@@ -93,8 +80,8 @@ export function HrJobsPage() {
       width: 140,
       align: 'center',
       render: (_, r) => (
-        <Tag color={r._count.applications > 0 ? 'blue' : 'default'} style={{ margin: 0 }}>
-          {r._count.applications}
+        <Tag color={(r._count?.applications ?? 0) > 0 ? 'blue' : 'default'} style={{ margin: 0 }}>
+          {r._count?.applications ?? 0}
         </Tag>
       ),
     },

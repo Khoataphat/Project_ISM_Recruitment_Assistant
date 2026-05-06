@@ -20,6 +20,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import { apiClient } from '@/lib/api'
+import { getHrJobById } from '@/services/jobsService'
 
 const PIPELINE_BG =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuBmrWT5hOOytaPJF8g5Hg4lP0mNxMaL3NyyHm_hv6YAprmcgngacokNZqQIVIYY_piu4ZjkwwVDDV8uGqjwnrzLIx8BNspsgRMPu-RN7-Q09SLjvzMO5kChuj5XF4ScN2A1JXvWSopmh8wWdc9B-or1gCUTAwzaGkWv3W0VBPlU6xOxvysUw6yPp_K3c1_t-CdY-WCIt-IMm-YA05wboIJmzi5bH_jOMcKIMaLbwYMyrurRxKqSUOgRe4Oc0OOqsE2AGgWS4ygCew'
@@ -214,13 +215,17 @@ export function HrJobDetailsPage() {
       if (!id) return
       try {
         setLoading(true)
-        const [jobRes, appsRes] = await Promise.all([
-          apiClient.get(`/jobs/${id}`),
-          apiClient.get('/dashboard/applications'), // Need to filter by jobId in frontend or backend
+        const [jobData, appsRes] = await Promise.all([
+          getHrJobById(id),
+          apiClient.get('/dashboard/applications'), // backend returns { applications, pagination }
         ])
-        setJob(jobRes.data.data)
+        setJob({
+          id: jobData.id,
+          title: jobData.title,
+          location: jobData.location ?? undefined,
+        })
         // Filter apps by jobId
-        const apps: HrApplication[] = appsRes.data.data
+        const apps: HrApplication[] = appsRes.data?.data?.applications ?? []
         const filteredApps = apps.filter((a) => a.job_id === id)
         setApplications(filteredApps)
       } catch (err: unknown) {

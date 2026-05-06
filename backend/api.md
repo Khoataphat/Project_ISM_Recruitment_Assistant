@@ -292,7 +292,7 @@ Public endpoint. Returns detail of one open job.
 {
   "title": "Backend Engineer",
   "description": "Build APIs for HR job posting and candidate application flow.",
-  "status": "open"
+  "status": "Open"
 }
 ```
 
@@ -300,7 +300,7 @@ Public endpoint. Returns detail of one open job.
 | ----------- | ------ | -------- | ------------------ |
 | title       | string | Yes      | 2-256 chars        |
 | description | string | Yes      | At least 10 chars  |
-| status      | string | No       | `open` or `closed` |
+| status      | string | No       | `Open`, `Closed`, or `Draft` |
 
 ### 2.4 PATCH `/jobs/:id`
 
@@ -308,11 +308,17 @@ Public endpoint. Returns detail of one open job.
 
 Update one or more job fields.
 
-### 2.5 GET `/jobs/hr/manage`
+### 2.5 GET `/jobs/hr`
 
 **Auth:** Required, Role `HR`
 
-Returns all jobs, including closed jobs, for HR management screens.
+Returns jobs for the current HR user, including closed/draft jobs.
+
+### 2.6 GET `/jobs/hr/:id`
+
+**Auth:** Required, Role `HR`
+
+Returns detail of one job (including closed/draft jobs).
 
 ---
 
