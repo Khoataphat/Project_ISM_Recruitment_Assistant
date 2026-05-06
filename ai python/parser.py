@@ -57,18 +57,26 @@ def ai_resume_parser(cv_text):
     {cv_text}
     """
 
-    try:
-        # Gọi model
-        response = client.models.generate_content(
-            model="gemini-3-flash-preview",
-            contents=prompt,
-            config={
-                "response_mime_type": "application/json",
-            }
-        )
-        
-        # Parse chuỗi JSON trả về thành Dictionary trong Python
-        return json.loads(response.text)
-    except Exception as e:
-        print(f"Lỗi: {e}")
-        return None
+    import time
+    max_retries = 3
+    retry_delay = 2
+
+    for attempt in range(max_retries):
+        try:
+            response = client.models.generate_content(
+                model="gemini-3-flash-preview",
+                contents=prompt,
+                config={
+                    "response_mime_type": "application/json",
+                }
+            )
+            return json.loads(response.text)
+        except Exception as e:
+            if attempt < max_retries - 1 and ("503" in str(e) or "429" in str(e)):
+                print(f"Lỗi Gemini ({e}), đang thử lại lần {attempt + 1}...")
+                time.sleep(retry_delay)
+                retry_delay *= 2
+            else:
+                print(f"Lỗi parser: {e}")
+                return None
+    return None

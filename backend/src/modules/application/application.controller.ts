@@ -2,6 +2,7 @@ import { Response } from "express";
 import path from "path";
 import { AuthRequest } from "../auth/auth.middleware";
 import { submitApplication, getApplicationsByCandidate, getApplicationById, updateApplicationStatus } from "./application.service";
+import { scoreApplicationWithAi } from "./ai.service";
 import { hr_status } from "@prisma/client";
 import { prisma } from "../../../prisma/prisma.service";
 
@@ -23,11 +24,18 @@ export const submit = async (req: AuthRequest, res: Response) => {
             return res.status(403).json({ status: "error", message: "No candidate profile found" });
         }
 
+        console.log(`[Submit] Creating application for candidate ${candidate.id} and job ${jobId}`);
         const application = await submitApplication({
             candidateId: candidate.id,
             jobId,
             cv_url,
             cover_letter: coverLetter,
+        });
+        console.log(`[Submit] Application created successfully with ID: ${application.id}`);
+
+        // Trigger AI scoring in background
+        scoreApplicationWithAi(application.id).catch(err => {
+            console.error("Async AI scoring error:", err);
         });
 
         res.status(201).json({ status: "success", data: application });

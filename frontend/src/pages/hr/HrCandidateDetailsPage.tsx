@@ -1,4 +1,4 @@
-import { ArrowLeftOutlined, FilePdfOutlined } from '@ant-design/icons'
+import { ArrowLeftOutlined, DashboardOutlined, FilePdfOutlined } from '@ant-design/icons'
 import {
   Alert,
   Avatar,
@@ -7,6 +7,7 @@ import {
   Card,
   Descriptions,
   Flex,
+  Progress,
   Result,
   Select,
   Space,
@@ -29,10 +30,20 @@ type ApplicationDetail = {
   hr_status: string
   hr_note?: string
   processing_status: string
+  ai_matching_score?: number
+  skills_radar?: Record<string, number>
+  ai_summary?: {
+    ai_summary?: string
+    ai_explanation?: {
+      score_reason?: string
+      radar_breakdown?: string
+    }
+  }
   applied_at: string
   jobs: {
     id: string
     title: string
+    description: string
     companies: { name: string; logo_url?: string }
   }
   candidates: {
@@ -155,6 +166,9 @@ export function HrCandidateDetailsPage() {
     )
   }
 
+  const aiScore = app.ai_matching_score ? Math.round(Number(app.ai_matching_score)) : 0
+  const isAnalyzed = app.processing_status === 'Analyzed'
+
   return (
     <div style={{ maxWidth: 880, margin: '0 auto' }}>
       <Flex vertical gap={token.marginLG}>
@@ -185,6 +199,114 @@ export function HrCandidateDetailsPage() {
             <Button icon={<ArrowLeftOutlined />}>Back to list</Button>
           </Link>
         </Flex>
+
+        {/* AI Analysis Section */}
+        {isAnalyzed && (
+          <Card
+            title={
+              <Space>
+                <DashboardOutlined style={{ color: token.colorPrimary }} />
+                <span>AI Analysis Result</span>
+              </Space>
+            }
+            variant="borderless"
+            style={{
+              borderRadius: token.borderRadiusLG * 1.25,
+              border: `1px solid ${token.colorPrimaryBorder}`,
+              background: `color-mix(in srgb, ${token.colorPrimaryBg} 40%, transparent)`,
+            }}
+          >
+            <Flex gap={24} wrap>
+              <div style={{ flex: '0 0 120px', textAlign: 'center' }}>
+                <Progress
+                  type="circle"
+                  percent={aiScore}
+                  size={100}
+                  strokeColor={{
+                    '0%': token.colorError,
+                    '50%': token.colorWarning,
+                    '100%': token.colorSuccess,
+                  }}
+                  format={(p) => (
+                    <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+                      <span style={{ fontSize: 24, fontWeight: 800, color: token.colorText }}>
+                        {p}
+                      </span>
+                      <span style={{ fontSize: 10, color: token.colorTextSecondary }}>MATCH</span>
+                    </div>
+                  )}
+                />
+              </div>
+              <div style={{ flex: 1, minWidth: 300 }}>
+                <Title level={5} style={{ marginTop: 0 }}>
+                  Matching Summary
+                </Title>
+                <div
+                  style={{
+                    padding: 12,
+                    background: token.colorBgContainer,
+                    borderRadius: token.borderRadius,
+                    border: `1px solid ${token.colorBorderSecondary}`,
+                  }}
+                >
+                  <Text style={{ display: 'block', marginBottom: 8 }}>
+                    {app.ai_summary?.ai_summary}
+                  </Text>
+                  {app.ai_summary?.ai_explanation?.score_reason && (
+                    <div style={{ marginTop: 12 }}>
+                      <Text strong>
+                        Reason:
+                      </Text>
+                      <br />
+                      <Text type="secondary" style={{ fontSize: 13 }}>
+                        {app.ai_summary.ai_explanation.score_reason}
+                      </Text>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Flex>
+
+            {app.skills_radar && (
+              <div style={{ marginTop: 24 }}>
+                <Title level={5}>Skills Breakdown</Title>
+                <Flex gap={8} wrap>
+                  {Object.entries(app.skills_radar).map(([skill, val]) => (
+                    <div
+                      key={skill}
+                      style={{
+                        padding: '8px 16px',
+                        background: token.colorBgContainer,
+                        borderRadius: 100,
+                        border: `1px solid ${token.colorBorderSecondary}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                      }}
+                    >
+                      <Text strong style={{ fontSize: 13 }}>
+                        {skill}
+                      </Text>
+                      <Tag
+                        color={val > 70 ? 'success' : val > 40 ? 'warning' : 'error'}
+                        style={{ margin: 0, borderRadius: 10 }}
+                      >
+                        {val}%
+                      </Tag>
+                    </div>
+                  ))}
+                </Flex>
+                {app.ai_summary?.ai_explanation?.radar_breakdown && (
+                  <div style={{ marginTop: 16 }}>
+                    <Text type="secondary" style={{ fontSize: 13, fontStyle: 'italic' }}>
+                      * {app.ai_summary.ai_explanation.radar_breakdown}
+                    </Text>
+                  </div>
+                )}
+              </div>
+            )}
+          </Card>
+        )}
 
         <Card
           variant="borderless"
@@ -267,7 +389,9 @@ export function HrCandidateDetailsPage() {
                 </Link>
               </Descriptions.Item>
               <Descriptions.Item label="Applied at">{formatDate(app.applied_at)}</Descriptions.Item>
-              <Descriptions.Item label="AI Processing">{app.processing_status}</Descriptions.Item>
+              <Descriptions.Item label="AI Processing">
+                <Tag color={isAnalyzed ? 'success' : 'processing'}>{app.processing_status}</Tag>
+              </Descriptions.Item>
               {app.candidates.years_of_experience !== undefined && (
                 <Descriptions.Item label="Experience">
                   {app.candidates.years_of_experience} years

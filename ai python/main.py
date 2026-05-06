@@ -1,7 +1,13 @@
 # main.py
 import json
+import sys
 from parser import extract_text_from_pdf, ai_resume_parser
 from models import MatchingEngine 
+
+# Cấu hình encoding UTF-8 cho stdout để tránh lỗi khi print tiếng Việt
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
+
 def main():
     # --- CẤU HÌNH ĐẦU VÀO ---
     file_path = "TruongThaiNgocToan_Resume.pdf"
@@ -26,11 +32,8 @@ def main():
     print("--- B2: Đang so khớp với yêu cầu công việc (AI Matching) ---")
     engine = MatchingEngine()
     
-    # Lấy danh sách kỹ năng từ Task 1 để đưa vào Task 2
-    skills_list = cv_data.get("skills", [])
-    
     # Gọi hàm calculate_match đã nâng cấp (có Summary và Radar)
-    matching_result = engine.calculate_match(skills_list, job_description)
+    matching_result = engine.calculate_match(cv_data, job_description)
 
     # --- BƯỚC 3: TỔNG HỢP DỮ LIỆU ĐỂ BÀN GIAO CHO BACKEND ---
     final_output = {
