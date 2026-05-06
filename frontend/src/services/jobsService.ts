@@ -42,12 +42,20 @@ export type ApiJob = {
   updated_at: string
   companies: ApiCompany
   hr_profiles: ApiHrProfile | null
+  _count?: { applications: number }
   [key: string]: unknown
 }
 
 export type CreateJobRequest = {
   title: string
   description: string
+  location?: string
+  level?: string
+  type?: string
+  salary_min?: number
+  salary_max?: number
+  application_deadline?: string
+  benefits?: string[]
   status?: JobStatus
 }
 
@@ -73,7 +81,22 @@ export async function updateJob(jobId: string | number, data: UpdateJobRequest) 
   return unwrapData(response)
 }
 
-export async function getHrManageJobs() {
-  const response = await apiClient.get<ApiSuccessEnvelope<ApiJob[]>>('/jobs/hr/manage')
+export async function deleteJob(jobId: string | number) {
+  const response = await apiClient.delete<ApiSuccessEnvelope<unknown>>(`/jobs/${jobId}`)
   return unwrapData(response)
 }
+
+export async function getHrJobs() {
+  const response = await apiClient.get<ApiSuccessEnvelope<ApiJob[]>>('/jobs/hr')
+  return unwrapData(response)
+}
+
+export async function getHrJobById(jobId: string | number) {
+  const response = await apiClient.get<ApiSuccessEnvelope<ApiJob>>(`/jobs/hr/${jobId}`)
+  return unwrapData(response)
+}
+
+/**
+ * Backward-compatible alias. Prefer `getHrJobs()`.
+ */
+export const getHrManageJobs = getHrJobs

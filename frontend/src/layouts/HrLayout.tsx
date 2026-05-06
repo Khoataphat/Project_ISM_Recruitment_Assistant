@@ -1,17 +1,17 @@
 import {
   BuildOutlined,
   DashboardOutlined,
+  MenuOutlined,
   PlusOutlined,
   ProjectOutlined,
   SettingOutlined,
   TeamOutlined,
 } from '@ant-design/icons'
-import { Button, ConfigProvider, Flex, Layout, Menu, theme, Typography } from 'antd'
+import { Button, ConfigProvider, Flex, Grid, Layout, Menu, theme, Typography } from 'antd'
 import type { CSSProperties } from 'react'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 
-import { MainFooter } from '@/layouts/main/MainFooter'
 import { TopNavBar } from '@/layouts/main/TopNavBar'
 
 const HEADER_HEIGHT = 80
@@ -40,6 +40,9 @@ export function HrLayout() {
   const { token } = theme.useToken()
   const location = useLocation()
   const selectedKey = matchNavKey(location.pathname)
+  const screens = Grid.useBreakpoint()
+  const isDesktop = Boolean(screens.lg)
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   const menuItems = useMemo(
     () => [
@@ -75,11 +78,12 @@ export function HrLayout() {
     bottom: 0,
     width: SIDEBAR_WIDTH,
     overflow: 'auto',
-    zIndex: 40,
+    zIndex: 60,
     padding: token.padding,
-    background: `color-mix(in srgb, ${token.colorBgContainer} 82%, transparent)`,
-    backdropFilter: 'blur(14px)',
-    borderRight: `1px solid ${token.colorBorderSecondary}`,
+    background: `rgba(255, 255, 255, 0.76)`,
+    backdropFilter: 'blur(16px)',
+    borderRight: `1px solid rgba(15, 23, 42, 0.08)`,
+    boxShadow: '0 18px 55px rgba(0, 26, 67, 0.08)',
     display: 'flex',
     flexDirection: 'column',
   }
@@ -126,7 +130,35 @@ export function HrLayout() {
     <Layout style={{ minHeight: '100vh', background: token.colorBgLayout }}>
       <TopNavBar />
 
-      <Layout.Sider width={SIDEBAR_WIDTH} style={siderStyle} theme="light">
+      {!isDesktop && mobileNavOpen && (
+        <div
+          onClick={() => setMobileNavOpen(false)}
+          role="button"
+          tabIndex={0}
+          aria-label="Close navigation"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            top: HEADER_HEIGHT,
+            background: 'rgba(15, 23, 42, 0.45)',
+            zIndex: 55,
+          }}
+        />
+      )}
+
+      <Layout.Sider
+        width={SIDEBAR_WIDTH}
+        style={siderStyle}
+        theme="light"
+        breakpoint="lg"
+        collapsedWidth={0}
+        collapsible
+        trigger={null}
+        collapsed={!isDesktop ? !mobileNavOpen : false}
+        onBreakpoint={(broken) => {
+          if (!broken) setMobileNavOpen(false)
+        }}
+      >
         <Flex vertical style={{ minHeight: '100%' }}>
           <div
             style={{
@@ -150,31 +182,37 @@ export function HrLayout() {
           </div>
 
           <div style={{ flex: 1, minHeight: 0 }}>
-            <ConfigProvider
-              theme={{
-                components: {
-                  Menu: {
-                    itemSelectedBg: token.colorPrimaryBg,
-                    itemSelectedColor: token.colorPrimary,
-                    itemHoverBg: token.colorFillTertiary,
-                    itemHoverColor: token.colorText,
-                    itemColor: token.colorTextSecondary,
-                    itemBorderRadius: token.borderRadiusLG,
-                    iconSize: token.fontSizeLG,
+            <div className="hr-surface hr-glass" style={{ padding: token.paddingXS }}>
+              <ConfigProvider
+                theme={{
+                  components: {
+                    Menu: {
+                      itemSelectedBg: `color-mix(in srgb, ${token.colorPrimary} 10%, transparent)`,
+                      itemSelectedColor: token.colorPrimary,
+                      itemHoverBg: `color-mix(in srgb, ${token.colorPrimary} 6%, transparent)`,
+                      itemHoverColor: token.colorText,
+                      itemColor: token.colorTextSecondary,
+                      itemBorderRadius: token.borderRadiusLG,
+                      iconSize: token.fontSizeLG,
+                      itemHeight: 44,
+                      itemMarginInline: 6,
+                      itemMarginBlock: 4,
+                    },
                   },
-                },
-              }}
-            >
-              <Menu
-                mode="inline"
-                selectedKeys={[selectedKey]}
-                items={menuItems}
-                style={{
-                  borderInlineEnd: 0,
-                  background: 'transparent',
                 }}
-              />
-            </ConfigProvider>
+              >
+                <Menu
+                  mode="inline"
+                  selectedKeys={[selectedKey]}
+                  items={menuItems}
+                  style={{
+                    borderInlineEnd: 0,
+                    background: 'transparent',
+                    fontWeight: 650,
+                  }}
+                />
+              </ConfigProvider>
+            </div>
           </div>
 
           <div style={{ paddingTop: token.paddingMD, paddingBottom: token.paddingXS }}>
@@ -189,7 +227,7 @@ export function HrLayout() {
 
       <Layout
         style={{
-          marginLeft: SIDEBAR_WIDTH,
+          marginLeft: isDesktop ? SIDEBAR_WIDTH : 0,
           paddingTop: HEADER_HEIGHT,
           minHeight: '100vh',
           background: token.colorBgLayout,
@@ -197,10 +235,25 @@ export function HrLayout() {
       >
         <Layout.Content style={{ paddingTop: 0 }}>
           <div style={{ padding: token.paddingLG }}>
+            {!isDesktop && (
+              <Button
+                type="primary"
+                icon={<MenuOutlined />}
+                onClick={() => setMobileNavOpen(true)}
+                aria-label="Open navigation"
+                style={{
+                  position: 'fixed',
+                  top: HEADER_HEIGHT + token.margin,
+                  left: token.margin,
+                  zIndex: 54,
+                  borderRadius: 999,
+                  boxShadow: '0 18px 55px rgba(0, 26, 67, 0.22)',
+                }}
+              />
+            )}
             <Outlet />
           </div>
         </Layout.Content>
-        <MainFooter />
       </Layout>
     </Layout>
   )
