@@ -81,7 +81,7 @@ export const getApplicationById = async (applicationId: string) => {
                 select: {
                     id: true,
                     title: true,
-                    companies: { select: { name: true, logo_url: true } },
+                    companies: { select: { id: true, name: true, logo_url: true } },
                 },
             },
         },

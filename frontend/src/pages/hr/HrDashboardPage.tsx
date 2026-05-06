@@ -38,6 +38,8 @@ type RecentApplication = {
   id: string
   hr_status: string
   applied_at: string
+  ai_matching_score: string | number | null
+  ai_summary: any
   jobs: { id: string; title: string }
   candidates: {
     users: { full_name: string; email: string; avatar_url?: string }
@@ -86,9 +88,44 @@ const columns: ColumnsType<RecentApplication> = [
           <Text type="secondary" style={{ fontSize: 12 }}>
             {a.candidates.users.email}
           </Text>
+          {a.ai_summary && (
+            <Text 
+              type="secondary" 
+              italic 
+              ellipsis 
+              style={{ fontSize: 11, display: 'block', maxWidth: 180, opacity: 0.8 }}
+            >
+              {typeof a.ai_summary === 'string' ? a.ai_summary : (a.ai_summary.summary || a.ai_summary.reasoning || '')}
+            </Text>
+          )}
         </div>
       </Flex>
     ),
+  },
+  {
+    title: 'AI Match',
+    key: 'ai_score',
+    render: (_, a) => {
+      const score = a.ai_matching_score != null ? Number(a.ai_matching_score) : null
+      let color = 'default'
+      let label = 'N/A'
+      if (score !== null) {
+        if (score >= 70) color = 'success'
+        else if (score >= 50) color = 'warning'
+        else color = 'error'
+        label = score >= 70 ? 'High' : score >= 50 ? 'Mid' : 'Low'
+      }
+      return (
+        <Flex vertical gap={2}>
+          <Text strong style={{ fontSize: 14 }}>
+            {score !== null ? `${Math.round(score)}%` : '—'}
+          </Text>
+          <Tag color={color} style={{ margin: 0, fontSize: 10, lineHeight: '16px' }}>
+            {label}
+          </Tag>
+        </Flex>
+      )
+    },
   },
   {
     title: 'Role',

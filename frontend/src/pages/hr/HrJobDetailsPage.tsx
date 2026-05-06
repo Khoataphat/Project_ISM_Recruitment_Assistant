@@ -33,6 +33,8 @@ type PipelineRow = {
   status: string
   appliedAtLabel: string
   resumeUrl: string
+  aiScore: number | null
+  aiSummary: string | null
 }
 
 type HrJob = {
@@ -47,6 +49,8 @@ type HrApplication = {
   hr_status: string
   applied_at: string
   cv_url: string
+  ai_matching_score: string | number | null
+  ai_summary: any
   candidates: {
     users: {
       full_name: string
@@ -85,6 +89,29 @@ const HR_STATUS_COLOR: Record<string, string> = {
   Rejected: 'error',
 }
 
+function getScoreColor(score: number | null, token: any) {
+  if (score === null) return token.colorTextTertiary
+  if (score >= 70) return token.colorSuccess
+  if (score >= 50) return token.colorWarning
+  return token.colorError
+}
+
+function getScoreLabel(score: number | null) {
+  if (score === null) return 'N/A'
+  if (score >= 70) return 'Highly Recommended'
+  if (score >= 50) return 'Consider'
+  return 'Not a fit'
+}
+
+function getSummarySnippet(summary: any): string | null {
+  if (!summary) return null
+  if (typeof summary === 'string') return summary
+  if (typeof summary === 'object') {
+    return summary.summary || summary.text || summary.reasoning || null
+  }
+  return null
+}
+
 function CandidateTableRow({
   row,
   token,
@@ -121,7 +148,7 @@ function CandidateTableRow({
         e.currentTarget.style.background = 'transparent'
       }}
     >
-      <Col xs={24} lg={8}>
+      <Col xs={24} lg={7}>
         <Flex align="center" gap={token.margin}>
           <Avatar
             size={48}
@@ -135,9 +162,10 @@ function CandidateTableRow({
           >
             {initials}
           </Avatar>
-          <div>
+          <div style={{ minWidth: 0, flex: 1 }}>
             <Typography.Text
               strong
+              ellipsis
               style={{
                 display: 'block',
                 color: hovered ? token.colorPrimary : token.colorText,
@@ -146,22 +174,61 @@ function CandidateTableRow({
             >
               {row.name}
             </Typography.Text>
-            <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+            <Typography.Text 
+              type="secondary" 
+              ellipsis 
+              style={{ fontSize: 11, display: 'block' }}
+            >
               {row.subtitle}
             </Typography.Text>
+            {row.aiSummary && (
+              <Typography.Text
+                type="secondary"
+                italic
+                ellipsis
+                style={{ fontSize: 11, marginTop: 2, display: 'block', opacity: 0.8 }}
+              >
+                "{row.aiSummary}"
+              </Typography.Text>
+            )}
           </div>
         </Flex>
       </Col>
-      <Col xs={24} lg={5} style={{ textAlign: 'center' }}>
+      <Col xs={24} lg={3} style={{ textAlign: 'center' }}>
+        <Flex vertical align="center">
+          <Typography.Text
+            strong
+            style={{
+              fontSize: 16,
+              color: getScoreColor(row.aiScore, token),
+              lineHeight: 1,
+            }}
+          >
+            {row.aiScore != null ? `${Math.round(row.aiScore)}%` : '—'}
+          </Typography.Text>
+          <Typography.Text
+            style={{
+              fontSize: 9,
+              textTransform: 'uppercase',
+              fontWeight: 700,
+              color: getScoreColor(row.aiScore, token),
+              marginTop: 4,
+            }}
+          >
+            {getScoreLabel(row.aiScore)}
+          </Typography.Text>
+        </Flex>
+      </Col>
+      <Col xs={24} lg={4} style={{ textAlign: 'center' }}>
         <Tag
           color={HR_STATUS_COLOR[row.status] || 'default'}
-          style={{ borderRadius: 999, fontWeight: 700, textTransform: 'uppercase' }}
+          style={{ borderRadius: 999, fontWeight: 700, textTransform: 'uppercase', margin: 0 }}
         >
           {row.status}
         </Tag>
       </Col>
-      <Col xs={24} lg={4} style={{ textAlign: 'center' }}>
-        <Typography.Text type="secondary" style={{ fontSize: token.fontSize }}>
+      <Col xs={24} lg={3} style={{ textAlign: 'center' }}>
+        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
           {row.appliedAtLabel}
         </Typography.Text>
       </Col>
@@ -234,14 +301,18 @@ export function HrJobDetailsPage() {
 
   const pipelineRows = useMemo(
     () =>
-      applications.map((a) => ({
-        applicationId: a.id,
-        name: a.candidates.users.full_name,
-        subtitle: a.candidates.users.email,
-        status: a.hr_status,
-        appliedAtLabel: formatAppliedShort(a.applied_at),
-        resumeUrl: a.cv_url,
-      })),
+      applications
+        .map((a) => ({
+          applicationId: a.id,
+          name: a.candidates.users.full_name,
+          subtitle: a.candidates.users.email,
+          status: a.hr_status,
+          appliedAtLabel: formatAppliedShort(a.applied_at),
+          resumeUrl: a.cv_url,
+          aiScore: a.ai_matching_score != null ? Number(a.ai_matching_score) : null,
+          aiSummary: getSummarySnippet(a.ai_summary),
+        }))
+        .sort((a, b) => (b.aiScore ?? -1) - (a.aiScore ?? -1)),
     [applications]
   )
 
@@ -619,14 +690,17 @@ export function HrJobDetailsPage() {
 
           <div>
             <Row gutter={[16, 0]} style={tableHeadStyle}>
-              <Col xs={0} lg={8}>
+              <Col xs={0} lg={7}>
                 Candidate
               </Col>
-              <Col xs={0} lg={5} style={{ textAlign: 'center' }}>
-                Status
+              <Col xs={0} lg={3} style={{ textAlign: 'center' }}>
+                AI Match
               </Col>
               <Col xs={0} lg={4} style={{ textAlign: 'center' }}>
-                Date Applied
+                Status
+              </Col>
+              <Col xs={0} lg={3} style={{ textAlign: 'center' }}>
+                Date
               </Col>
               <Col xs={0} lg={7} style={{ textAlign: 'right' }}>
                 Action

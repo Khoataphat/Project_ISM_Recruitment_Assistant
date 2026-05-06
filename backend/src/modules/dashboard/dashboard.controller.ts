@@ -13,13 +13,26 @@ const hrStatusMap: Record<string, hr_status> = {
     Rejected: hr_status.Rejected,
 };
 
-export const getDashboardStats = async (_req: AuthRequest, res: Response) => {
+export const getDashboardStats = async (req: AuthRequest, res: Response) => {
     try {
+        const userId = req.userId;
+        const hrProfile = await prisma.hr_profiles.findUnique({
+            where: { user_id: userId },
+            select: { company_id: true }
+        });
+
+        if (!hrProfile) {
+            return res.status(403).json({ status: "error", message: "HR profile not found" });
+        }
+
+        const companyId = hrProfile.company_id;
+
         const [totalJobs, totalApplications, totalCandidates, recentApplications] = await Promise.all([
-            prisma.jobs.count({ where: { status: "Open" } }),
-            prisma.applications.count(),
-            prisma.candidates.count(),
+            prisma.jobs.count({ where: { company_id: companyId, status: "Open" } }),
+            prisma.applications.count({ where: { jobs: { company_id: companyId } } }),
+            prisma.candidates.count({ where: { applications: { some: { jobs: { company_id: companyId } } } } }),
             prisma.applications.findMany({
+                where: { jobs: { company_id: companyId } },
                 take: 5,
                 orderBy: { applied_at: "desc" },
                 include: {
@@ -52,18 +65,37 @@ export const getDashboardStats = async (_req: AuthRequest, res: Response) => {
 
 export const getApplications = async (req: AuthRequest, res: Response) => {
     try {
+        const userId = req.userId;
+        const hrProfile = await prisma.hr_profiles.findUnique({
+            where: { user_id: userId },
+            select: { company_id: true }
+        });
+
+        if (!hrProfile) {
+            return res.status(403).json({ status: "error", message: "HR profile not found" });
+        }
+
+        const companyId = hrProfile.company_id;
         const { status, search, page = "1", limit = "20" } = req.query as Record<string, string>;
         const skip = (parseInt(page) - 1) * parseInt(limit);
 
-        const where: any = {};
+        const where: any = {
+            jobs: { company_id: companyId }
+        };
+
         if (status && hrStatusMap[status]) {
             where.hr_status = hrStatusMap[status];
         }
         if (search) {
-            where.OR = [
-                { candidates: { users: { full_name: { contains: search, mode: "insensitive" } } } },
-                { candidates: { users: { email: { contains: search, mode: "insensitive" } } } },
-                { jobs: { title: { contains: search, mode: "insensitive" } } },
+            where.AND = [
+                { jobs: { company_id: companyId } },
+                {
+                    OR: [
+                        { candidates: { users: { full_name: { contains: search, mode: "insensitive" } } } },
+                        { candidates: { users: { email: { contains: search, mode: "insensitive" } } } },
+                        { jobs: { title: { contains: search, mode: "insensitive" } } },
+                    ]
+                }
             ];
         }
 
@@ -111,11 +143,26 @@ export const getApplications = async (req: AuthRequest, res: Response) => {
 
 export const getApplicationDetail = async (req: AuthRequest, res: Response) => {
     try {
+        const userId = req.userId;
+        const hrProfile = await prisma.hr_profiles.findUnique({
+            where: { user_id: userId },
+            select: { company_id: true }
+        });
+
+        if (!hrProfile) {
+            return res.status(403).json({ status: "error", message: "HR profile not found" });
+        }
+
         const id = String(req.params.id);
         const application = await getApplicationById(id);
 
         if (!application) {
             return res.status(404).json({ status: "error", message: "Application not found" });
+        }
+
+        // Security check: HR can only see applications for their company
+        if (application.jobs.companies.id !== hrProfile.company_id) {
+            return res.status(403).json({ status: "error", message: "Forbidden: You do not have access to this application" });
         }
 
         res.status(200).json({ status: "success", data: application });
@@ -127,8 +174,31 @@ export const getApplicationDetail = async (req: AuthRequest, res: Response) => {
 
 export const patchStatus = async (req: AuthRequest, res: Response) => {
     try {
+        const userId = req.userId;
+        const hrProfile = await prisma.hr_profiles.findUnique({
+            where: { user_id: userId },
+            select: { company_id: true }
+        });
+
+        if (!hrProfile) {
+            return res.status(403).json({ status: "error", message: "HR profile not found" });
+        }
+
         const id = String(req.params.id);
         const { status, hr_note } = req.body;
+
+        const application = await prisma.applications.findUnique({
+            where: { id },
+            include: { jobs: { select: { company_id: true } } }
+        });
+
+        if (!application) {
+            return res.status(404).json({ status: "error", message: "Application not found" });
+        }
+
+        if (application.jobs.company_id !== hrProfile.company_id) {
+            return res.status(403).json({ status: "error", message: "Forbidden: You do not have access to this application" });
+        }
 
         const mappedStatus = hrStatusMap[status];
         if (!mappedStatus) {
