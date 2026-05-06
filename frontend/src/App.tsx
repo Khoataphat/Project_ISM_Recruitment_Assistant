@@ -13,6 +13,7 @@ import { CandidateProfilePage } from '@/pages/candidate/CandidateProfilePage.tsx
 import { HrCandidateDetailsPage } from '@/pages/hr/HrCandidateDetailsPage'
 import { HrCandidatesPage } from '@/pages/hr/HrCandidatesPage'
 import { HrDashboardPage } from '@/pages/hr/HrDashboardPage'
+import { HrJobEditPage } from '@/pages/hr/HrJobEditPage'
 import { HrJobDetailsPage } from '@/pages/hr/HrJobDetailsPage'
 import { HrJobsPage } from '@/pages/hr/HrJobsPage'
 import { HrMyJobPage } from '@/pages/hr/HrMyJobPage'
@@ -43,6 +44,7 @@ const App = () => (
             <Route path="dashboard" element={<HrDashboardPage />} />
             <Route path="my-job" element={<HrMyJobPage />} />
             <Route path="jobs" element={<HrJobsPage />} />
+            <Route path="job/:id/edit" element={<HrJobEditPage />} />
             <Route path="job/:id" element={<HrJobDetailsPage />} />
             <Route path="candidates" element={<HrCandidatesPage />} />
             <Route path="candidate/:id" element={<HrCandidateDetailsPage />} />
