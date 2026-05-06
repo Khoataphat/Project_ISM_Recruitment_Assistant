@@ -351,8 +351,7 @@ function JobListRow({
         <Space size="small">
           <Tooltip title="Edit">
             <Link
-              to={`/hr/job/${job.id}`}
-              state={{ mode: 'edit' }}
+              to={`/hr/job/${job.id}/edit`}
               style={{ textDecoration: 'none', display: 'inline-flex' }}
               aria-label={`Edit ${job.title}`}
             >
