@@ -256,6 +256,8 @@ model jobs {
   job_skills            job_skills[]
   applications          applications[]
   saved_jobs            saved_jobs[]
+
+  @@unique([company_id, title])
 }
 
 model job_skills {
