@@ -293,6 +293,7 @@ model applications {
 
   jobs                jobs              @relation(fields: [job_id], references: [id], onDelete: Restrict)
   candidates          candidates        @relation(fields: [candidate_id], references: [id], onDelete: Restrict)
+  interviews          interviews?
 
   @@unique([job_id, candidate_id], name: "applications_unique_per_job")
 }
@@ -358,3 +359,15 @@ model skill_assessments {
   candidates   candidates        @relation(fields: [candidate_id], references: [id], onDelete: Cascade)
   skills       skills            @relation(fields: [skill_id], references: [id], onDelete: Restrict)
 }
+
+model interviews {
+  id             String            @id @default(uuid()) @db.Uuid
+  application_id String            @unique @db.Uuid
+  video_url      String            @db.VarChar(500)
+  status         processing_status @default(Processing)
+  created_at     DateTime          @default(now())
+  updated_at     DateTime          @updatedAt
+
+  applications   applications      @relation(fields: [application_id], references: [id], onDelete: Cascade)
+}
+

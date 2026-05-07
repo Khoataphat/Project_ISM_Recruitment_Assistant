@@ -14,6 +14,7 @@ import authRoute from "./modules/auth/auth.route";
 import applicationRoute from "./modules/application/application.route";
 import dashboardRoute from "./modules/dashboard/dashboard.route";
 import jobRoute from "./modules/job/job.route";
+import aiInterviewRoute from "./modules/ai-interview/ai-interview.route";
 import { authMiddleware, authorizeRole } from "./modules/auth/auth.middleware";
 import { sanitizeBody } from "./shared/middleware/sanitize.middleware";
 
@@ -40,6 +41,7 @@ app.use("/auth", authRoute);
 app.use("/jobs", jobRoute);
 app.use("/applications", authMiddleware, authorizeRole(user_role.User), applicationRoute);
 app.use("/dashboard", authMiddleware, authorizeRole(user_role.HR), dashboardRoute);
+app.use("/ai-interview", aiInterviewRoute);
 
 // Global error handler (Multer + general)
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
