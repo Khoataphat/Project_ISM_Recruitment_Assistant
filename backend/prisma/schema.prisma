@@ -361,13 +361,22 @@ model skill_assessments {
 }
 
 model interviews {
-  id             String            @id @default(uuid()) @db.Uuid
-  application_id String            @unique @db.Uuid
-  video_url      String            @db.VarChar(500)
-  status         processing_status @default(Processing)
-  created_at     DateTime          @default(now())
-  updated_at     DateTime          @updatedAt
+  id                  String            @id @default(uuid()) @db.Uuid
+  application_id      String            @unique @db.Uuid
+  video_url           String            @db.VarChar(500)
+  status              processing_status @default(Processing)
+  interview_score     Int?
+  communication_score Int?
+  confidence_score    Int?
+  relevance_score     Int?
+  attitude_score      Int?
+  environment_note    String?
+  feedback_summary    String?
+  feedback_strengths  String?
+  feedback_weaknesses String?
+  created_at          DateTime          @default(now())
+  updated_at          DateTime          @updatedAt
 
-  applications   applications      @relation(fields: [application_id], references: [id], onDelete: Cascade)
+  applications        applications      @relation(fields: [application_id], references: [id], onDelete: Cascade)
 }
 

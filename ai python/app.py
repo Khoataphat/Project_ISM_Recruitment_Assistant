@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, Form
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from parser import extract_text_from_pdf, ai_resume_parser
 from models import MatchingEngine, InterviewEvaluator
@@ -54,15 +54,16 @@ async def analyze_cv(file: UploadFile = File(...), jd_text: str = Form(...)):
         }
     except Exception as e:
         if os.path.exists(temp_path): os.remove(temp_path)
-        return {"error": str(e)}
+        print(f"Lỗi hệ thống khi xử lý CV: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/analyze-interview")
-async def analyze_interview(video: UploadFile = File(...), context: str = Form(...)):
+async def analyze_interview(file: UploadFile = File(...), context: str = Form(...)):
     """
     Endpoint nhận file Video (webm/mp4) và ngữ cảnh (JD, Questions), trả về kết quả đánh giá Multimodal.
     """
     # Lấy extension của file gốc, mặc định là .webm nếu không có
-    ext = os.path.splitext(video.filename)[1] if video.filename else ".webm"
+    ext = os.path.splitext(file.filename)[1] if file.filename else ".webm"
     if not ext: ext = ".webm"
     
     # Tạo tên file tạm thời an toàn (chỉ chứa ASCII) bằng UUID
@@ -76,7 +77,7 @@ async def analyze_interview(video: UploadFile = File(...), context: str = Form(.
 
         # Lưu file video tạm
         with open(temp_path, "wb") as buffer:
-            buffer.write(await video.read())
+            buffer.write(await file.read())
             
         print(f"Đã lưu video tạm: {temp_path}")
         
@@ -87,7 +88,8 @@ async def analyze_interview(video: UploadFile = File(...), context: str = Form(.
         
     except Exception as e:
         print(f"Lỗi hệ thống khi xử lý video: {e}")
-        return {"error": str(e)}
+        # Trả về mã 500 để Node.js Backend biết là có lỗi
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         # Xóa file video tạm
         if os.path.exists(temp_path):

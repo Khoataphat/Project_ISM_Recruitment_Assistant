@@ -22,7 +22,7 @@
 * **UI/UX Chart:** Component Radar Chart hiện tại cần được config lại để nhận 4-5 trục (thêm trục Thái độ/Biểu cảm) thay vì 3 trục như ban đầu.
 
 **Tasks:**
-- [ ] (Backend) Viết API GET `/ai-interview/result/:applicationId`.
-- [ ] (Frontend) Cập nhật Radar Chart / Progress Bar để vẽ thêm `attitude_score`.
-- [ ] (Frontend) Thêm block UI để hiển thị `environment_note`.
-- [ ] (Frontend) Tạo khu vực hiển thị Summary, Strengths, Weaknesses và Video Player.
+- [x] (Backend) Viết API GET `/ai-interview/result/:applicationId`.
+- [x] (Frontend) Cập nhật Radar Chart / Progress Bar để vẽ thêm `attitude_score`.
+- [x] (Frontend) Thêm block UI để hiển thị `environment_note`.
+- [x] (Frontend) Tạo khu vực hiển thị Summary, Strengths, Weaknesses và Video Player.

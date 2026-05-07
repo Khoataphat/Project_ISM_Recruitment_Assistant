@@ -35,33 +35,58 @@ export class AiInterviewService {
             try {
                 console.log(`[AI-Service-Trigger] Sending video for application ${applicationId} to AI service`);
                 
-                // Assuming ai-service is available at http://ai-service:8000
-                const aiServiceUrl = process.env.AI_SERVICE_URL || "http://ai-service:8000/analyze-interview";
+                const aiServiceUrl = process.env.AI_INTERVIEW_URL || "http://ai-service:8000/analyze-interview";
                 
-                // In a real scenario, we might send the filePath or a readable stream
-                // Here we send the file path assuming the AI service shares the same volume
-                // or we could use FormData if we need to send the actual file stream.
-                // The Dev Notes say: "đính kèm file stream và JSON questions"
-                // Let's use form-data to send the actual stream.
-
                 const FormData = require('form-data');
                 const form = new FormData();
                 
-                form.append("application_id", applicationId);
-                form.append("video", fs.createReadStream(filePath));
-                form.append("questions", JSON.stringify(questions));
+                // Quy tắc 2: Đọc stream file và gắn thêm filename 'video.webm'
+                form.append('file', fs.createReadStream(filePath), 'video.webm');
+                
+                // Gửi context chứa applicationId và questions
+                const context = {
+                    application_id: applicationId,
+                    questions: questions
+                };
+                form.append("context", JSON.stringify(context));
 
-                await axios.post(aiServiceUrl, form, {
+                // Quy tắc 3: BẮT BUỘC truyền headers từ formData và bổ sung timeout 2 phút
+                const response = await axios.post(aiServiceUrl, form, {
                     headers: {
                         ...form.getHeaders()
+                    },
+                    timeout: 120000 // 2 minutes
+                });
+
+                const result = response.data;
+
+                // Chuẩn hệ thống phân tán: Kiểm tra tính hợp lệ của dữ liệu AI trả về
+                if (!result || result.interview_score === undefined) {
+                    throw new Error("Dữ liệu AI trả về rỗng hoặc không hợp lệ");
+                }
+
+                // Cập nhật kết quả vào DB
+                await prisma.interviews.update({
+                    where: { application_id: applicationId },
+                    data: {
+                        status: processing_status.Analyzed,
+                        interview_score: result.interview_score,
+                        communication_score: result.communication_score,
+                        attitude_score: result.attitude_score,
+                        environment_note: result.environment_note,
+                        feedback_summary: result.feedback,
+                        updated_at: new Date()
                     }
                 });
 
-                console.log(`[AI-Service-Trigger] Successfully triggered analysis for application ${applicationId}`);
+                console.log(`[AI-Service-Trigger] Successfully triggered analysis and updated DB for application ${applicationId}`);
             } catch (error: any) {
-                console.error(`[AI-Service-Trigger] Failed to trigger AI analysis for application ${applicationId}:`, error.message);
+                // Quy tắc 4: Bắt lỗi chi tiết từ FastAPI
+                console.error(`[AI-Service-Trigger] Failed to trigger AI analysis for application ${applicationId}:`, 
+                    error.message, 
+                    error.response?.data || "No detailed error from AI Service"
+                );
                 
-                // Update interview status to Failed if AI trigger fails
                 try {
                     const interview = await prisma.interviews.findUnique({ where: { application_id: applicationId } });
                     if (interview) {
@@ -75,6 +100,59 @@ export class AiInterviewService {
                 }
             }
         });
+    }
+
+    /**
+     * Get interview result by applicationId
+     */
+    async getInterviewResult(applicationId: string) {
+        return await prisma.interviews.findUnique({
+            where: { application_id: applicationId },
+            select: {
+                id: true,
+                application_id: true,
+                video_url: true,
+                status: true,
+                interview_score: true,
+                communication_score: true,
+                confidence_score: true,
+                relevance_score: true,
+                attitude_score: true,
+                environment_note: true,
+                feedback_summary: true,
+                feedback_strengths: true,
+                feedback_weaknesses: true,
+                created_at: true,
+                updated_at: true,
+                applications: {
+                    select: {
+                        jobs: {
+                            select: {
+                                company_id: true
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    /**
+     * Get interview questions by jobId
+     */
+    async getInterviewQuestions(jobId: string) {
+        // Tạm thời fix cứng mảng 3 câu hỏi mặc định như yêu cầu
+        const defaultQuestions = [
+            "Please introduce yourself and your background.",
+            "Why are you interested in this position?",
+            "Describe a challenging project you worked on and how you handled it."
+        ];
+        
+        // Map to standard object format expected by Frontend: { id, content }
+        return defaultQuestions.map((q, index) => ({
+            id: `q${index + 1}`,
+            content: q
+        }));
     }
 }
 

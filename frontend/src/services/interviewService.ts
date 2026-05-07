@@ -1,31 +1,29 @@
+import { apiClient } from '@/lib/api'
+
 export interface InterviewQuestion {
   id: string
   content: string
 }
 
 /**
- * Mock API to fetch interview questions
+ * API to fetch interview questions
  */
 export async function getInterviewQuestions(jobId: string): Promise<InterviewQuestion[]> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve([
-        { id: 'q1', content: 'Please introduce yourself and your background.' },
-        { id: 'q2', content: 'Why are you interested in this position?' },
-        { id: 'q3', content: 'Describe a challenging project you worked on and how you handled it.' },
-      ])
-    }, 1000)
-  })
+  const response = await apiClient.get(`/ai-interview/questions/${jobId}`)
+  return response.data?.data || []
 }
 
 /**
- * Mock API to upload the interview video
+ * API to upload the interview video
  */
-export async function submitInterviewVideo(jobId: string, videoBlob: Blob): Promise<{ success: boolean; message: string }> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      console.log(`Uploaded video for job ${jobId}. Size: ${videoBlob.size} bytes.`)
-      resolve({ success: true, message: 'Interview submitted successfully.' })
-    }, 2000)
-  })
+export async function submitInterviewVideo(applicationId: string, videoBlob: Blob): Promise<{ success: boolean; message: string }> {
+  const formData = new FormData()
+  // Add applicationId which is expected by the backend multer config
+  formData.append('applicationId', applicationId)
+  // Use "video" key to match upload.single("video") in backend
+  formData.append('video', videoBlob, 'interview.webm')
+
+  // Let browser automatically set Content-Type with correct boundary
+  const response = await apiClient.post('/ai-interview/submit', formData)
+  return response.data
 }

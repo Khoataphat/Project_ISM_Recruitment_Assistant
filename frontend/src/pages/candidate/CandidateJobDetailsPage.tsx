@@ -76,6 +76,7 @@ export function CandidateJobDetailsPage() {
   
   const [job, setJob] = useState<ApiJob | null>(null)
   const [isApplied, setIsApplied] = useState(false)
+  const [applicationId, setApplicationId] = useState<string | null>(null)
   const [isInterviewCompleted, setIsInterviewCompleted] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -92,6 +93,10 @@ export function CandidateJobDetailsPage() {
         setJob(jobData)
         const alreadyApplied = (appsData ?? []).some((app: any) => app.job_id === id)
         setIsApplied(alreadyApplied)
+        if (alreadyApplied) {
+          const app = (appsData ?? []).find((app: any) => app.job_id === id)
+          if (app) setApplicationId(app.id)
+        }
       } catch (err: unknown) {
         setError(getApiErrorMessage(err, 'Failed to fetch data'))
       } finally {
@@ -133,19 +138,16 @@ export function CandidateJobDetailsPage() {
   const handleApplySubmit = async (file: File) => {
     if (!id) return
     try {
-      await submitApplication({
+      const result = await submitApplication({
         jobId: id,
         resume: file,
         coverLetter: 'Applied via candidate job details page.',
       })
-      message.success('Your application has been submitted successfully!')
-      setApplyOpen(false)
+      if (result && result.id) {
+        setApplicationId(String(result.id))
+      }
       setIsApplied(true)
-      
-      // Delay opening to allow the apply modal to visually close completely
-      setTimeout(() => {
-        setInterviewPopupOpen(true)
-      }, 500)
+      // Note: Modal will handle its own closing after the AI progress animation
     } catch (err: unknown) {
       throw new Error(getApiErrorMessage(err, 'Failed to submit application'))
     }
@@ -431,7 +433,16 @@ export function CandidateJobDetailsPage() {
 
       <JobApplyModal
         open={applyOpen}
-        onClose={() => setApplyOpen(false)}
+        onClose={() => {
+          setApplyOpen(false)
+          // If application was successful, show success and trigger next step
+          if (isApplied) {
+            message.success('Your application has been submitted successfully!')
+            setTimeout(() => {
+              setInterviewPopupOpen(true)
+            }, 600)
+          }
+        }}
         jobTitle={job.title}
         subtitle="Submit your application for this role."
         onSubmit={handleApplySubmit}
@@ -446,6 +457,7 @@ export function CandidateJobDetailsPage() {
       <InterviewRecordingModal
         open={interviewRecordingOpen}
         jobId={id || ''}
+        applicationId={applicationId || ''}
         stream={interviewStream}
         onClose={handleInterviewClose}
         onComplete={handleInterviewComplete}

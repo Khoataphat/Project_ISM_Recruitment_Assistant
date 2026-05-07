@@ -9,6 +9,7 @@ const { Title, Text, Paragraph } = Typography
 export interface InterviewRecordingModalProps {
   open: boolean
   jobId: string
+  applicationId: string
   stream: MediaStream | null
   onClose: () => void
   onComplete: () => void
@@ -16,7 +17,7 @@ export interface InterviewRecordingModalProps {
 
 const MAX_RECORDING_TIME = 180 // 3 minutes in seconds
 
-export function InterviewRecordingModal({ open, jobId, stream, onClose, onComplete }: InterviewRecordingModalProps) {
+export function InterviewRecordingModal({ open, jobId, applicationId, stream, onClose, onComplete }: InterviewRecordingModalProps) {
   const [questions, setQuestions] = useState<InterviewQuestion[]>([])
   const [loadingQuestions, setLoadingQuestions] = useState(true)
   const [timeLeft, setTimeLeft] = useState(MAX_RECORDING_TIME)
@@ -88,7 +89,7 @@ export function InterviewRecordingModal({ open, jobId, stream, onClose, onComple
 
     setIsSubmitting(true)
     try {
-      await submitInterviewVideo(jobId, blob)
+      await submitInterviewVideo(applicationId, blob)
       message.success('Gửi video phỏng vấn thành công!')
       onComplete()
     } catch (err) {

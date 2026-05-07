@@ -3,6 +3,7 @@ import multer from "multer";
 import fs from "fs";
 import path from "path";
 import { aiInterviewController } from "./ai-interview.controller";
+import { authMiddleware, authorizeRole } from "../auth/auth.middleware";
 
 const router = Router();
 
@@ -47,5 +48,16 @@ const upload = multer({
 
 // POST /ai-interview/submit
 router.post("/submit", upload.single("video"), aiInterviewController.submitInterview);
+
+// GET /ai-interview/questions/:id
+router.get("/questions/:id", aiInterviewController.getInterviewQuestions);
+
+// GET /ai-interview/result/:applicationId
+router.get(
+    "/result/:applicationId",
+    authMiddleware,
+    authorizeRole("HR"),
+    aiInterviewController.getInterviewResult
+);
 
 export default router;
