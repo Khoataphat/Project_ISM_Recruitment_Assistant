@@ -266,7 +266,7 @@ export function HrCandidatesPage() {
   ]
 
   return (
-    <div style={{ maxWidth: 1280, margin: '0 auto' }}>
+    <div style={{ margin: '0 auto' }}>
       <Flex vertical gap={token.marginLG}>
         <div>
           <Title level={2} style={{ margin: 0, fontWeight: 800, letterSpacing: '-0.02em' }}>
