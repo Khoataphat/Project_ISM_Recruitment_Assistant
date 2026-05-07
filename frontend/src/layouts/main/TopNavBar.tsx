@@ -13,12 +13,7 @@ import {
   Typography,
 } from 'antd'
 import type { MenuProps } from 'antd'
-import {
-  DashboardOutlined,
-  LogoutOutlined,
-  MenuOutlined,
-  UserOutlined,
-} from '@ant-design/icons'
+import { DashboardOutlined, LogoutOutlined, MenuOutlined, UserOutlined } from '@ant-design/icons'
 import { useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { appEnv } from '@/config/env'
@@ -229,9 +224,7 @@ export function TopNavBar() {
                     {avatarText}
                   </Avatar>
                   {isDesktop && (
-                    <Typography.Text style={{ fontWeight: 650 }}>
-                      {displayName}
-                    </Typography.Text>
+                    <Typography.Text style={{ fontWeight: 650 }}>{displayName}</Typography.Text>
                   )}
                 </Space>
               </Button>

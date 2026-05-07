@@ -20,6 +20,8 @@ import {
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { apiClient } from '@/lib/api'
+import { appEnv } from '@/config/env'
+import { SkillsRadarChart } from '@/components/candidate/SkillsRadarChart'
 
 const { Title, Text } = Typography
 
@@ -56,6 +58,20 @@ type ApplicationDetail = {
       avatar_url?: string
     }
   }
+}
+
+type InterviewResult = {
+  status: string
+  interview_score: number
+  communication_score: number
+  confidence_score: number
+  relevance_score: number
+  attitude_score: number
+  environment_note: string
+  feedback_summary: string
+  feedback_strengths: string
+  feedback_weaknesses: string
+  video_url: string
 }
 
 const HR_STATUS_OPTIONS = [
@@ -103,6 +119,9 @@ export function HrCandidateDetailsPage() {
   const [error, setError] = useState<string | null>(null)
   const [updating, setUpdating] = useState(false)
 
+  const [interview, setInterview] = useState<InterviewResult | null>(null)
+  const [interviewLoading, setInterviewLoading] = useState(true)
+
   useEffect(() => {
     const fetchDetail = async () => {
       if (!id) return
@@ -122,7 +141,23 @@ export function HrCandidateDetailsPage() {
         setLoading(false)
       }
     }
+
+    const fetchInterview = async () => {
+      if (!id) return
+      try {
+        setInterviewLoading(true)
+        const res = await apiClient.get(`/ai-interview/result/${id}`)
+        setInterview(res.data.data)
+      } catch (err: unknown) {
+        // It's okay if interview result doesn't exist yet
+        console.error('Failed to load interview result', err)
+      } finally {
+        setInterviewLoading(false)
+      }
+    }
+
     fetchDetail()
+    fetchInterview()
   }, [id])
 
   const handleStatusChange = async (newStatus: string) => {
@@ -169,6 +204,15 @@ export function HrCandidateDetailsPage() {
   const aiScore = app.ai_matching_score ? Math.round(Number(app.ai_matching_score)) : 0
   const isAnalyzed = app.processing_status === 'Analyzed'
 
+  const interviewRadar = interview
+    ? {
+        Communication: interview.communication_score || 0,
+        Confidence: interview.confidence_score || 0,
+        Relevance: interview.relevance_score || 0,
+        Attitude: interview.attitude_score || 0,
+      }
+    : {}
+
   return (
     <div style={{ maxWidth: 880, margin: '0 auto' }}>
       <Flex vertical gap={token.marginLG}>
@@ -200,13 +244,13 @@ export function HrCandidateDetailsPage() {
           </Link>
         </Flex>
 
-        {/* AI Analysis Section */}
-        {isAnalyzed && (
+        {/* AI Analysis Section (CV Scoring) */}
+        {app.processing_status !== 'Pending' ? (
           <Card
             title={
               <Space>
                 <DashboardOutlined style={{ color: token.colorPrimary }} />
-                <span>AI Analysis Result</span>
+                <span>AI CV Analysis Result</span>
               </Space>
             }
             variant="borderless"
@@ -216,94 +260,264 @@ export function HrCandidateDetailsPage() {
               background: `color-mix(in srgb, ${token.colorPrimaryBg} 40%, transparent)`,
             }}
           >
-            <Flex gap={24} wrap>
-              <div style={{ flex: '0 0 120px', textAlign: 'center' }}>
-                <Progress
-                  type="circle"
-                  percent={aiScore}
-                  size={100}
-                  strokeColor={{
-                    '0%': token.colorError,
-                    '50%': token.colorWarning,
-                    '100%': token.colorSuccess,
-                  }}
-                  format={(p) => (
-                    <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
-                      <span style={{ fontSize: 24, fontWeight: 800, color: token.colorText }}>
-                        {p}
-                      </span>
-                      <span style={{ fontSize: 10, color: token.colorTextSecondary }}>MATCH</span>
-                    </div>
-                  )}
-                />
-              </div>
-              <div style={{ flex: 1, minWidth: 300 }}>
-                <Title level={5} style={{ marginTop: 0 }}>
-                  Matching Summary
-                </Title>
-                <div
-                  style={{
-                    padding: 12,
-                    background: token.colorBgContainer,
-                    borderRadius: token.borderRadius,
-                    border: `1px solid ${token.colorBorderSecondary}`,
-                  }}
-                >
-                  <Text style={{ display: 'block', marginBottom: 8 }}>
-                    {app.ai_summary?.ai_summary}
-                  </Text>
-                  {app.ai_summary?.ai_explanation?.score_reason && (
-                    <div style={{ marginTop: 12 }}>
-                      <Text strong>
-                        Reason:
-                      </Text>
-                      <br />
-                      <Text type="secondary" style={{ fontSize: 13 }}>
-                        {app.ai_summary.ai_explanation.score_reason}
-                      </Text>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </Flex>
-
-            {app.skills_radar && (
-              <div style={{ marginTop: 24 }}>
-                <Title level={5}>Skills Breakdown</Title>
-                <Flex gap={8} wrap>
-                  {Object.entries(app.skills_radar).map(([skill, val]) => (
+            {app.processing_status === 'Processing' ? (
+              <Flex justify="center" align="center" vertical gap={16} style={{ minHeight: 150 }}>
+                <Spin />
+                <Text type="secondary">AI đang phân tích CV, vui lòng đợi...</Text>
+              </Flex>
+            ) : app.processing_status === 'Failed' ? (
+              <Alert
+                message="AI CV Analysis Failed"
+                description="Có lỗi xảy ra khi phân tích CV của ứng viên này. Vui lòng liên hệ quản trị viên hoặc thử lại sau."
+                type="error"
+                showIcon
+              />
+            ) : (
+              <>
+                <Flex gap={24} wrap>
+                  <div style={{ flex: '0 0 120px', textAlign: 'center' }}>
+                    <Progress
+                      type="circle"
+                      percent={aiScore}
+                      size={100}
+                      strokeColor={{
+                        '0%': token.colorError,
+                        '50%': token.colorWarning,
+                        '100%': token.colorSuccess,
+                      }}
+                      format={(p) => (
+                        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+                          <span style={{ fontSize: 24, fontWeight: 800, color: token.colorText }}>
+                            {p}
+                          </span>
+                          <span style={{ fontSize: 10, color: token.colorTextSecondary }}>MATCH</span>
+                        </div>
+                      )}
+                    />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 300 }}>
+                    <Title level={5} style={{ marginTop: 0 }}>
+                      Matching Summary
+                    </Title>
                     <div
-                      key={skill}
                       style={{
-                        padding: '8px 16px',
+                        padding: 12,
                         background: token.colorBgContainer,
-                        borderRadius: 100,
+                        borderRadius: token.borderRadius,
                         border: `1px solid ${token.colorBorderSecondary}`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
                       }}
                     >
-                      <Text strong style={{ fontSize: 13 }}>
-                        {skill}
+                      <Text style={{ display: 'block', marginBottom: 8 }}>
+                        {app.ai_summary?.ai_summary}
                       </Text>
-                      <Tag
-                        color={val > 70 ? 'success' : val > 40 ? 'warning' : 'error'}
-                        style={{ margin: 0, borderRadius: 10 }}
-                      >
-                        {val}%
-                      </Tag>
+                      {app.ai_summary?.ai_explanation?.score_reason && (
+                        <div style={{ marginTop: 12 }}>
+                          <Text strong>
+                            Reason:
+                          </Text>
+                          <br />
+                          <Text type="secondary" style={{ fontSize: 13 }}>
+                            {app.ai_summary.ai_explanation.score_reason}
+                          </Text>
+                        </div>
+                      )}
                     </div>
-                  ))}
+                  </div>
                 </Flex>
-                {app.ai_summary?.ai_explanation?.radar_breakdown && (
-                  <div style={{ marginTop: 16 }}>
-                    <Text type="secondary" style={{ fontSize: 13, fontStyle: 'italic' }}>
-                      * {app.ai_summary.ai_explanation.radar_breakdown}
-                    </Text>
+
+                {app.skills_radar && (
+                  <div style={{ marginTop: 24 }}>
+                    <Title level={5}>Skills Breakdown</Title>
+                    <Flex gap={8} wrap>
+                      {Object.entries(app.skills_radar).map(([skill, val]) => (
+                        <div
+                          key={skill}
+                          style={{
+                            padding: '8px 16px',
+                            background: token.colorBgContainer,
+                            borderRadius: 100,
+                            border: `1px solid ${token.colorBorderSecondary}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8,
+                          }}
+                        >
+                          <Text strong style={{ fontSize: 13 }}>
+                            {skill}
+                          </Text>
+                          <Tag
+                            color={val > 70 ? 'success' : val > 40 ? 'warning' : 'error'}
+                            style={{ margin: 0, borderRadius: 10 }}
+                          >
+                            {val}%
+                          </Tag>
+                        </div>
+                      ))}
+                    </Flex>
+                    {app.ai_summary?.ai_explanation?.radar_breakdown && (
+                      <div style={{ marginTop: 16 }}>
+                        <Text type="secondary" style={{ fontSize: 13, fontStyle: 'italic' }}>
+                          * {app.ai_summary.ai_explanation.radar_breakdown}
+                        </Text>
+                      </div>
+                    )}
                   </div>
                 )}
-              </div>
+              </>
+            )}
+          </Card>
+        ) : (
+           <Card
+            title={
+              <Space>
+                <DashboardOutlined style={{ color: token.colorTextQuaternary }} />
+                <span>AI CV Analysis Result</span>
+              </Space>
+            }
+            variant="borderless"
+            style={{
+              borderRadius: token.borderRadiusLG * 1.25,
+              border: `1px solid ${token.colorBorderSecondary}`,
+              background: token.colorBgContainerDisabled,
+            }}
+          >
+            <Result
+              icon={<DashboardOutlined style={{ fontSize: 48, color: token.colorTextQuaternary }} />}
+              title="CV chưa được phân tích"
+              subTitle="Ứng viên này chưa được hệ thống tự động chấm điểm CV. Có thể do ứng tuyển trước khi tính năng được kích hoạt."
+            />
+          </Card>
+        )}
+
+        {/* AI Interview Section */}
+        {(interview || interviewLoading) && (
+          <Card
+            title={
+              <Space>
+                <DashboardOutlined style={{ color: token.colorWarning }} />
+                <span>AI Interview Evaluation</span>
+              </Space>
+            }
+            variant="borderless"
+            style={{
+              borderRadius: token.borderRadiusLG * 1.25,
+              border: `1px solid ${token.colorWarningBorder}`,
+              background: `color-mix(in srgb, ${token.colorWarningBg} 20%, transparent)`,
+            }}
+          >
+            {interviewLoading ? (
+              <Flex justify="center" align="center" style={{ minHeight: 150 }}>
+                <Spin />
+              </Flex>
+            ) : interview ? (
+              interview.status?.toUpperCase() === 'PROCESSING' ? (
+                <Flex justify="center" align="center" vertical gap={16} style={{ minHeight: 150, padding: 24 }}>
+                  <Spin size="large" />
+                  <Text type="secondary" style={{ fontSize: 16 }}>AI đang phân tích video, vui lòng quay lại sau vài phút</Text>
+                </Flex>
+              ) : (
+                <Flex vertical gap={24}>
+                  <Flex gap={24} wrap>
+                    <div style={{ flex: '0 0 120px', textAlign: 'center' }}>
+                    <Progress
+                      type="circle"
+                      percent={interview.interview_score}
+                      size={100}
+                      strokeColor={{
+                        '0%': token.colorError,
+                        '50%': token.colorWarning,
+                        '100%': token.colorSuccess,
+                      }}
+                      format={(p) => (
+                        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+                          <span style={{ fontSize: 24, fontWeight: 800, color: token.colorText }}>
+                            {p}
+                          </span>
+                          <span style={{ fontSize: 10, color: token.colorTextSecondary }}>SCORE</span>
+                        </div>
+                      )}
+                    />
+                  </div>
+                  
+                  <div style={{ flex: 1, minWidth: 250 }}>
+                    <SkillsRadarChart skillsRadar={interviewRadar} accentColor={token.colorWarning} />
+                  </div>
+                </Flex>
+
+                {interview.environment_note && (
+                  <Alert
+                    message="Environment & Professionalism Note"
+                    description={interview.environment_note}
+                    type="info"
+                    showIcon
+                    style={{ borderRadius: token.borderRadiusLG }}
+                  />
+                )}
+
+                <Flex gap={16} wrap>
+                  <div style={{ flex: 1, minWidth: 300 }}>
+                    <Title level={5} style={{ marginTop: 0 }}>
+                      Feedback Summary
+                    </Title>
+                    <div
+                      style={{
+                        padding: 16,
+                        background: token.colorBgContainer,
+                        borderRadius: token.borderRadiusLG,
+                        border: `1px solid ${token.colorBorderSecondary}`,
+                      }}
+                    >
+                      <Text style={{ display: 'block', marginBottom: 12 }}>
+                        {interview.feedback_summary}
+                      </Text>
+                      
+                      {interview.feedback_strengths && (
+                        <div style={{ marginBottom: 12 }}>
+                          <Text strong type="success">Strengths:</Text>
+                          <br />
+                          <Text style={{ fontSize: 13 }}>{interview.feedback_strengths}</Text>
+                        </div>
+                      )}
+                      
+                      {interview.feedback_weaknesses && (
+                        <div>
+                          <Text strong type="danger">Areas for Improvement:</Text>
+                          <br />
+                          <Text style={{ fontSize: 13 }}>{interview.feedback_weaknesses}</Text>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </Flex>
+
+                {interview.video_url && (
+                  <div>
+                    <Title level={5}>Interview Recording</Title>
+                    <div style={{ 
+                      borderRadius: token.borderRadiusLG, 
+                      overflow: 'hidden',
+                      border: `1px solid ${token.colorBorderSecondary}`
+                    }}>
+                      <video 
+                        controls 
+                        src={`${appEnv.apiUrl.replace(/\/$/, '')}${interview.video_url?.startsWith('/') ? '' : '/'}${interview.video_url}`} 
+                        style={{ width: '100%', display: 'block' }}
+                      >
+                        Your browser does not support the video tag.
+                      </video>
+                    </div>
+                  </div>
+                )}
+              </Flex>
+              )
+            ) : (
+              <Flex justify="center" align="center" style={{ minHeight: 150 }}>
+                <Result
+                  icon={<DashboardOutlined style={{ fontSize: 48, color: token.colorTextQuaternary }} />}
+                  title="No AI Interview Result Yet"
+                  subTitle="The candidate has not completed the AI video interview or it is still processing."
+                />
+              </Flex>
             )}
           </Card>
         )}
