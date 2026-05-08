@@ -1,0 +1,67 @@
+services:
+  # 1. Redis
+  redis:
+    image: redis:alpine
+    container_name: recruitment-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+
+
+  # 3. Backend
+  backend:
+    build:
+      context: ./backend
+      target: development
+    container_name: recruitment-backend
+    ports:
+      - "3000:3000"
+      - "5555:5555" # Prisma Studio
+    env_file:
+      - ./backend/.env
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - NODE_ENV=development
+      - AI_SERVICE_URL=http://ai-service:8000/analyze-cv
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./database:/database:ro
+    depends_on:
+      redis:
+        condition: service_started
+    restart: unless-stopped
+
+  # 3.5 AI Service (Python)
+  ai-service:
+    build:
+      context: "./ai python"
+    container_name: recruitment-ai-service
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - "./ai python:/app"
+    restart: unless-stopped
+
+  # 4. Frontend
+  frontend:
+    build:
+      context: ./frontend
+      target: development
+    container_name: recruitment-frontend
+    ports:
+      - "5173:5173"
+    env_file:
+      - ./frontend/.env
+    environment:
+      - VITE_API_URL=http://localhost:3000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    restart: unless-stopped

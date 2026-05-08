@@ -1,0 +1,382 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum user_role {
+  HR
+  User
+}
+
+enum job_status {
+  Draft
+  Open
+  Closed
+}
+
+enum job_type {
+  Full_time  @map("Full-time")
+  Part_time  @map("Part-time")
+  Contract
+  Freelance
+  Internship
+}
+
+enum job_level {
+  Intern
+  Fresher
+  Junior
+  Mid_Level  @map("Mid-Level")
+  Senior
+  Lead
+  Manager
+  Director
+}
+
+enum skill_category {
+  Technical
+  Soft_Skill @map("Soft Skill")
+  Language
+}
+
+enum proficiency_level {
+  Beginner
+  Intermediate
+  Advanced
+  Expert
+}
+
+enum processing_status {
+  Pending
+  Processing
+  Analyzed
+  Failed
+}
+
+enum hr_status {
+  Pending
+  Shortlisted
+  Interviewing
+  Offered
+  Accepted
+  Rejected
+}
+
+enum experience_type {
+  Work
+  Internship
+  Project
+  Volunteer
+  Extracurricular
+}
+
+enum company_size {
+  SIZE_1_10    @map("1-10")
+  SIZE_11_50   @map("11-50")
+  SIZE_51_200  @map("51-200")
+  SIZE_201_500 @map("201-500")
+  SIZE_500_PLUS @map("500+")
+}
+
+enum company_type {
+  Startup
+  SME
+  Corporate
+  MNC
+  NGO
+  Government
+}
+
+enum notification_type {
+  application_update
+  job_match
+  system
+  career_suggestion
+}
+
+enum assessment_source {
+  Self
+  AI_Test
+  Third_Party
+}
+
+model users {
+  id            String          @id @default(uuid()) @db.Uuid
+  full_name     String          @db.VarChar(255)
+  email         String          @unique @db.VarChar(255)
+  phone         String?         @unique @db.VarChar(20)
+  avatar_url    String?         @db.VarChar(500)
+  password_hash String          @db.VarChar(255)
+  role          user_role
+  is_active     Boolean         @default(true)
+  created_at    DateTime        @default(now())
+  updated_at    DateTime        @updatedAt
+
+  candidates    candidates?
+  hr_profiles   hr_profiles?
+  notifications notifications[]
+}
+
+model candidates {
+  id                  String                  @id @default(uuid()) @db.Uuid
+  user_id             String                  @unique @db.Uuid
+  portfolio_url       String?                 @db.VarChar(500)
+  years_of_experience Int                     @default(0)
+  summary             String?
+  profile_embedding   Unsupported("vector(1536)")?
+  career_interests    String[]
+  target_job_titles   String[]
+  preferred_locations String[]
+  expected_salary_min Int?
+  expected_salary_max Int?
+  default_resume_url  String?                 
+
+  created_at          DateTime                @default(now())
+  updated_at          DateTime                @updatedAt
+
+  users               users                   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  educations          candidate_education[]
+  experiences         candidate_experiences[]
+  applications        applications[]
+  skills              candidate_skills[]
+  skill_assessments   skill_assessments[]
+  saved_jobs          saved_jobs[]
+  career_suggestions  ai_career_suggestions[]
+}
+
+model companies {
+  id                    String        @id @default(uuid()) @db.Uuid
+  name                  String        @db.VarChar(255)
+  industry              String?       @db.VarChar(100)
+  headquarters_location String?       @db.VarChar(255)
+  website_url           String?       @db.VarChar(500)
+  logo_url              String?       @db.VarChar(500)
+  cover_image_url       String?       @db.VarChar(500)
+  description           String?
+  company_size          company_size?
+  company_type          company_type?
+  founded_year          Int?
+  is_verified           Boolean       @default(false)
+
+  created_at            DateTime      @default(now())
+  updated_at            DateTime      @updatedAt
+
+  hr_profiles           hr_profiles[]
+  jobs                  jobs[]
+}
+
+model hr_profiles {
+  id              String    @id @default(uuid()) @db.Uuid
+  user_id         String    @unique @db.Uuid
+  company_id      String    @db.Uuid
+  employee_id     String?   @unique @db.VarChar(50)
+  department_name String?   @db.VarChar(100)
+  position        String?   @db.VarChar(100)
+
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+
+  users           users     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  companies       companies @relation(fields: [company_id], references: [id], onDelete: Restrict)
+  jobs            jobs[]
+}
+
+model candidate_education {
+  id           String     @id @default(uuid()) @db.Uuid
+  candidate_id String     @db.Uuid
+  institution  String     @db.VarChar(255)
+  degree       String?    @db.VarChar(100)
+  major        String?    @db.VarChar(150)
+  gpa          Decimal?   @db.Decimal(3, 2)
+  start_year   Int?
+  end_year     Int?
+  is_current   Boolean    @default(false)
+  created_at   DateTime   @default(now())
+
+  candidates   candidates @relation(fields: [candidate_id], references: [id], onDelete: Cascade)
+}
+
+model candidate_experiences {
+  id           String          @id @default(uuid()) @db.Uuid
+  candidate_id String          @db.Uuid
+  company      String?         @db.VarChar(255)
+  title        String          @db.VarChar(255)
+  type         experience_type @default(Work)
+  start_date   DateTime        @db.Date
+  end_date     DateTime?       @db.Date
+  is_current   Boolean         @default(false)
+  description  String?
+  created_at   DateTime        @default(now())
+
+  candidates   candidates      @relation(fields: [candidate_id], references: [id], onDelete: Cascade)
+}
+
+model skills {
+  id                String              @id @default(uuid()) @db.Uuid
+  skill_name        String              @unique @db.VarChar(100)
+  category          skill_category
+
+  job_skills        job_skills[]
+  candidate_skills  candidate_skills[]
+  skill_assessments skill_assessments[]
+}
+
+model jobs {
+  id                    String        @id @default(uuid()) @db.Uuid
+  company_id            String        @db.Uuid
+  hr_id                 String        @db.Uuid
+  title                 String        @db.VarChar(255)
+  level                 job_level     @default(Mid_Level)
+  type                  job_type      @default(Full_time)
+  location              String?       @db.VarChar(255)
+  is_remote             Boolean       @default(false)
+  description           String
+  salary_min            Int?
+  salary_max            Int?
+  salary_currency       String        @default("VND") @db.VarChar(10)
+  is_salary_visible     Boolean       @default(true)
+  application_deadline  DateTime?     @db.Date
+  headcount             Int           @default(1)
+  min_experience_years  Int           @default(0)
+  education_requirement String?       @db.VarChar(100)
+  benefits              String[]
+  application_count     Int           @default(0)
+  view_count            Int           @default(0)
+  job_embedding         Unsupported("vector(1536)")?
+  status                job_status    @default(Draft)
+
+  created_at            DateTime      @default(now())
+  updated_at            DateTime      @updatedAt
+
+  companies             companies     @relation(fields: [company_id], references: [id], onDelete: Cascade)
+  hr_profiles           hr_profiles   @relation(fields: [hr_id], references: [id], onDelete: Restrict)
+  job_skills            job_skills[]
+  applications          applications[]
+  saved_jobs            saved_jobs[]
+
+  @@unique([company_id, title])
+}
+
+model job_skills {
+  job_id      String  @db.Uuid
+  skill_id    String  @db.Uuid
+  is_required Boolean @default(true)
+
+  jobs        jobs    @relation(fields: [job_id], references: [id], onDelete: Cascade)
+  skills      skills  @relation(fields: [skill_id], references: [id], onDelete: Restrict)
+
+  @@id([job_id, skill_id])
+}
+
+model applications {
+  id                  String            @id @default(uuid()) @db.Uuid
+  job_id              String            @db.Uuid
+  candidate_id        String            @db.Uuid
+  cv_url              String            @db.VarChar(500)
+  cv_storage_path     String?           @db.VarChar(500)
+  cover_letter        String?
+  processing_status   processing_status @default(Pending)
+  ai_matching_score   Decimal?          @db.Decimal(5, 2)
+  skills_radar        Json              @default("{}")
+  ai_summary          Json              @default("{}")
+  hr_status           hr_status         @default(Pending)
+  hr_note             String?
+  viewed_by_hr_at     DateTime?         
+  is_withdrawn        Boolean           @default(false)
+  withdrawn_at        DateTime?         
+  applied_at          DateTime          @default(now())
+  updated_at          DateTime          @updatedAt
+  interview_video_url String?           
+
+  jobs                jobs              @relation(fields: [job_id], references: [id], onDelete: Restrict)
+  candidates          candidates        @relation(fields: [candidate_id], references: [id], onDelete: Restrict)
+  interviews          interviews?
+
+  @@unique([job_id, candidate_id], name: "applications_unique_per_job")
+}
+
+model candidate_skills {
+  candidate_id      String            @db.Uuid
+  skill_id          String            @db.Uuid
+  proficiency_level proficiency_level
+
+  candidates        candidates        @relation(fields: [candidate_id], references: [id], onDelete: Cascade)
+  skills            skills            @relation(fields: [skill_id], references: [id], onDelete: Restrict)
+
+  @@id([candidate_id, skill_id])
+}
+
+model saved_jobs {
+  candidate_id String   @db.Uuid
+  job_id       String   @db.Uuid
+  saved_at     DateTime @default(now()) 
+
+  candidates   candidates @relation(fields: [candidate_id], references: [id], onDelete: Cascade)
+  jobs         jobs       @relation(fields: [job_id], references: [id], onDelete: Cascade)
+
+  @@id([candidate_id, job_id])
+}
+
+model notifications {
+  id         String            @id @default(uuid()) @db.Uuid
+  user_id    String            @db.Uuid
+  type       notification_type
+  title      String            @db.VarChar(255)
+  body       String?
+  is_read    Boolean           @default(false)
+  read_at    DateTime?         
+  ref_id     String?           @db.Uuid
+  created_at DateTime          @default(now()) 
+
+  users      users             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model ai_career_suggestions {
+  id                   String     @id @default(uuid()) @db.Uuid
+  candidate_id         String     @db.Uuid
+  suggested_job_titles String[]
+  suggested_skills     String[]
+  career_path_summary  String?
+  reasoning            Json       @default("{}")
+  model_version        String?    @db.VarChar(50)
+  generated_at         DateTime   @default(now()) 
+  skill_gaps           String[]   
+
+  candidates           candidates @relation(fields: [candidate_id], references: [id], onDelete: Cascade)
+}
+
+model skill_assessments {
+  id           String            @id @default(uuid()) @db.Uuid
+  candidate_id String            @db.Uuid
+  skill_id     String            @db.Uuid
+  score        Decimal           @db.Decimal(5, 2)
+  source       assessment_source @default(Self)
+  assessed_at  DateTime          @default(now()) 
+
+  candidates   candidates        @relation(fields: [candidate_id], references: [id], onDelete: Cascade)
+  skills       skills            @relation(fields: [skill_id], references: [id], onDelete: Restrict)
+}
+
+model interviews {
+  id                  String            @id @default(uuid()) @db.Uuid
+  application_id      String            @unique @db.Uuid
+  video_url           String            @db.VarChar(500)
+  status              processing_status @default(Processing)
+  interview_score     Int?
+  communication_score Int?
+  confidence_score    Int?
+  relevance_score     Int?
+  attitude_score      Int?
+  environment_note    String?
+  feedback_summary    String?
+  feedback_strengths  String?
+  feedback_weaknesses String?
+  created_at          DateTime          @default(now())
+  updated_at          DateTime          @updatedAt
+
+  applications        applications      @relation(fields: [application_id], references: [id], onDelete: Cascade)
+}
+
