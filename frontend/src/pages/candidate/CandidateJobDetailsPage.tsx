@@ -28,6 +28,8 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
 import { JobApplyModal } from '@/components/candidate/JobApplyModal.tsx'
+import { InterviewPopupModal } from '@/components/candidate/InterviewPopupModal.tsx'
+import { InterviewRecordingModal } from '@/components/candidate/InterviewRecordingModal.tsx'
 import { getMyApplications, submitApplication } from '@/services/applicationsService'
 import { getJobById, type ApiJob } from '@/services/jobsService'
 
@@ -68,8 +70,14 @@ export function CandidateJobDetailsPage() {
   const { token } = theme.useToken()
   const { id } = useParams()
   const [applyOpen, setApplyOpen] = useState(false)
+  const [interviewPopupOpen, setInterviewPopupOpen] = useState(false)
+  const [interviewRecordingOpen, setInterviewRecordingOpen] = useState(false)
+  const [interviewStream, setInterviewStream] = useState<MediaStream | null>(null)
+  
   const [job, setJob] = useState<ApiJob | null>(null)
   const [isApplied, setIsApplied] = useState(false)
+  const [applicationId, setApplicationId] = useState<string | null>(null)
+  const [isInterviewCompleted, setIsInterviewCompleted] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -85,6 +93,10 @@ export function CandidateJobDetailsPage() {
         setJob(jobData)
         const alreadyApplied = (appsData ?? []).some((app: any) => app.job_id === id)
         setIsApplied(alreadyApplied)
+        if (alreadyApplied) {
+          const app = (appsData ?? []).find((app: any) => app.job_id === id)
+          if (app) setApplicationId(app.id)
+        }
       } catch (err: unknown) {
         setError(getApiErrorMessage(err, 'Failed to fetch data'))
       } finally {
@@ -126,14 +138,41 @@ export function CandidateJobDetailsPage() {
   const handleApplySubmit = async (file: File) => {
     if (!id) return
     try {
-      await submitApplication({
+      const result = await submitApplication({
         jobId: id,
         resume: file,
         coverLetter: 'Applied via candidate job details page.',
       })
-      message.success('Your application has been submitted successfully!')
+      if (result && result.id) {
+        setApplicationId(String(result.id))
+      }
+      setIsApplied(true)
+      // Note: Modal will handle its own closing after the AI progress animation
     } catch (err: unknown) {
       throw new Error(getApiErrorMessage(err, 'Failed to submit application'))
+    }
+  }
+
+  const handleInterviewAccept = (stream: MediaStream) => {
+    setInterviewStream(stream)
+    setInterviewPopupOpen(false)
+    setInterviewRecordingOpen(true)
+  }
+
+  const handleInterviewComplete = () => {
+    setInterviewRecordingOpen(false)
+    setIsInterviewCompleted(true)
+    if (interviewStream) {
+      interviewStream.getTracks().forEach(t => t.stop())
+      setInterviewStream(null)
+    }
+  }
+
+  const handleInterviewClose = () => {
+    setInterviewRecordingOpen(false)
+    if (interviewStream) {
+      interviewStream.getTracks().forEach(t => t.stop())
+      setInterviewStream(null)
     }
   }
 
@@ -282,16 +321,27 @@ export function CandidateJobDetailsPage() {
                   </Button>
                 </Link>
                 <Button
-                  type={isApplied ? 'default' : 'primary'}
+                  type={!isApplied ? 'primary' : 'default'}
                   className="candidate-applyNowBtn"
-                  onClick={() => setApplyOpen(true)}
-                  style={isApplied ? { 
+                  onClick={() => {
+                    if (!isApplied) {
+                      setApplyOpen(true)
+                    } else if (!isInterviewCompleted) {
+                      setInterviewPopupOpen(true)
+                    }
+                  }}
+                  style={(isApplied && isInterviewCompleted) ? { 
                     background: token.colorFillSecondary,
                     borderColor: 'transparent',
                     color: token.colorTextSecondary
+                  } : (isApplied && !isInterviewCompleted) ? {
+                    background: '#faad14',
+                    borderColor: '#faad14',
+                    color: '#fff'
                   } : undefined}
+                  disabled={isApplied && isInterviewCompleted}
                 >
-                  {isApplied ? 'Đã ứng tuyển' : 'Apply now'}
+                  {!isApplied ? 'Apply now' : (!isInterviewCompleted ? 'Hoàn tất hồ sơ' : 'Đã ứng tuyển')}
                 </Button>
               </Flex>
             </div>
@@ -383,10 +433,34 @@ export function CandidateJobDetailsPage() {
 
       <JobApplyModal
         open={applyOpen}
-        onClose={() => setApplyOpen(false)}
+        onClose={() => {
+          setApplyOpen(false)
+          // If application was successful, show success and trigger next step
+          if (isApplied) {
+            message.success('Your application has been submitted successfully!')
+            setTimeout(() => {
+              setInterviewPopupOpen(true)
+            }, 600)
+          }
+        }}
         jobTitle={job.title}
         subtitle="Submit your application for this role."
         onSubmit={handleApplySubmit}
+      />
+
+      <InterviewPopupModal
+        open={interviewPopupOpen}
+        onClose={() => setInterviewPopupOpen(false)}
+        onAccept={handleInterviewAccept}
+      />
+
+      <InterviewRecordingModal
+        open={interviewRecordingOpen}
+        jobId={id || ''}
+        applicationId={applicationId || ''}
+        stream={interviewStream}
+        onClose={handleInterviewClose}
+        onComplete={handleInterviewComplete}
       />
     </div>
   )
